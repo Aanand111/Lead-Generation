@@ -1,0 +1,154 @@
+const { pool } = require('../config/db');
+
+const getVendorStats = async (req, res, next) => {
+    try {
+        const vendorId = req.user.id; // User must be a vendor
+
+        const statsQuery = `
+            SELECT 
+                (SELECT COUNT(*) FROM users WHERE referred_by = $1 AND role = 'user') as total_users,
+                (SELECT COUNT(*) FROM users WHERE referred_by = $1 AND role = 'vendor') as referred_vendors,
+                (SELECT COALESCE(SUM(amount), 0) FROM commission_transactions WHERE vendor_id = $1 AND status = 'COMPLETED') as total_earnings,
+                (SELECT COALESCE(SUM(amount), 0) FROM commission_transactions WHERE vendor_id = $1 AND status = 'PENDING') as pending_earnings,
+                (SELECT referral_code FROM users WHERE id = $1) as referral_code
+        `;
+
+        const result = await pool.query(statsQuery, [vendorId]);
+        res.status(200).json({ success: true, data: result.rows[0] });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getVendorReferrals = async (req, res, next) => {
+    try {
+        const vendorId = req.user.id;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        const queryStr = `
+            SELECT 
+                u.id, u.phone, u.full_name, u.role, u.status, u.created_at, u.last_login,
+                (SELECT MAX(created_at) FROM transactions t WHERE t.user_id = u.id AND t.type IN ('PURCHASE', 'PLAN_PURCHASE')) as last_activity,
+                (SELECT COALESCE(SUM(amount), 0) FROM transactions t WHERE t.user_id = u.id AND (t.type = 'PURCHASE' OR t.type = 'PLAN_PURCHASE')) as total_revenue
+            FROM users u 
+            WHERE u.referred_by = $1 
+            ORDER BY u.created_at DESC 
+            LIMIT $2 OFFSET $3
+        `;
+        const result = await pool.query(queryStr, [vendorId, limit, offset]);
+
+        const countQuery = `SELECT COUNT(*) FROM users WHERE referred_by = $1`;
+        const countRes = await pool.query(countQuery, [vendorId]);
+
+        res.status(200).json({
+            success: true,
+            data: result.rows,
+            pagination: {
+                total: parseInt(countRes.rows[0].count),
+                page,
+                limit,
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getVendorEarnings = async (req, res, next) => {
+    try {
+        const vendorId = req.user.id;
+        const query = `
+            SELECT * FROM commission_transactions 
+            WHERE vendor_id = $1 
+            ORDER BY created_at DESC
+        `;
+        const result = await pool.query(query, [vendorId]);
+        res.status(200).json({ success: true, data: result.rows });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const referUser = async (req, res, next) => {
+    // This will likely be handled by a user-facing signup using a referral code.
+    // However, if a vendor can add them manually:
+    try {
+        const vendorId = req.user.id;
+        const { phone, email, password, full_name } = req.body;
+
+        if (!email) return res.status(400).json({ success: false, message: 'Email sequence required for user enrollment.' });
+
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const result = await pool.query(
+            'INSERT INTO users (phone, email, password_hash, full_name, role, referred_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [phone, email, hashedPassword, full_name, 'user', vendorId]
+        );
+
+        res.status(201).json({ success: true, message: 'User referred & added successfully', data: result.rows[0] });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const referVendor = async (req, res, next) => {
+    try {
+        const vendorId = req.user.id;
+        const { phone, email, password, full_name } = req.body;
+
+        if (!email) return res.status(400).json({ success: false, message: 'Email signal required for sub-vendor orchestration.' });
+
+        // BRD Section 1.3: Secondary Vendor Restriction
+        // Primary Vendors have referred_by = NULL (added by Admin).
+        // Secondary/Sub-Vendors have referred_by = [Primary Vendor ID].
+        const checkVendor = await pool.query('SELECT referred_by, status FROM users WHERE id = $1', [vendorId]);
+        const vendor = checkVendor.rows[0];
+
+        if (!vendor || vendor.status !== 'ACTIVE') {
+            return res.status(403).json({ success: false, message: 'AUTHENTICATION_FAILURE: Vendor node is inactive or unauthorized.' });
+        }
+
+        if (vendor.referred_by) {
+            console.warn(`[HIERARCHY_BLOCK] Sub-Vendor ${vendorId} attempted to add a 3rd-tier vendor.`);
+            return res.status(403).json({ 
+                success: false, 
+                message: 'HIERARCHY_RESTRICTION: Only Primary/Direct vendors are authorized to orchestrate new vendor nodes.' 
+            });
+        }
+
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Generate unique referral code for the new Sub-Vendor
+        const newReferralCode = `VND-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+        const result = await pool.query(
+            'INSERT INTO users (phone, email, password_hash, full_name, role, referred_by, referral_code, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+            [phone, email, hashedPassword, full_name, 'vendor', vendorId, newReferralCode, 'ACTIVE']
+        );
+
+        res.status(201).json({ 
+            success: true, 
+            message: 'Sub-Vendor identity registered successfully in the hierarchy.', 
+            data: { id: result.rows[0].id, phone: result.rows[0].phone, email: result.rows[0].email, referral_code: newReferralCode } 
+        });
+    } catch (error) {
+        if (error.code === '23505') { // Unique constraint (phone/code)
+             return res.status(400).json({ success: false, message: 'Identity Conflict: Smartphone signature or Referral code already exists in the mesh.' });
+        }
+        next(error);
+    }
+};
+
+module.exports = {
+    getVendorStats,
+    getVendorReferrals,
+    getVendorEarnings,
+    referUser,
+    referVendor
+};

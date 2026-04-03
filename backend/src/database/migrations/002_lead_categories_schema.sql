@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS lead_categories (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) UNIQUE NOT NULL,
+  status VARCHAR(20) DEFAULT 'Active',
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);

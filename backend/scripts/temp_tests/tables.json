@@ -1,0 +1,22 @@
+[
+  "migrations",
+  "users",
+  "user_profiles",
+  "lead_history",
+  "lead_purchases",
+  "leads",
+  "user_packages",
+  "packages",
+  "referrals",
+  "commission_transactions",
+  "posters",
+  "transactions",
+  "banners",
+  "news",
+  "notifications",
+  "pincodes",
+  "available _leads",
+  "lead_categories",
+  "customers",
+  "vendors"
+]
