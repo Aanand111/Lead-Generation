@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS lead_purchases (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id),
   lead_id UUID REFERENCES leads(id),
-  lead_price num REFERENCES leads(lead_value),
+  lead_price numeric REFERENCES leads(lead_value),
   credits_used INT,
   customer_name TEXT,
   purchase_date TIMESTAMP DEFAULT NOW(),
