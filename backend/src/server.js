@@ -30,7 +30,8 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
         'http://localhost:3000', 
         'http://localhost:5173', 
         'http://localhost:5174',
-        'https://lead-generation-hp33p72jp-aaanandjoshiii-1651s-projects.vercel.app'
+        'https://lead-generation-hp33p72jp-aaanandjoshiii-1651s-projects.vercel.app',
+        'https://lead-generation-ivory-two.vercel.app'
       ];
 
 app.use(cors({
