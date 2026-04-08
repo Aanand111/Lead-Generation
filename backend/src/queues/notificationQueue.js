@@ -17,30 +17,25 @@
 
 // module.exports = notificationQueue;
 
-
-
 const { Queue } = require('bullmq');
 const Redis = require('ioredis');
 
-// Use Railway REDIS_URL if available, otherwise fallback to individual host/port/password
-const connection = process.env.REDIS_URL
-    ? new Redis(process.env.REDIS_URL) // Railway deployment
-    : new Redis({
-          host: process.env.REDIS_HOST || 'localhost',
-          port: parseInt(process.env.REDIS_PORT) || 6379,
-          password: process.env.REDIS_PASSWORD || undefined,
-          maxRetriesPerRequest: null,
-      });
+// Create a Redis connection correctly for both local and Railway
+const redisConnection = process.env.REDIS_URL
+  ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null }) // Railway
+  : new Redis({
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT) || 6379,
+        password: process.env.REDIS_PASSWORD || undefined,
+        maxRetriesPerRequest: null, // Important for BullMQ
+    });
 
 // Notification queue
 const notificationQueue = new Queue('notification-broadcast', {
-  connection,  // Pass the Redis instance directly
+  connection: redisConnection,
   defaultJobOptions: {
     attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 5000,
-    },
+    backoff: { type: 'exponential', delay: 5000 },
     removeOnComplete: true,
     removeOnFail: false,
   }

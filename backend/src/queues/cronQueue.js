@@ -48,14 +48,15 @@
 
 
 
-
 const { Queue, Worker } = require('bullmq');
 const Redis = require('ioredis');
 const { archiveExpiredPosters, expirePurchasedLeads } = require('../jobs/maintenanceJobs');
 const { redisConnection } = require('../config/redis'); // local fallback
 
-// Use REDIS_URL in production (Railway)
-const connection = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : redisConnection;
+// Correct Redis connection for BullMQ
+const connection = process.env.REDIS_URL
+  ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null }) // Railway
+  : redisConnection;
 
 // 1. Create Maintenance Queue
 const maintenanceQueue = new Queue('MaintenanceQueue', {
@@ -71,27 +72,23 @@ const worker = new Worker('MaintenanceQueue', async (job) => {
     } else if (job.name === 'DailyLeadCleanup') {
         await expirePurchasedLeads();
     }
-}, { connection });
+}, { connection }); // same connection
 
 // 3. Schedule Repeatable Jobs (Repeat Daily)
 const scheduleJobs = async () => {
-    // Clear existing jobs to avoid duplicates (optional but safe)
+    // Clear existing jobs to avoid duplicates
     await maintenanceQueue.drain();
     
-    // Day cron at 01:00 AM
-    await maintenanceQueue.add('DailyArchiving', {}, {
-        repeat: { pattern: '0 1 * * *' }
-    });
+    // Daily cron at 01:00 AM
+    await maintenanceQueue.add('DailyArchiving', {}, { repeat: { pattern: '0 1 * * *' } });
     
-    // Day cron at 02:00 AM
-    await maintenanceQueue.add('DailyLeadCleanup', {}, {
-        repeat: { pattern: '0 2 * * *' }
-    });
+    // Daily cron at 02:00 AM
+    await maintenanceQueue.add('DailyLeadCleanup', {}, { repeat: { pattern: '0 2 * * *' } });
 
     console.log('[CRON] Maintenance jobs successfully scheduled in Redis.');
 };
 
-// Error handling for worker
+// Error handling
 worker.on('failed', (job, err) => {
     console.error(`[WORKER ERROR] Job ${job.id} failed: ${err.message}`);
 });

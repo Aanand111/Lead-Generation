@@ -34,7 +34,7 @@ require('dotenv').config();
 
 // Use Railway REDIS_URL if available, otherwise fallback to individual host/port/password
 const redisConnection = process.env.REDIS_URL
-    ? new Redis(process.env.REDIS_URL) // Recommended on Railway
+    ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null }) // Recommended on Railway
     : new Redis({
           host: process.env.REDIS_HOST || 'localhost',
           port: parseInt(process.env.REDIS_PORT) || 6379,
