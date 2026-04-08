@@ -98,6 +98,11 @@ if (process.env.NODE_ENV === 'development') {
 // Swagger API Documentation
 swaggerSetup(app);
 
+// Server Status
+app.get('/', (req, res) => {
+    res.send('✅ Lead-Generation API is running!');
+});
+
 // Health Check
 app.get('/api/health', (req, res) => {
     const { getPoolStatus } = require('./config/db');
