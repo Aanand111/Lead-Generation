@@ -1,5 +1,5 @@
 const express = require('express');
-const { uploadLead, getLeads, editLead, removeLead, getPurchasedLeads } = require('../controllers/adminLeadController');
+const { uploadLead, getLeads, editLead, removeLead, getPurchasedLeads, getPendingLeads, approveLead, getLead } = require('../controllers/adminLeadController');
 const { addPackage, editPackage, getPackages, removePackage } = require('../controllers/adminPackageController');
 const { addBanner, editBanner, getBanners, removeBanner, recordBannerClick } = require('../controllers/adminBannerController');
 // const { getVendors, addVendor, updateVendorStatus, removeVendor } = require('../controllers/vendorController');
@@ -22,7 +22,6 @@ const {
     blockUserSchema
 } = require('../utils/validators');
 
-console.log(`[BOOT] Admin Routes Loaded at /api/admin`);
 
 const router = express.Router();
 
@@ -41,10 +40,7 @@ router.get('/ping-check', (req, res) => res.status(200).json({ success: true, me
 router.get('/commissions', fetchCommissions);
 router.put('/commissions/:id/approve', handleCommissionApproval);
 
-router.put('/vendor-commission/:id', (req, res, next) => {
-    console.log(`[ROUTE] Hit PUT /api/admin/vendor-commission/${req.params.id}`);
-    next();
-}, updateVendorCommission);
+router.put('/vendor-commission/:id', updateVendorCommission);
 
 router.get('/users', getUsers);
 router.put('/profile', updateProfile);
@@ -59,7 +55,10 @@ router.post('/upload-photo', fileUpload.single('file'), uploadProfilePhoto);
 const { getAvailableLeads, assignLeads, suggestBestMatch } = require('../controllers/availableLeadsController');
 router.post('/leads', validate(leadSchema), uploadLead);
 router.get('/leads', getLeads);
+router.get('/leads/pending', getPendingLeads);
 router.get('/leads-purchased', getPurchasedLeads);
+router.get('/leads/:id', getLead);
+router.put('/leads/:id/approve', approveLead);
 router.get('/available-leads', getAvailableLeads);
 router.get('/leads/:lead_id/suggest-match', suggestBestMatch);
 router.post('/assign-leads', assignLeads);
@@ -174,14 +173,12 @@ router.put('/subscriptions/:id', validate(subscriptionSchema), updateSubscriptio
 router.delete('/subscriptions/:id', deleteSubscription);
 
 // Transaction Management Routes
-const { getTransactions, getTransactionById, createTransaction, getPayouts, updatePayoutStatus } = require('../controllers/adminTransactionController');
+const { getTransactions, getTransactionById, createTransaction } = require('../controllers/adminTransactionController');
 router.get('/transactions', getTransactions);
 router.get('/transactions/:id', getTransactionById);
 router.post('/transactions', validate(transactionSchema), createTransaction);
 
 // Payout Management Routes
-router.get('/payouts', getPayouts);
-router.put('/payouts/:id', updatePayoutStatus);
 router.get('/test-ping', (req, res) => res.json({ success: true, message: 'Admin layer active' }));
 
 // Dashboard Stats Route

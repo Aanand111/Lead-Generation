@@ -48,7 +48,8 @@ const Analytics = () => {
                 setAnalytics(data.data);
             }
         } catch (err) {
-            setMessage('Telemetry out of sync. Retry protocol.');
+            console.error("Fetch analytics error:", err);
+            setMessage('Failed to load analytics data. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -59,11 +60,11 @@ const Analytics = () => {
             {/* Command Header */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <div className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-2 italic">
-                        Strategic Oversight <ChevronRight size={10} /> Reporting & Analytics
+                    <div className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-2">
+                        Admin Overview <ChevronRight size={10} /> Reports & Analytics
                     </div>
-                    <h1 className="text-4xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-none mb-2">Performance Intelligence Hub</h1>
-                    <p className="text-xs font-bold text-[var(--text-muted)] italic leading-none">Granular analysis of node productivity, conversion delta, and quality guards.</p>
+                    <h1 className="text-4xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-none mb-2">Performance Analytics</h1>
+                    <p className="text-xs font-bold text-[var(--text-muted)] leading-none">Detailed analysis of vendor productivity, conversion rates, and quality reports.</p>
                 </div>
                 <div className="flex gap-4">
                     <button 
@@ -83,19 +84,18 @@ const Analytics = () => {
                         onClick={fetchAnalytics}
                         className="p-4 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-2xl text-[var(--text-muted)] hover:text-indigo-500 transition-all shadow-sm active:scale-95 flex items-center gap-2 uppercase text-[10px] font-black tracking-widest"
                     >
-                        <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} /> Sync Data
+                        <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} /> Refresh Data
                     </button>
                 </div>
             </header>
 
-            {/* Tactical Switcher */}
-            <div className="flex gap-2 p-1.5 bg-[var(--bg-color)]/50 rounded-2xl border border-[var(--border-color)] w-max max-w-full overflow-x-auto shadow-inner">
+             <div className="flex gap-2 p-1.5 bg-[var(--bg-color)]/50 rounded-2xl border border-[var(--border-color)] w-max max-w-full overflow-x-auto shadow-inner">
                 {[
                     { id: 'productivity', label: 'Vendor Productivity', icon: Briefcase },
-                    { id: 'leads', label: 'Lead Lifecycle', icon: Target },
+                    { id: 'leads', label: 'Lead Trends', icon: Target },
                     { id: 'feedback', label: 'Quality Trends', icon: Award },
                     { id: 'subscriptions', label: 'Revenue & Subs', icon: PieChart },
-                    { id: 'banners', label: 'Banner Optimization', icon: MousePointer2 }
+                    { id: 'banners', label: 'Banner optimization', icon: MousePointer2 }
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -114,7 +114,7 @@ const Analytics = () => {
             {loading ? (
                 <div className="py-40 flex flex-col items-center justify-center gap-4">
                     <div className="spinner"></div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.5em] animate-pulse text-indigo-500">Decrypting Analytics Stream...</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest animate-pulse text-indigo-500">Loading Analytics Data...</span>
                 </div>
             ) : (
                 <div className="space-y-8 animate-slide-up">
@@ -124,43 +124,43 @@ const Analytics = () => {
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                 <div className="card p-6 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-3xl relative overflow-hidden group">
                                     <Activity size={80} className="absolute -bottom-6 -right-6 opacity-[0.03] group-hover:scale-110 transition-transform" />
-                                    <div className="relative z-10">
-                                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3 italic">Grid Conversion Avg</p>
+                                     <div className="relative z-10">
+                                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3">Avg Conversion Rate</p>
                                         <h3 className="text-4xl font-black text-emerald-500 tracking-tighter leading-none">
                                             {(analytics.vendorProductivity.reduce((acc, v) => acc + parseFloat(v.conversion_rate), 0) / (analytics.vendorProductivity.length || 1)).toFixed(1)}%
                                         </h3>
                                         <div className="flex items-center gap-1 mt-2 text-emerald-600 font-black italic text-[9px] uppercase">
-                                            <TrendingUp size={10} /> Optimized Target Range
+                                            <TrendingUp size={10} /> Good Performance Range
                                         </div>
                                     </div>
                                 </div>
                                 <div className="card p-6 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-3xl relative overflow-hidden group border-l-4 border-l-indigo-600">
                                     <Users size={80} className="absolute -bottom-6 -right-6 opacity-[0.03] group-hover:scale-110 transition-transform" />
-                                    <div className="relative z-10">
-                                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3 italic">Active Node Cluster</p>
-                                        <h3 className="text-4xl font-black text-[var(--text-dark)] tracking-tighter leading-none">{analytics.vendorProductivity.length} <span className="text-xs opacity-30 font-black uppercase tracking-widest italic">Nodes</span></h3>
-                                        <div className="flex items-center gap-1 mt-2 text-indigo-600 font-black italic text-[9px] uppercase tracking-widest leading-none">
-                                            <ShieldAlert size={10} /> Authorized Spectrum
+                                     <div className="relative z-10">
+                                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3">Active Vendors</p>
+                                        <h3 className="text-4xl font-black text-[var(--text-dark)] tracking-tighter leading-none">{analytics.vendorProductivity.length} <span className="text-xs opacity-30 font-black uppercase tracking-widest">Vendors</span></h3>
+                                        <div className="flex items-center gap-1 mt-2 text-indigo-600 font-black text-[9px] uppercase tracking-widest leading-none">
+                                            <ShieldAlert size={10} /> Total Registered
                                         </div>
                                     </div>
                                 </div>
                                 <div className="card p-6 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-3xl relative overflow-hidden group">
                                     <Target size={80} className="absolute -bottom-6 -right-6 opacity-[0.03] group-hover:scale-110 transition-transform" />
-                                    <div className="relative z-10">
-                                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3 italic">Market Saturation</p>
+                                     <div className="relative z-10">
+                                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3">Top Performers</p>
                                         <h3 className="text-4xl font-black text-rose-500 tracking-tighter leading-none">
                                             {analytics.vendorProductivity.reduce((acc, v) => acc + (v.leads_uploaded > 50 ? 1 : 0), 0)} <span className="text-xs opacity-50 uppercase tracking-widest">High Vol</span>
                                         </h3>
-                                        <div className="flex items-center gap-1 mt-2 text-rose-600 font-black italic text-[9px] uppercase tracking-widest leading-none">
-                                            <ShieldAlert size={10} /> Tier 1 Nodes
+                                        <div className="flex items-center gap-1 mt-2 text-rose-600 font-black text-[9px] uppercase tracking-widest leading-none">
+                                            <ShieldAlert size={10} /> Top-Tier Vendors
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Productivity Comparison Chart */}
-                            <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm italic">
-                                <h4 className="text-sm font-black uppercase tracking-tight text-[var(--text-dark)] mb-10 flex items-center gap-3"><Activity size={18} className="text-indigo-600" /> Performance Spectrum - Top Nodes</h4>
+                             {/* Productivity Comparison Chart */}
+                            <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm">
+                                <h4 className="text-sm font-black uppercase tracking-tight text-[var(--text-dark)] mb-10 flex items-center gap-3"><Activity size={18} className="text-indigo-600" /> Performance Chart - Top Vendors</h4>
                                 <div className="flex items-end justify-between gap-4 h-48 mb-6 overflow-x-auto pb-4">
                                     {analytics.vendorProductivity.slice(0, 10).map((vendor, i) => (
                                         <div key={i} className="flex-1 min-w-[60px] flex flex-col items-center gap-3 group px-2">
@@ -182,13 +182,13 @@ const Analytics = () => {
                             <div className="card shadow-2xl border border-[var(--border-color)] overflow-hidden bg-[var(--surface-color)] rounded-[2.5rem]">
                                 <div className="table-responsive">
                                     <table className="table hover-highlight mb-0 text-left">
-                                        <thead className="bg-[var(--bg-color)]/30 border-b border-[var(--border-color)] text-[10px] uppercase font-black tracking-widest">
+                                         <thead className="bg-[var(--bg-color)]/30 border-b border-[var(--border-color)] text-[10px] uppercase font-black tracking-widest">
                                             <tr>
-                                                <th className="px-8 py-6 text-[var(--text-muted)]">Node Identity</th>
-                                                <th className="py-6 text-[var(--text-muted)]">Activity Matrix</th>
-                                                <th className="py-6 text-[var(--text-muted)]">Conversion Delta</th>
-                                                <th className="py-6 text-[var(--text-muted)] text-center">Quality Guard</th>
-                                                <th className="py-6 text-[var(--text-muted)] text-right px-8">Strategic Health</th>
+                                                <th className="px-8 py-6 text-[var(--text-muted)]">Vendor Details</th>
+                                                <th className="py-6 text-[var(--text-muted)]">Activity Data</th>
+                                                <th className="py-6 text-[var(--text-muted)]">Conversion Rate</th>
+                                                <th className="py-6 text-[var(--text-muted)] text-center">User Rating</th>
+                                                <th className="py-6 text-[var(--text-muted)] text-right px-8">Overall Health</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -200,20 +200,20 @@ const Analytics = () => {
                                                                 {(vendor.vendor_name || 'A').charAt(0).toUpperCase()}
                                                             </div>
                                                             <div>
-                                                                <div className="font-black text-sm text-[var(--text-dark)] uppercase tracking-tight leading-none mb-1">{vendor.vendor_name || 'Anonymous Node'}</div>
+                                                                <div className="font-black text-sm text-[var(--text-dark)] uppercase tracking-tight leading-none mb-1">{vendor.vendor_name || 'Anonymous Vendor'}</div>
                                                                 <div className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest italic leading-none">{vendor.phone}</div>
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td>
+                                                     <td>
                                                         <div className="flex gap-4">
                                                             <div className="flex flex-col">
-                                                                <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 italic leading-none">Uploaded</span>
-                                                                <span className="text-xs font-black text-[var(--text-dark)] leading-none">{vendor.leads_uploaded} <span className="opacity-30 italic font-black uppercase text-[8px]">PKTS</span></span>
+                                                                <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 leading-none">Uploaded</span>
+                                                                <span className="text-xs font-black text-[var(--text-dark)] leading-none">{vendor.leads_uploaded} <span className="opacity-30 font-black uppercase text-[8px]">PKTS</span></span>
                                                             </div>
                                                             <div className="flex flex-col border-l border-[var(--border-color)] pl-4">
-                                                                <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 italic leading-none">Validated</span>
-                                                                <span className="text-xs font-black text-emerald-500 italic leading-none">{vendor.leads_purchased} <span className="opacity-50 italic font-black uppercase text-[8px]">NODES</span></span>
+                                                                <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1 leading-none">Purchased</span>
+                                                                <span className="text-xs font-black text-emerald-500 leading-none">{vendor.leads_purchased} <span className="opacity-50 font-black uppercase text-[8px]">LEADS</span></span>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -244,20 +244,20 @@ const Analytics = () => {
                                                             </div>
                                                             {vendor.reports_count > 0 && (
                                                                 <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20 text-[8px] font-black uppercase tracking-widest italic leading-none">
-                                                                    Anomalies: {vendor.reports_count}
+                                                                    Reports: {vendor.reports_count}
                                                                 </span>
                                                             )}
                                                         </div>
                                                     </td>
                                                     <td className="text-right px-8">
-                                                        <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] border ${
+                                                         <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] border ${
                                                             vendor.conversion_rate >= 50 ? 'bg-emerald-500/5 text-emerald-500 border-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.1)]' :
                                                             vendor.conversion_rate >= 20 ? 'bg-indigo-500/5 text-indigo-500 border-indigo-500/10' :
                                                             'bg-rose-500/10 text-rose-600 border-rose-500/20 animate-pulse'
                                                         }`}>
-                                                            {vendor.conversion_rate >= 50 ? 'OPTIMIZED' :
-                                                             vendor.conversion_rate >= 20 ? 'SYMMETRIC' :
-                                                             'DEGRADATION'}
+                                                            {vendor.conversion_rate >= 50 ? 'GOOD' :
+                                                             vendor.conversion_rate >= 20 ? 'AVERAGE' :
+                                                             'LOW'}
                                                             {vendor.conversion_rate < 20 ? <AlertTriangle size={12} /> : <div className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />}
                                                         </span>
                                                     </td>
@@ -269,20 +269,20 @@ const Analytics = () => {
                             </div>
                         </div>
                     )}
-                    {/* Tab 2: Lead Lifecycle */}
+                     {/* Tab 2: Lead Trends */}
                     {activeTab === 'leads' && (
                         <div className="space-y-8">
-                            <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm italic">
+                            <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm">
                                 <div className="flex items-center justify-between mb-10">
-                                    <h4 className="text-sm font-black uppercase tracking-tight text-[var(--text-dark)] flex items-center gap-3"><TrendingUp size={18} className="text-indigo-600" /> Injection vs Acquisition Dynamics</h4>
-                                    <div className="flex gap-4">
+                                    <h4 className="text-sm font-black uppercase tracking-tight text-[var(--text-dark)] flex items-center gap-3"><TrendingUp size={18} className="text-indigo-600" /> Upload vs Purchase Trends</h4>
+                                     <div className="flex gap-4">
                                         <div className="flex items-center gap-2">
                                             <div className="w-2 h-2 rounded-full bg-indigo-600"></div>
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] italic">Uploaded</span>
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Uploaded</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] italic">Purchased</span>
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Purchased</span>
                                         </div>
                                     </div>
                                 </div>
@@ -305,8 +305,8 @@ const Analytics = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                <div className="lg:col-span-1 card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm italic h-full">
+                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                <div className="lg:col-span-1 card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm h-full">
                                     <h4 className="text-sm font-black uppercase tracking-tight text-[var(--text-dark)] mb-10 flex items-center gap-3"><PieChart size={18} className="text-indigo-600" /> Category Distribution</h4>
                                     <div className="space-y-6">
                                         {analytics.leadLifecycle.categoryDistribution.map((cat, idx) => (
@@ -326,32 +326,32 @@ const Analytics = () => {
                                     </div>
                                 </div>
 
-                                <div className="lg:col-span-2 card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm italic bg-gradient-to-br from-[var(--surface-color)] to-[var(--bg-color)] relative overflow-hidden">
+                                 <div className="lg:col-span-2 card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm bg-gradient-to-br from-[var(--surface-color)] to-[var(--bg-color)] relative overflow-hidden">
                                     <Activity size={150} className="absolute -bottom-10 -right-10 opacity-[0.02]" />
                                     <h4 className="text-sm font-black uppercase tracking-tight text-[var(--text-dark)] mb-8 flex items-center gap-3"><ShieldCheck size={18} className="text-indigo-600" /> Operational Insights</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="p-6 bg-white/50 dark:bg-white/5 rounded-3xl border border-white/50 flex flex-col justify-between">
+                                         <div className="p-6 bg-white/50 dark:bg-white/5 rounded-3xl border border-white/50 flex flex-col justify-between">
                                             <div>
-                                                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3 italic">Total Injection Volume</p>
+                                                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3">Total Upload Volume</p>
                                                 <h3 className="text-3xl font-black text-[var(--text-dark)] tracking-tighter leading-none mb-1">
                                                     {analytics.leadLifecycle.dailyVolume.reduce((acc, t) => acc + parseInt(t.uploaded), 0)}
                                                 </h3>
                                             </div>
-                                            <p className="text-[10px] text-indigo-600 font-bold uppercase mt-4 tracking-tighter">Peak: {Math.max(...analytics.leadLifecycle.dailyVolume.map(v => v.uploaded))} Units / Cycle</p>
+                                            <p className="text-[10px] text-indigo-600 font-bold uppercase mt-4 tracking-tighter">Peak: {Math.max(...analytics.leadLifecycle.dailyVolume.map(v => v.uploaded))} Units</p>
                                         </div>
-                                        <div className="p-6 bg-white/50 dark:bg-white/5 rounded-3xl border border-white/50 flex flex-col justify-between">
+                                         <div className="p-6 bg-white/50 dark:bg-white/5 rounded-3xl border border-white/50 flex flex-col justify-between">
                                             <div>
-                                                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3 italic">Absorption Rate</p>
+                                                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3">Purchase Rate</p>
                                                 <h3 className="text-3xl font-black text-emerald-500 tracking-tighter leading-none mb-1">
                                                     {((analytics.leadLifecycle.dailyVolume.reduce((acc, t) => acc + parseInt(t.purchased), 0) / (analytics.leadLifecycle.dailyVolume.reduce((acc, t) => acc + parseInt(t.uploaded), 0) || 1)) * 100).toFixed(1)}%
                                                 </h3>
                                             </div>
-                                            <p className="text-[10px] text-emerald-600 font-bold uppercase mt-4 tracking-tighter">Symmetric Liquidity</p>
+                                            <p className="text-[10px] text-emerald-600 font-bold uppercase mt-4 tracking-tighter">Active Lead Flow</p>
                                         </div>
                                     </div>
-                                    <div className="mt-8 p-6 rounded-2xl bg-indigo-600 text-white border border-indigo-500 shadow-xl shadow-indigo-200">
-                                        <p className="text-[11px] font-bold italic leading-relaxed">
-                                            High acceleration in {analytics.leadLifecycle.categoryDistribution[0]?.category || 'Primary'} category detected. Recommend increasing node allocation for parallel spectrum coverage.
+                                     <div className="mt-8 p-6 rounded-2xl bg-indigo-600 text-white border border-indigo-500 shadow-xl shadow-indigo-200">
+                                        <p className="text-[11px] font-bold leading-relaxed">
+                                            Growth in {analytics.leadLifecycle.categoryDistribution[0]?.category || 'Primary'} category detected. Consider optimizing vendor assignments for this area.
                                         </p>
                                     </div>
                                 </div>
@@ -359,7 +359,7 @@ const Analytics = () => {
                         </div>
                     )}
 
-                    {/* Tab 2: Quality Trends */}
+                    {/* Tab 3: Quality Trends */}
                     {activeTab === 'feedback' && (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm flex flex-col justify-between italic bg-gradient-to-br from-[var(--surface-color)] to-[var(--bg-color)]">
@@ -369,8 +369,8 @@ const Analytics = () => {
                                             <Award size={24} />
                                         </div>
                                         <div>
-                                            <h4 className="text-lg font-black uppercase tracking-tight text-[var(--text-dark)] leading-none mb-1">Quality Variance Protocol</h4>
-                                            <p className="text-[10px] uppercase font-black text-indigo-600 tracking-widest opacity-60">System-wide satisfaction telemetry</p>
+                                            <h4 className="text-lg font-black uppercase tracking-tight text-[var(--text-dark)] leading-none mb-1">Quality Satisfaction Analytics</h4>
+                                            <p className="text-[10px] uppercase font-black text-indigo-600 tracking-widest opacity-60">System-wide customer feedback data</p>
                                         </div>
                                     </div>
                                     
@@ -430,7 +430,7 @@ const Analytics = () => {
                                     </div>
                                     <p className="text-[10px] font-black text-emerald-100/50 uppercase tracking-widest leading-none mb-3 italic">Network Satisfaction</p>
                                     <h3 className="text-4xl font-black text-white tracking-tighter leading-none">92.8%</h3>
-                                    <p className="text-[11px] font-bold text-emerald-100 uppercase mt-2 italic leading-none tracking-widest">Symmetric Approval</p>
+                                    <p className="text-[11px] font-bold text-emerald-100 uppercase mt-2 italic leading-none tracking-widest">Happy Users</p>
                                     <div className="mt-8 flex gap-2">
                                         {[1,2,3,4,5,6].map(i => <div key={i} className="h-1.5 flex-1 bg-white/20 rounded-full overflow-hidden shadow-inner"><div className="h-full bg-white w-3/4 shadow-[0_0_8px_white]" /></div>)}
                                     </div>
@@ -439,19 +439,19 @@ const Analytics = () => {
                         </div>
                     )}
 
-                    {/* Tab 3: Subscription Analytics */}
+                    {/* Tab 4: Subscription Analytics */}
                     {activeTab === 'subscriptions' && (
                         <div className="space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="card p-8 bg-indigo-600 text-white rounded-[2.5rem] shadow-2xl shadow-indigo-200">
-                                    <p className="text-[10px] font-black text-indigo-100 uppercase tracking-widest leading-none mb-3 italic">Gross Ecosystem Revenue</p>
+                                    <p className="text-[10px] font-black text-indigo-100 uppercase tracking-widest leading-none mb-3 italic">Total Revenue Generated</p>
                                     <h3 className="text-4xl font-black tracking-tighter leading-none mb-2">₹{analytics.subscriptionStats.reduce((acc, s) => acc + parseFloat(s.revenue_generated || 0), 0).toLocaleString()}</h3>
                                     <div className="flex items-center gap-2 text-[10px] font-black text-indigo-200 uppercase tracking-widest italic pt-2 border-t border-white/10 mt-4">
-                                        <TrendingUp size={12} /> Optimized Payout Cycle
+                                        <TrendingUp size={12} /> Revenue Growth Tracked
                                     </div>
                                 </div>
                                 <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[2.5rem] shadow-sm">
-                                    <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3 italic">Active Global Nodes</p>
+                                    <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3 italic">Active Subscriptions</p>
                                     <h3 className="text-4xl font-black text-[var(--text-dark)] tracking-tighter leading-none mb-2">{analytics.subscriptionStats.reduce((acc, s) => acc + parseInt(s.active_now || 0), 0)}</h3>
                                     <div className="flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest italic pt-2 border-t border-[var(--border-color)] mt-4">
                                         <CheckCircle size={12} /> Sync Status: Green
@@ -467,7 +467,7 @@ const Analytics = () => {
                             </div>
 
                             <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm italic">
-                                <h4 className="text-sm font-black uppercase tracking-tight text-[var(--text-dark)] mb-10 flex items-center gap-3"><Layers size={18} className="text-indigo-600" /> Plan Distribution Matrix</h4>
+                                <h4 className="text-sm font-black uppercase tracking-tight text-[var(--text-dark)] mb-10 flex items-center gap-3"><Layers size={18} className="text-indigo-600" /> Subscription Plan Breakdown</h4>
                                 <div className="space-y-8">
                                     {analytics.subscriptionStats.map((stat, idx) => (
                                         <div key={idx} className="group">
@@ -497,7 +497,7 @@ const Analytics = () => {
                         </div>
                     )}
 
-                    {/* Tab 4: Banner Performance */}
+                    {/* Tab 5: Banner Performance */}
                     {activeTab === 'banners' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {analytics.bannerPerformance.map((banner, i) => (
@@ -540,8 +540,8 @@ const Analytics = () => {
                                             />
                                         </div>
                                         <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] italic overflow-hidden leading-none mt-1">
-                                            <span>Engagement Matrix</span>
-                                            <span className={parseFloat(banner.ctr) >= 5 ? 'text-emerald-500' : 'text-indigo-500'}>{parseFloat(banner.ctr) >= 5 ? 'Optimized' : 'Normal Cycle'}</span>
+                                            <span>Engagement Tracking</span>
+                                            <span className={parseFloat(banner.ctr) >= 5 ? 'text-emerald-500' : 'text-indigo-500'}>{parseFloat(banner.ctr) >= 5 ? 'High Performance' : 'Normal'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -558,10 +558,10 @@ const Analytics = () => {
                         <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center flex-shrink-0 animate-pulse border border-white/5">
                             <Info size={24} />
                         </div>
-                        <div className="flex-1 italic overflow-hidden leading-none mb-1">
-                            <h5 className="text-[11px] font-black uppercase tracking-widest text-white mb-2 leading-none">Analytic Guidance Protocol</h5>
-                            <p className="text-[10px] font-medium text-white/70 leading-relaxed italic">
-                                Use the Conversion Delta to identify node degradation. Vendors with conversion below 20% should be re-trained or purged from the operational spectrum.
+                        <div className="flex-1 overflow-hidden leading-none mb-1">
+                            <h5 className="text-[11px] font-black uppercase tracking-widest text-white mb-2 leading-none">Analytics Help</h5>
+                            <p className="text-[10px] font-medium text-white/70 leading-relaxed">
+                                Use the conversion data to identify underperforming vendors. Ideally, vendors with low conversion should be reviewed.
                             </p>
                         </div>
                     </div>

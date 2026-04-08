@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { MoreVertical, X, Layers, Briefcase, MapPin, Search, CheckCircle, Smartphone, Mail, User, ShieldCheck, Activity, Trash2, Edit2, RotateCcw, Filter, ExternalLink } from 'lucide-react';
 import api from '../utils/api';
 import CustomSelect from '../components/CustomSelect';
+import { useConfirm } from '../context/ConfirmContext';
 
 const AvailableLeads = () => {
+    const { confirm } = useConfirm();
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -133,17 +135,17 @@ const AvailableLeads = () => {
     const handleEditClick = (lead) => {
         setCurrentEditLead(lead);
         setEditFormData({
-            lead_id: lead.lead_uid || '',
-            customer_name: lead.name || '',
-            customer_email: lead.email || '',
-            customer_phone: lead.phone || '',
-            category: lead.category_name || '',
+            lead_id: lead.lead_uid || lead.lead_id || '',
+            customer_name: lead.name || lead.customer_name || '',
+            customer_email: lead.email || lead.av_email || lead.customer_email || '',
+            customer_phone: lead.phone || lead.av_phone || lead.customer_phone || '',
+            category: lead.category_name || lead.category || '',
             source: lead.source || '',
             status: lead.status || 'New',
             priority: lead.priority || 'Normal',
             address: lead.address || '',
-            city: lead.city || '',
-            state: lead.state || '',
+            city: lead.city_display || lead.city || '',
+            state: lead.state_display || lead.state || '',
             pincode: lead.pincode || '',
             notes: lead.notes || '',
             assignee_name: lead.assignee_name || '',
@@ -151,6 +153,33 @@ const AvailableLeads = () => {
         });
         setIsEditModalOpen(true);
         setOpenActionId(null);
+    };
+
+    // Handle lead deletion with confirmation
+    const handleDeleteClick = async (leadId) => {
+        const confirmed = await confirm(
+            'Are you sure you want to delete this lead? This action cannot be undone.',
+            'Delete Lead'
+        );
+        if (!confirmed) return;
+        
+        try {
+            const { data } = await api.delete(`/admin/leads/${leadId}`);
+            if (data.success) {
+                setMessage({ type: 'success', text: 'Lead deleted successfully.' });
+                fetchLeads();
+            } else {
+                setMessage({ type: 'error', text: data.message || 'Failed to delete lead.' });
+            }
+        } catch (err) {
+            console.error("Delete lead error:", err);
+            setMessage({ type: 'error', text: 'Server error: Could not delete lead.' });
+        }
+        setOpenActionId(null);
+    };
+
+    const handleEditChange = (e) => {
+        setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
     };
 
     const handleAssignTypeChange = async (e) => {
@@ -177,7 +206,7 @@ const AvailableLeads = () => {
             return;
         }
         if (!assignType || !selectedAssignee) {
-            setMessage({ type: 'error', text: 'Select assignation type and target node.' });
+            setMessage({ type: 'error', text: 'Select assignment type and user.' });
             return;
         }
 
@@ -189,7 +218,7 @@ const AvailableLeads = () => {
             });
 
             if (data.success) {
-                setMessage({ type: 'success', text: 'Leads successfully distributed in the mesh.' });
+                setMessage({ type: 'success', text: 'Leads successfully assigned.' });
                 setSelectedLeads([]);
                 setSelectAll(false);
                 setAssignType('');
@@ -200,7 +229,7 @@ const AvailableLeads = () => {
                 setMessage({ type: 'error', text: data.message || "Failed to assign leads." });
             }
         } catch (err) {
-            setMessage({ type: 'error', text: 'Network protocol failure during distribution.' });
+            setMessage({ type: 'error', text: 'Failed to assign leads. Please try again.' });
         } finally {
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
         }
@@ -214,12 +243,15 @@ const AvailableLeads = () => {
             if (data.success) {
                 setIsEditModalOpen(false);
                 fetchLeads();
-                setMessage({ type: 'success', text: 'Lead identity protocol updated.' });
+                setMessage({ type: 'success', text: 'Lead updated successfully.' });
             } else {
                 setMessage({ type: 'error', text: data.message || "Update rejected." });
             }
         } catch (err) {
-            setMessage({ type: 'error', text: 'Communication failure during synchronization.' });
+            setMessage({ 
+                type: 'error', 
+                text: err.response?.data?.message || 'Failed to sync internal data.' 
+            });
         } finally {
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
         }
@@ -229,8 +261,11 @@ const AvailableLeads = () => {
         <div className="page-content animate-fade-in text-[var(--text-dark)]">
             <div className="pageHeader">
                 <div className="pageHeaderTitle">
-                    <h2>Available Lead Spectrum</h2>
-                    <p>Monitor and manually distribute unassigned lead nodes across the network</p>
+                    <h2 className="flex items-center gap-3">
+                        <Briefcase className="text-indigo-500" size={24} />
+                        Available Leads
+                    </h2>
+                    <p>Track and manage active leads available for distribution</p>
                 </div>
                 <div className="pageHeaderActions flex items-center gap-3">
                     <CustomSelect
@@ -241,7 +276,7 @@ const AvailableLeads = () => {
                             { value: 'vendor', label: 'VENDOR' },
                             { value: 'subvendor', label: 'SUBVENDOR' }
                         ]}
-                        placeholder="TYPE"
+                        placeholder="Assign To"
                         className="min-w-[120px]"
                     />
 
@@ -252,7 +287,7 @@ const AvailableLeads = () => {
                                 value={selectedAssignee}
                                 onChange={(e) => setSelectedAssignee(e.target.value)}
                                 options={assignees.map(a => ({ value: a.id, label: a.name.toUpperCase() }))}
-                                placeholder="TARGET NODE"
+                                placeholder="Select Member"
                                 className="min-w-[180px]"
                             />
                         </div>
@@ -263,14 +298,14 @@ const AvailableLeads = () => {
                         disabled={!selectedAssignee || selectedLeads.length === 0}
                         className="btn btn-primary flex items-center gap-2 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/10 disabled:opacity-30"
                     >
-                        <ShieldCheck size={16} /> Orchestrate Allocation
+                        <ShieldCheck size={16} /> Assign Leads
                     </button>
 
                     <div className="flex items-center gap-3 bg-[var(--surface-color)]/50 backdrop-blur-md p-1 pl-4 pr-1 rounded-[1.5rem] border border-[var(--border-color)]">
                         <div className="flex flex-col">
-                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Spectrum Live Sync</span>
+                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Auto Refresh</span>
                             <span className={`text-[9px] font-black uppercase tracking-widest ${autoRefresh ? 'text-emerald-500' : 'text-slate-400'}`}>
-                                {autoRefresh ? 'ACTIVE' : 'IDLE'}
+                                {autoRefresh ? 'ON' : 'OFF'}
                             </span>
                         </div>
                         <button 
@@ -291,7 +326,7 @@ const AvailableLeads = () => {
                 <div className="flex items-center gap-2">
                     <div className={`w-1.5 h-1.5 rounded-full ${autoRefresh ? 'bg-emerald-500 animate-ping' : 'bg-slate-300'}`}></div>
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none">
-                        Last Synchronization: {lastSync.toLocaleTimeString([])}
+                        Last Updated: {lastSync.toLocaleTimeString([])}
                     </span>
                 </div>
             </div>
@@ -308,12 +343,12 @@ const AvailableLeads = () => {
             <div className="card shadow-sm border border-[var(--border-color)] overflow-hidden bg-[var(--surface-color)]">
                 <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-[var(--bg-color)]/30 border-b border-[var(--border-color)]">
                     <div className="flex items-center gap-3">
-                        <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest italic leading-none">
-                            Unallocated Nodes: <span className="text-[var(--text-dark)] not-italic font-black">{leads.length} Available</span>
+                        <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">
+                            Unassigned Leads: <span className="text-[var(--text-dark)] font-black">{leads.length} Remaining</span>
                         </span>
                         <div className="h-4 w-px bg-[var(--border-color)]"></div>
                         <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">
-                            {selectedLeads.length} Nodes Selected
+                            {selectedLeads.length} Selected
                         </div>
                     </div>
 
@@ -322,7 +357,7 @@ const AvailableLeads = () => {
                         <input 
                             type="text" 
                             className="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium shadow-sm focus:border-indigo-500 outline-none transition-all placeholder:text-[var(--text-muted)]/50 text-[var(--text-dark)]" 
-                            placeholder="Filter spectrum..." 
+                            placeholder="Search leads..." 
                         />
                     </div>
                 </div>
@@ -339,10 +374,10 @@ const AvailableLeads = () => {
                                         className="w-4 h-4 rounded border-[var(--border-color)] text-indigo-600 focus:ring-indigo-500"
                                     />
                                 </th>
-                                <th className="text-[var(--text-muted)]">Lead Identity</th>
-                                <th className="text-[var(--text-muted)]">Source Origin</th>
-                                <th className="text-[var(--text-muted)]">Allocation Path</th>
-                                <th className="text-[var(--text-muted)]">Node State</th>
+                                <th className="text-[var(--text-muted)]">Lead Name</th>
+                                <th className="text-[var(--text-muted)]">Source</th>
+                                <th className="text-[var(--text-muted)]">Location</th>
+                                <th className="text-[var(--text-muted)]">Status</th>
                                 <th className="text-[var(--text-muted)]">Priority</th>
                                 <th className="text-[var(--text-muted)]">Created Date</th>
                                 <th className="text-right text-[var(--text-muted)]">Op</th>
@@ -354,7 +389,7 @@ const AvailableLeads = () => {
                                     <td colSpan="8" className="text-center py-24">
                                         <div className="flex flex-col items-center gap-3">
                                             <div className="spinner mb-2"></div>
-                                            <span className="text-[10px] uppercase font-black tracking-[0.2em] animate-pulse text-[var(--text-muted)]">Scanning Available Nodes...</span>
+                                            <span className="text-[10px] uppercase font-black tracking-widest animate-pulse text-[var(--text-muted)]">Loading available leads...</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -426,18 +461,18 @@ const AvailableLeads = () => {
                                                 {openActionId === lead.id && (
                                                     <>
                                                         <div className="fixed inset-0 z-[100]" onClick={() => setOpenActionId(null)} />
-                                                        <div className="absolute right-10 top-0 bg-[var(--surface-color)] shadow-2xl rounded-2xl border border-[var(--border-color)] z-[110] min-w-[150px] py-2 overflow-hidden animate-zoom-in origin-right">
+                                                         <div className="absolute right-10 top-0 bg-[var(--surface-color)] shadow-2xl rounded-2xl border border-[var(--border-color)] z-[110] min-w-[150px] py-2 overflow-hidden animate-zoom-in origin-right">
                                                             <button 
                                                                 className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-indigo-500/10 hover:text-indigo-500 transition-all flex items-center gap-3 border-none cursor-pointer bg-transparent"
                                                                 onClick={() => handleEditClick(lead)}
                                                             >
-                                                                <Edit2 size={14} className="text-indigo-500" /> Refine Node
+                                                                <Edit2 size={14} className="text-indigo-500" /> Edit Lead
                                                             </button>
                                                             <button 
                                                                 className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase text-red-500 hover:bg-red-500/10 transition-all flex items-center gap-3 border-none cursor-pointer bg-transparent"
-                                                                onClick={() => {/* Purge logic if any */}}
+                                                                onClick={() => handleDeleteClick(lead.id)}
                                                             >
-                                                                <Trash2 size={14} /> Purge Node
+                                                                <Trash2 size={14} /> Delete Lead
                                                             </button>
                                                         </div>
                                                     </>
@@ -451,7 +486,7 @@ const AvailableLeads = () => {
                                     <td colSpan="8" className="text-center py-24 text-[var(--text-muted)] italic">
                                         <div className="flex flex-col items-center gap-4 opacity-30">
                                             <Layers size={64} strokeWidth={1} />
-                                            <p className="font-black uppercase tracking-widest text-[10px]">No unallocated nodes detected in spectrum</p>
+                                            <p className="font-black uppercase tracking-widest text-[10px]">No unassigned leads found</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -468,9 +503,9 @@ const AvailableLeads = () => {
                         <div className="p-8 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-color)]/30">
                             <div>
                                 <h3 className="text-2xl font-black text-[var(--text-dark)] tracking-tight uppercase">
-                                    Lead Identity Sync
+                                    Edit Lead Details
                                 </h3>
-                                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mt-1 italic">Synchronization of lead identity and distribution parameters</p>
+                                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mt-1">Update customer information and plan details</p>
                             </div>
                             <button onClick={() => setIsEditModalOpen(false)} className="w-12 h-12 rounded-2xl bg-[var(--surface-color)] shadow-sm border border-[var(--border-color)] flex items-center justify-center hover:bg-[var(--bg-color)] transition-colors cursor-pointer outline-none">
                                 <X size={20} className="text-[var(--text-muted)]" />
@@ -488,7 +523,7 @@ const AvailableLeads = () => {
                                         <div className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-widest">
                                             {editFormData.assignee_name ? (
                                                 <>Assigned: <span className="text-indigo-500">{editFormData.assignee_name}</span> ({editFormData.assignee_designation})</>
-                                            ) : 'Status: Unallocated Node'}
+                                            ) : 'Status: Unassigned'}
                                         </div>
                                     </div>
                                 </div>
@@ -497,11 +532,11 @@ const AvailableLeads = () => {
                             <div className="grid grid-cols-2 gap-8 mb-8">
                                 <div className="space-y-4">
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Contact Protocol</label>
-                                        <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-dark)] italic">
+                                        <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Contact Details</label>
+                                        <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-dark)]">
                                             <Smartphone size={14} className="text-indigo-400" /> {editFormData.customer_phone || '-'}
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-muted)] italic">
+                                        <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-muted)]">
                                             <Mail size={14} className="opacity-40" /> {editFormData.customer_email || '-'}
                                         </div>
                                     </div>
@@ -517,8 +552,8 @@ const AvailableLeads = () => {
 
                                 <div className="space-y-4">
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Geolocation Hub</label>
-                                        <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-dark)] italic">
+                                        <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Location</label>
+                                        <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-dark)]">
                                             <MapPin size={14} className="text-rose-400" /> {editFormData.city}, {editFormData.state}
                                         </div>
                                     </div>
@@ -541,18 +576,18 @@ const AvailableLeads = () => {
 
                             <div className="space-y-2 mb-8">
                                 <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 flex items-center gap-2">
-                                    <Briefcase size={12} /> Narrative Logs
+                                    <Briefcase size={12} /> Remarks / Notes
                                 </label>
-                                <div className="p-4 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)] text-[11px] font-medium text-[var(--text-dark)] leading-relaxed italic min-h-[80px]">
-                                    {editFormData.notes || 'No operational intelligence recorded for this node.'}
+                                <div className="p-4 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)] text-[11px] font-medium text-[var(--text-dark)] leading-relaxed min-h-[80px]">
+                                    {editFormData.notes || 'No remarks added for this lead.'}
                                 </div>
                             </div>
 
                             <div className="flex items-center justify-end gap-3 pt-6 border-t border-[var(--border-color)]">
                                 <button type="submit" className="btn btn-primary px-10 py-4 flex items-center justify-center gap-3 font-black uppercase text-[11px] tracking-widest shadow-xl shadow-indigo-500/10">
-                                    <Activity size={16} /> Synchronize Profile
+                                    <Activity size={16} /> Save Changes
                                 </button>
-                                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-8 py-4 bg-[var(--bg-color)] text-[var(--text-muted)] hover:bg-[var(--border-color)] font-black uppercase text-[11px] tracking-widest rounded-2xl transition-all border-none cursor-pointer">Abort</button>
+                                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-8 py-4 bg-[var(--bg-color)] text-[var(--text-muted)] hover:bg-[var(--border-color)] font-black uppercase text-[11px] tracking-widest rounded-2xl transition-all border-none cursor-pointer">Cancel</button>
                             </div>
                         </form>
                     </div>

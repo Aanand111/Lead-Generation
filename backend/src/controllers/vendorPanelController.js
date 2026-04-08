@@ -9,7 +9,8 @@ const getVendorStats = async (req, res, next) => {
                 (SELECT COUNT(*) FROM users WHERE referred_by = $1 AND role = 'user') as total_users,
                 (SELECT COUNT(*) FROM users WHERE referred_by = $1 AND role = 'vendor') as referred_vendors,
                 (SELECT COALESCE(SUM(amount), 0) FROM commission_transactions WHERE vendor_id = $1 AND status = 'COMPLETED') as total_earnings,
-                (SELECT COALESCE(SUM(amount), 0) FROM commission_transactions WHERE vendor_id = $1 AND status = 'PENDING') as pending_earnings,
+                (SELECT COALESCE(SUM(amount), 0) FROM commission_transactions WHERE vendor_id = $1 AND status IN ('PENDING', 'REQUESTED')) as pending_earnings,
+                (SELECT COALESCE(SUM(amount), 0) FROM commission_transactions WHERE vendor_id = $1 AND status = 'REQUESTED') as active_request_amount,
                 (SELECT referral_code FROM users WHERE id = $1) as referral_code
         `;
 
@@ -127,10 +128,59 @@ const referVendor = async (req, res, next) => {
         // Generate unique referral code for the new Sub-Vendor
         const newReferralCode = `VND-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
+        // Get the current vendor's registry ID (from 'vendors' table) to maintain hierarchy
+        let registryVendorId = null;
+        try {
+            const userRes = await pool.query('SELECT phone, email FROM users WHERE id = $1', [vendorId]);
+            if (userRes.rows.length > 0) {
+                const { phone: uPhone, email: uEmail } = userRes.rows[0];
+                const vendorRes = await pool.query(
+                    'SELECT id FROM vendors WHERE phone = $1 OR email = $2 LIMIT 1',
+                    [uPhone, uEmail]
+                );
+                if (vendorRes.rows.length > 0) {
+                    registryVendorId = vendorRes.rows[0].id;
+                }
+            }
+        } catch (err) {
+            console.error('[HIERARCHY_SYNC] Failed to resolve parent vendor node:', err.message);
+        }
+
+        // Synchronize with 'vendors' table for Admin visibility
+        const vendorDb = require('../models/vendorModel');
+        try {
+            await vendorDb.createVendor({
+                name: full_name,
+                phone: phone,
+                email: email,
+                password: hashedPassword,
+                referral_code: newReferralCode,
+                referred_by_vendor_id: registryVendorId || vendorId, // Fallback to user ID if registry entry missing
+                status: 'Active'
+            });
+        } catch (vErr) {
+            console.error('[SYNC_ERROR] Failed to populate vendors table:', vErr.message);
+        }
+
+        // Synchronize with 'users' table for Authentication
         const result = await pool.query(
             'INSERT INTO users (phone, email, password_hash, full_name, role, referred_by, referral_code, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
             [phone, email, hashedPassword, full_name, 'vendor', vendorId, newReferralCode, 'ACTIVE']
         );
+
+        // Emit real-time notification for Admin
+        try {
+            const { getIO } = require('../utils/socket');
+            const io = getIO();
+            io.emit('new_vendor_referral', {
+                message: `New Vendor Node Initialized: ${full_name}`,
+                phone: phone,
+                referrer: req.user.full_name || 'Primary Node',
+                timestamp: new Date()
+            });
+        } catch (sErr) {
+            console.error('[SOCKET_ERROR] Failed to emit referral signal:', sErr.message);
+        }
 
         res.status(201).json({ 
             success: true, 
@@ -145,10 +195,43 @@ const referVendor = async (req, res, next) => {
     }
 };
 
+const requestSettlement = async (req, res, next) => {
+    try {
+        const vendorId = req.user.id;
+
+        // Check if there are any pending commissions to request
+        const checkPending = await pool.query(
+            "SELECT COUNT(*) FROM commission_transactions WHERE vendor_id = $1 AND status = 'PENDING'",
+            [vendorId]
+        );
+
+        if (parseInt(checkPending.rows[0].count) === 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'No pending commission nodes found for synchronization. Bandwidth at equilibrium.' 
+            });
+        }
+
+        // Update all PENDING to REQUESTED
+        await pool.query(
+            "UPDATE commission_transactions SET status = 'REQUESTED' WHERE vendor_id = $1 AND status = 'PENDING'",
+            [vendorId]
+        );
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Settlement request broadcasted to Admin Hub. Authorization pending.' 
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getVendorStats,
     getVendorReferrals,
     getVendorEarnings,
     referUser,
-    referVendor
+    referVendor,
+    requestSettlement
 };

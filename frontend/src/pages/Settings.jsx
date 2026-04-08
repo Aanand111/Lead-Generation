@@ -163,14 +163,19 @@ const Settings = () => {
             }
         } catch (err) {
             console.error('Failed to fetch settings', err);
-            setMessage({ type: 'error', text: 'Failed to synchronize settings from the matrix.' });
+            setMessage({ type: 'error', text: 'Failed to load settings from server.' });
         } finally {
             setLoading(false);
         }
     };
 
     const handleChange = useCallback((key, value) => {
-        setSettings(prev => ({ ...prev, [key]: value }));
+        if (key === 'support_phone') {
+            const val = value.replace(/\D/g, '');
+            if (val.length <= 10) setSettings(prev => ({ ...prev, [key]: val }));
+        } else {
+            setSettings(prev => ({ ...prev, [key]: value }));
+        }
     }, []);
 
     const handleSaveSection = async (section) => {
@@ -184,11 +189,11 @@ const Settings = () => {
 
             const { data } = await api.put('/admin/settings', { settings: settingsToUpdate });
             if (data.success) {
-                setMessage({ type: 'success', text: `${section.label} settings synchronized successfully.` });
+                setMessage({ type: 'success', text: `${section.label} settings updated successfully.` });
                 setTimeout(() => setMessage({ type: '', text: '' }), 3000);
             }
         } catch (err) {
-            setMessage({ type: 'error', text: err.response?.data?.message || 'Matrix synchronization failure.' });
+            setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to save settings.' });
         } finally {
             setSaving(null);
         }
@@ -202,7 +207,7 @@ const Settings = () => {
         return (
             <div className="min-h-[70vh] flex flex-col items-center justify-center gap-6">
                 <div className="w-14 h-14 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-[var(--text-muted)] animate-pulse">Loading System Configuration...</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-[var(--text-muted)] animate-pulse">Loading settings...</span>
             </div>
         );
     }
@@ -255,7 +260,7 @@ const Settings = () => {
                                 </div>
                                 <div>
                                     <div className="text-[11px] leading-none mb-0.5">{section.label}</div>
-                                    <div className="text-[9px] opacity-50 uppercase tracking-widest">{section.keys.length} params</div>
+                                    <div className="text-[9px] opacity-50 uppercase tracking-widest">{section.keys.length} items</div>
                                 </div>
                                 {isActive && <ChevronRight size={14} className={`ml-auto ${colors.text}`} />}
                             </button>
@@ -296,7 +301,7 @@ const Settings = () => {
                                         }`}
                                     >
                                         {saving === activeConfig.id ? <RefreshCcw size={15} className="animate-spin" /> : <Save size={15} />}
-                                        {saving === activeConfig.id ? 'Synchronizing...' : 'Save Section'}
+                                        {saving === activeConfig.id ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </div>
 
@@ -404,7 +409,7 @@ const Settings = () => {
                                                 }`}
                                             >
                                                 {saving === activeConfig.id ? <RefreshCcw size={13} className="animate-spin" /> : <Save size={13} />}
-                                                {saving === activeConfig.id ? 'Syncing...' : 'Commit Section'}
+                                                {saving === activeConfig.id ? 'Saving...' : 'Save Changes'}
                                             </button>
                                         </div>
                                     </div>

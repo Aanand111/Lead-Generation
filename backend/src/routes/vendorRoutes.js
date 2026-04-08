@@ -5,8 +5,12 @@ const {
     getVendorReferrals, 
     getVendorEarnings, 
     referUser, 
-    referVendor 
+    referVendor,
+    requestSettlement
 } = require('../controllers/vendorPanelController');
+const { uploadLead } = require('../controllers/adminLeadController');
+const { leadSchema } = require('../utils/validators');
+const validate = require('../middlewares/validate');
 
 const router = express.Router();
 
@@ -28,5 +32,7 @@ router.get('/referrals', getVendorReferrals);
 router.get('/earnings', getVendorEarnings);
 router.post('/refer-user', referUser);
 router.post('/refer-vendor', referVendor);
+router.post('/leads', validate(leadSchema), uploadLead);
+router.post('/request-settlement', requestSettlement);
 
 module.exports = router;

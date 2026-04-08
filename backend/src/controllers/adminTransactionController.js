@@ -111,7 +111,6 @@ const createTransaction = async (req, res, next) => {
 const getPayouts = async (req, res, next) => {
     try {
         const { status } = req.query;
-        console.log(`[DEBUG] Received request for payouts with status: "${status}"`);
         let query = `
             SELECT 
                 ct.*,

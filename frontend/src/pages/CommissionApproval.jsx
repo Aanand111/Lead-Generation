@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, DollarSign, User, Calendar, Search, RefreshCcw, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, IndianRupee, User, Calendar, Search, RefreshCcw, AlertCircle } from 'lucide-react';
 import api from '../utils/api';
+import { useConfirm } from '../context/ConfirmContext';
+import { toast } from 'react-hot-toast';
 
 const CommissionApproval = () => {
+    const { confirm } = useConfirm();
     const [commissions, setCommissions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filterStatus, setFilterStatus] = useState('PENDING');
-    const [message, setMessage] = useState({ type: '', text: '' });
+    const [filterStatus, setFilterStatus] = useState('REQUESTED');
+    const [counts, setCounts] = useState({ PENDING: 0, REQUESTED: 0, COMPLETED: 0 });
     const [processingId, setProcessingId] = useState(null);
 
     const fetchCommissions = async (status = filterStatus) => {
@@ -17,10 +20,19 @@ const CommissionApproval = () => {
             });
             if (data.success) {
                 setCommissions(data.data);
+                // Also fetch all counts for the tabs
+                const allRes = await api.get('/admin/commissions'); // fetch all to count
+                if (allRes.data.success) {
+                    const allData = allRes.data.data;
+                    setCounts({
+                        PENDING: allData.filter(c => c.status === 'PENDING').length,
+                        REQUESTED: allData.filter(c => c.status === 'REQUESTED').length,
+                        COMPLETED: allData.filter(c => c.status === 'COMPLETED').length
+                    });
+                }
             }
         } catch (err) {
-            console.error('Error fetching commissions:', err);
-            setMessage({ type: 'error', text: 'System grid failure: Protocol "FETCH_COMMISSION" rejected.' });
+            toast.error('System grid failure: Protocol "FETCH_COMMISSION" rejected.');
         } finally {
             setLoading(false);
         }
@@ -31,20 +43,23 @@ const CommissionApproval = () => {
     }, [filterStatus]);
 
     const handleApprove = async (id) => {
-        if (!window.confirm('Execute core settlement protocol for this commission node?')) return;
+        const confirmed = await confirm(
+            'Execute core settlement protocol for this commission node? Vendor wallet will be enriched immediately.',
+            'Authorize Settlement'
+        );
+        if (!confirmed) return;
         
         setProcessingId(id);
         try {
             const { data } = await api.put(`/admin/commissions/${id}/approve`);
             if (data.success) {
-                setMessage({ type: 'success', text: 'Settlement synchronized. Vendor wallet enriched.' });
+                toast.success('Settlement synchronized. Vendor wallet enriched.');
                 setCommissions(prev => prev.filter(c => c.id !== id));
             }
         } catch (err) {
-            setMessage({ type: 'error', text: 'Authorization failure: Settlement node rejected.' });
+            toast.error('Authorization failure: Settlement node rejected.');
         } finally {
             setProcessingId(null);
-            setTimeout(() => setMessage({ type: '', text: '' }), 3000);
         }
     };
 
@@ -53,7 +68,7 @@ const CommissionApproval = () => {
             <div className="pageHeader">
                 <div className="pageHeaderTitle">
                     <h2 className="text-2xl font-black text-[var(--text-dark)] tracking-tight uppercase flex items-center gap-3">
-                        <DollarSign className="text-indigo-500" /> Revenue Settlement Hub
+                        <IndianRupee className="text-indigo-500" /> Revenue Settlement Hub
                     </h2>
                     <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mt-1 italic">
                         Audit and authorize peripheral revenue streams for partner nodes
@@ -61,23 +76,23 @@ const CommissionApproval = () => {
                 </div>
             </div>
 
-            {message.text && (
-                <div className={`mb-8 p-4 rounded-2xl flex items-center gap-4 border animate-slide-up ${
-                    message.type === 'error' ? 'bg-red-50/10 text-red-500 border-red-500/20' : 'bg-emerald-50/10 text-emerald-500 border-emerald-500/20'
-                }`}>
-                    {message.type === 'error' ? <AlertCircle size={20} /> : <CheckCircle size={20} />}
-                    <span className="text-[10px] font-black uppercase tracking-widest">{message.text}</span>
-                </div>
-            )}
 
             <div className="flex gap-4 mb-8">
                 <button 
-                    onClick={() => setFilterStatus('PENDING')}
+                    onClick={() => setFilterStatus('REQUESTED')}
                     className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                        filterStatus === 'PENDING' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-[var(--surface-color)] text-[var(--text-muted)] border border-[var(--border-color)]'
+                        filterStatus === 'REQUESTED' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-[var(--surface-color)] text-[var(--text-muted)] border border-[var(--border-color)]'
                     }`}
                 >
-                    In Queue ({commissions.filter(c => c.status === 'PENDING').length})
+                    Vendor Requested ({counts.REQUESTED})
+                </button>
+                <button 
+                    onClick={() => setFilterStatus('PENDING')}
+                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        filterStatus === 'PENDING' ? 'bg-amber-600/10 text-amber-600 border border-amber-600/20' : 'bg-[var(--surface-color)] text-[var(--text-muted)] border border-[var(--border-color)]'
+                    } ${filterStatus === 'PENDING' ? '!bg-amber-600 !text-white !opacity-100' : ''}`}
+                >
+                    In Queue ({counts.PENDING})
                 </button>
                 <button 
                     onClick={() => setFilterStatus('COMPLETED')}
@@ -85,7 +100,7 @@ const CommissionApproval = () => {
                         filterStatus === 'COMPLETED' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-[var(--surface-color)] text-[var(--text-muted)] border border-[var(--border-color)]'
                     }`}
                 >
-                    Settled
+                    Settled ({counts.COMPLETED})
                 </button>
             </div>
 
@@ -154,7 +169,7 @@ const CommissionApproval = () => {
                                                     className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 disabled:opacity-50 shadow-lg shadow-indigo-100"
                                                 >
                                                     {processingId === commission.id ? <RefreshCcw size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                                                    Authorize
+                                                    {filterStatus === 'REQUESTED' ? 'Authorize Request' : 'Authorize Settlement'}
                                                 </button>
                                             ) : (
                                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 text-[9px] font-black uppercase tracking-widest border border-emerald-500/20">

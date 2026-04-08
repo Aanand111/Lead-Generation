@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
-import { User, Mail, Phone, MapPin, Building, Activity, Type, IndianRupee, CalendarDays, KeySquare, FileText, ArrowLeft, Save, Sparkles, TrendingUp, Zap, Briefcase, Globe } from 'lucide-react';
+import { 
+    User, Mail, Phone, MapPin, Building, Activity, Type, 
+    DollarSign, CalendarDays, KeySquare, FileText, ArrowLeft, 
+    Save, Sparkles, TrendingUp, Zap, Briefcase, Globe, Plus 
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import CustomSelect from '../components/CustomSelect';
+import { toast } from 'react-hot-toast';
 
-const LeadCreate = () => {
+const VendorLeadUpload = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        lead_id: '', // New field required by validator
+        lead_id: '',
         customer_name: '',
         customer_phone: '',
         customer_email: '',
@@ -95,7 +100,7 @@ const LeadCreate = () => {
         setError('');
         try {
             const payload = {
-                lead_id: formData.lead_id || `LEAD-${Date.now()}`,
+                lead_id: formData.lead_id || `VND-LEAD-${Date.now()}`,
                 customer_name: formData.customer_name,
                 customer_phone: formData.customer_phone,
                 customer_email: formData.customer_email || undefined,
@@ -107,15 +112,16 @@ const LeadCreate = () => {
                 expiry_date: formData.expiry_date ? new Date(formData.expiry_date).toISOString() : undefined
             };
 
-            const res = await api.post('/admin/leads', payload);
+            const res = await api.post('/vendor/leads', payload);
             if (res.data.success) {
-                navigate('/dashboard');
+                toast.success('Lead injected into the grid successfully.');
+                navigate('/vendor/dashboard');
             } else {
-                setError(res.data.message || 'Error creating lead');
+                setError(res.data.message || 'Node Injection Rejected.');
             }
         } catch (err) {
             console.error("Error submitting form:", err);
-            setError(err.response?.data?.message || 'Failed to connect to backend. Data not saved.');
+            setError(err.response?.data?.message || 'Synchronization failure. Data not synced.');
         } finally {
             setSubmitting(false);
         }
@@ -124,24 +130,20 @@ const LeadCreate = () => {
     return (
         <div className="page-content animate-fade-in text-[var(--text-dark)] pb-20">
             {/* Page Header */}
-            <div className="pageHeader">
-                <div className="pageHeaderTitle">
-                    <h2 className="flex items-center gap-3">
-                        Create New Lead
-                        <div className="p-2.5 rounded-2xl bg-indigo-500 shadow-lg shadow-indigo-500/30 flex items-center justify-center">
-                            <TrendingUp className="text-white" size={24} />
-                        </div>
-                    </h2>
-                    <p>Add a new business lead to the system</p>
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2 mb-10">
+                <div>
+                    <div className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-2 italic">
+                        Production Protocol <ChevronRight size={10} /> Lead Injection
+                    </div>
+                    <h1 className="text-4xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-none mb-2">Forge New Prospect</h1>
+                    <p className="text-xs font-bold text-[var(--text-muted)] italic leading-none">Initialize a new business data node for synchronization and validation.</p>
                 </div>
-                <div className="pageHeaderActions">
-                    <button onClick={() => navigate('/leads')} className="btn bg-[var(--surface-color)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-indigo-500 hover:bg-indigo-500/10 flex items-center gap-2 font-black uppercase text-[10px] tracking-widest px-6 py-3 rounded-2xl transition-all shadow-sm">
-                        <ArrowLeft size={16} /> Cancel
-                    </button>
-                </div>
-            </div>
+                <button onClick={() => navigate('/vendor/dashboard')} className="p-4 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-2xl text-[var(--text-muted)] hover:text-red-500 transition-all shadow-sm active:scale-95 flex items-center gap-2 uppercase text-[10px] font-black tracking-widest">
+                    <ArrowLeft size={16} /> Abort Operation
+                </button>
+            </header>
 
-            <div className="max-w-6xl mx-auto mt-10">
+            <div className="max-w-6xl mx-auto">
                 <form onSubmit={handleSubmit} className="space-y-10">
                     {error && (
                         <div className="p-4 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 flex items-center gap-4 text-xs font-black uppercase tracking-widest italic animate-shake">
@@ -159,41 +161,31 @@ const LeadCreate = () => {
                                             <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-500 shadow-inner">
                                                 <Type size={24} />
                                             </div>
-                                            Lead Details
+                                            Node Metadata
                                         </h3>
-                                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic mt-2 ml-14">Basic information about the lead and category</p>
+                                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic mt-2 ml-14">Define the core identity of the prospect node</p>
                                     </div>
                                     <Sparkles className="text-amber-500/20" size={48} />
                                 </div>
 
                                 <div className="p-10 space-y-8">
-                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 font-bold">Lead ID (Optional)</label>
+                                            <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 font-bold">Forge Lead ID (Unique)</label>
                                             <input
                                                 type="text" name="lead_id" value={formData.lead_id} onChange={handleChange}
                                                 className="w-full p-5 rounded-[1.5rem] font-black text-sm uppercase bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none text-indigo-500 tracking-wider"
-                                                placeholder="AUTO-GENERATED IF BLANK"
+                                                placeholder="VND-LEAD-XXXX"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 font-bold">Category</label>
+                                            <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 font-bold">Category Sector</label>
                                             <input
                                                 type="text" name="category" value={formData.category} onChange={handleChange}
                                                 className="w-full p-5 rounded-[1.5rem] font-bold text-sm uppercase bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none text-[var(--text-dark)]"
-                                                placeholder="EX: IT-HARDWARE, INSURANCE..." required
+                                                placeholder="EX: REAL ESTATE, FINANCE..." required
                                             />
                                         </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 font-bold">Lead Requirements</label>
-                                        <textarea
-                                            name="description"
-                                            className="w-full p-6 rounded-[2rem] min-h-[120px] font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none text-[var(--text-dark)]"
-                                            placeholder="Describe what the customer is looking for..."
-                                            onChange={handleChange}
-                                        />
                                     </div>
                                 </div>
                             </div>
@@ -206,16 +198,16 @@ const LeadCreate = () => {
                                             <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500 shadow-inner">
                                                 <User size={24} />
                                             </div>
-                                            Customer Information
+                                            Identity Matrix
                                         </h3>
-                                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic mt-2 ml-14">Contact details for the prospective customer</p>
+                                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic mt-2 ml-14">Customer endpoints for validation protocol</p>
                                     </div>
                                 </div>
 
                                 <div className="p-10 space-y-8">
-                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 font-bold">Customer Full Name</label>
+                                            <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 font-bold">Full Name</label>
                                             <div className="relative group">
                                                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-amber-500 transition-colors" size={18} />
                                                 <input
@@ -226,7 +218,7 @@ const LeadCreate = () => {
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 font-bold">Contact Phone Number</label>
+                                            <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 font-bold">Contact Node (Phone)</label>
                                             <div className="relative group">
                                                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-amber-500 transition-colors" size={18} />
                                                 <input
@@ -238,14 +230,14 @@ const LeadCreate = () => {
                                         </div>
                                     </div>
 
-                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 font-bold">Email Address</label>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 font-bold">Email Interface</label>
                                         <div className="relative group">
                                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-amber-500 transition-colors" size={18} />
                                             <input
                                                 type="email" name="customer_email" value={formData.customer_email} onChange={handleChange}
                                                 className="w-full pl-12 pr-4 py-5 rounded-[1.5rem] font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-amber-500 transition-all shadow-inner outline-none text-[var(--text-dark)]"
-                                                placeholder="EMAIL@EXAMPLE.COM"
+                                                placeholder="EMAIL@PROTOCOL.COM"
                                             />
                                         </div>
                                     </div>
@@ -253,7 +245,7 @@ const LeadCreate = () => {
                             </div>
                         </div>
 
-                        {/* Value & Locality (Side Panel) */}
+                        {/* Side Controls */}
                         <div className="space-y-10">
                             {/* Proximity Matrix */}
                             <div className="card shadow-2xl rounded-[3rem] border border-[var(--border-color)] bg-[var(--surface-color)] overflow-hidden">
@@ -262,106 +254,54 @@ const LeadCreate = () => {
                                         <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 shadow-inner">
                                             <MapPin size={20} />
                                         </div>
-                                        Location
+                                        Locality Sync
                                     </h3>
                                 </div>
 
                                 <div className="p-8 space-y-6">
+                                    <CustomSelect
+                                        label="State Cluster"
+                                        name="state"
+                                        value={formData.state}
+                                        onChange={handleChange}
+                                        options={stateOptions}
+                                        placeholder="SELECT STATE"
+                                        variant="compact"
+                                    />
+                                    <CustomSelect
+                                        label="City Hub"
+                                        name="city"
+                                        value={formData.city}
+                                        onChange={handleChange}
+                                        options={cityOptions}
+                                        placeholder="SELECT CITY"
+                                        required
+                                        variant="compact"
+                                    />
                                     <div className="space-y-2">
-                                        <CustomSelect
-                                            label="State"
-                                            name="state"
-                                            value={formData.state}
-                                            onChange={handleChange}
-                                            options={stateOptions}
-                                            placeholder="SELECT STATE"
-                                            variant="compact"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <CustomSelect
-                                            label="City"
-                                            name="city"
-                                            value={formData.city}
-                                            onChange={handleChange}
-                                            options={cityOptions}
-                                            placeholder="SELECT CITY"
-                                            required
-                                            variant="compact"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic">Pincode</label>
+                                        <label className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic">PIN Code</label>
                                         <input
                                             type="text" name="pincode" value={formData.pincode} onChange={handleChange}
-                                            className="w-full p-4 rounded-xl font-bold text-xs uppercase bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-emerald-500 transition-all shadow-inner outline-none text-[var(--text-dark)]"
+                                            className="w-full p-4 rounded-xl font-bold text-xs bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-emerald-500 transition-all shadow-inner outline-none text-[var(--text-dark)]"
                                             placeholder="6 DIGITS" maxLength={6}
                                         />
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Monetary Parameters */}
-                            <div className="card shadow-2xl rounded-[3rem] border border-[var(--border-color)] bg-indigo-600 overflow-hidden text-[var(--text-dark)] relative">
-                                <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 text-white">
-                                    <IndianRupee size={120} />
-                                </div>
-
-                                <div className="p-8 relative z-10">
-                                    <h3 className="text-md font-black uppercase tracking-tight flex items-center gap-3 mb-8">
-                                        <div className="p-2.5 rounded-xl bg-[var(--surface-color)] shadow-backdrop-blur-md text-[var(--text-dark)] border border-[var(--border-color)] shadow-inner">
-                                            <Zap size={20} />
-                                        </div>
-                                        Lead Value
-                                    </h3>
-
-                                    <div className="space-y-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-[var(--text-dark)] uppercase tracking-widest ml-1 italic">Estimated Lead Value (₹)</label>
-                                            <div className="relative">
-                                                <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dark)]" size={16} />
-                                                <input
-                                                    type="text" name="lead_value" value={formData.lead_value} onChange={handleChange}
-                                                    className="w-full pl-10 pr-4 py-4 rounded-2xl font-black text-lg bg-[var(--bg-color)] border border-[var(--border-color)] text-[var(--text-dark)] focus:bg-[var(--surface-color)] transition-all shadow-xl outline-none placeholder:text-[var(--text-muted)]"
-                                                    placeholder="0.00"
-                                                />
-                                            </div>
-                                        </div>                                         <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-white/60 uppercase tracking-widest ml-1 italic">Lead Expiry Date</label>
-                                            <div className="relative">
-                                                <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dark)]" size={16} />
-                                                <input
-                                                    type="date" name="expiry_date" value={formData.expiry_date} onChange={handleChange}
-                                                    className="w-full pl-10 pr-4 py-4 rounded-2xl font-black text-xs uppercase bg-[var(--bg-color)] border border-[var(--border-color)] text-[var(--text-dark)] focus:bg-[var(--surface-color)] transition-all shadow-xl outline-none"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* Execution Hub */}
-                            <div className="pt-4 flex flex-col gap-4">
+                            <div className="card p-8 bg-indigo-600 rounded-[2.5rem] shadow-2xl shadow-indigo-200">
+                                <div className="flex items-center gap-3 mb-8">
+                                    <Zap className="text-white" size={24} />
+                                    <h3 className="text-white text-md font-black uppercase tracking-tight italic">Injection Hub</h3>
+                                </div>
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="w-full py-6 bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[11px] tracking-[0.2em] rounded-[1.5rem] shadow-2xl shadow-emerald-500/40 flex items-center justify-center gap-4 transition-all active:scale-95 disabled:opacity-50"
+                                    className="w-full py-5 bg-white text-indigo-600 font-black uppercase text-[11px] tracking-[0.2em] rounded-2xl shadow-xl hover:bg-indigo-50 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
                                 >
-                                    {submitting ? (
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    ) : (
-                                        <>
-                                            <Save size={20} />
-                                            Create Lead
-                                        </>
-                                    )}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/leads')}
-                                    className="w-full py-5 bg-[var(--surface-color)] text-[var(--text-muted)] font-black uppercase text-[10px] tracking-[0.2em] rounded-[1.5rem] hover:bg-red-500/10 hover:text-red-500 transition-all border border-[var(--border-color)] hover:border-red-500/20"
-                                >
-                                    Cancel
+                                    {submitting ? <Activity size={20} className="animate-spin" /> : <Save size={20} />}
+                                    {submitting ? 'Processing Node...' : 'Inject into Grid'}
                                 </button>
                             </div>
                         </div>
@@ -372,4 +312,8 @@ const LeadCreate = () => {
     );
 };
 
-export default LeadCreate;
+export default VendorLeadUpload;
+
+const ChevronRight = ({ size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+);

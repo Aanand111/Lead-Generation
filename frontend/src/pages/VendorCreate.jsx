@@ -27,8 +27,9 @@ const VendorCreate = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === 'phone') {
-            if (value === '' || /^[0-9]+$/.test(value)) {
-                setFormData({ ...formData, [name]: value });
+            const val = value.replace(/\D/g, '');
+            if (val.length <= 10) {
+                setFormData({ ...formData, [name]: val });
             }
         } else {
             setFormData({ ...formData, [name]: value });
@@ -72,14 +73,14 @@ const VendorCreate = () => {
             <div className="pageHeader">
                 <div className="pageHeaderTitle">
                     <h2 className="flex items-center gap-3 italic">
-                        Mint New Vendor
+                        Add New Vendor
                         <UserPlus className="text-indigo-500 animate-pulse" size={24} />
                     </h2>
-                    <p>Initialize a new vendor entity and establish distribution protocols</p>
+                    <p>Create a new vendor account and set up their profile</p>
                 </div>
                 <div className="pageHeaderActions">
                     <button onClick={() => navigate('/vendors')} className="btn bg-[var(--surface-color)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-indigo-500 hover:bg-indigo-500/10 flex items-center gap-2 font-black uppercase text-[10px] tracking-widest px-6 py-3 rounded-2xl transition-all shadow-sm">
-                        <ArrowLeft size={16} /> Abort Operation
+                        <ArrowLeft size={16} /> Cancel
                     </button>
                 </div>
             </div>
@@ -92,32 +93,32 @@ const VendorCreate = () => {
                         </div>
                     )}
 
-                    {/* Identity Matrix */}
+                    {/* Vendor Information Section */}
                     <div className="card shadow-2xl rounded-[3rem] border border-[var(--border-color)] bg-[var(--surface-color)] overflow-hidden">
                         <div className="p-10 border-b border-[var(--border-color)] bg-[var(--bg-color)]/30">
                             <div className="flex justify-between items-center">
-                                <div>
+                                 <div>
                                     <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-3">
                                         <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-500 shadow-inner">
                                             <ShieldCheck size={24} />
                                         </div>
-                                        Vendor Identity Matrix
+                                        Vendor Information
                                     </h3>
-                                    <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic mt-2 ml-14">Configure primary authentication and identity parameters</p>
+                                    <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic mt-2 ml-14">Basic details and login credentials for the vendor</p>
                                 </div>
                                 <Zap className="text-amber-500/30" size={40} />
                             </div>
                         </div>
 
                         <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic font-bold">Full Legal Name</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic font-bold">Full Name</label>
                                 <div className="relative group">
                                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-500 transition-colors" size={18} />
                                     <input 
                                         type="text" name="name" value={formData.name} onChange={handleChange} 
                                         className="w-full pl-12 pr-4 py-5 rounded-[1.5rem] font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none text-[var(--text-dark)]"
-                                        placeholder="EX: ALEPH NULL" required 
+                                        placeholder="EX: JOHN DOE" required 
                                     />
                                 </div>
                             </div>
@@ -126,36 +127,35 @@ const VendorCreate = () => {
                                 <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic font-bold">Gender</label>
                                 <CustomSelect
                                     name="gender" value={formData.gender} onChange={handleChange} 
-                                        
                                     options={[
                                     {value: 'Male', label: 'MALE'},
                                     {value: 'Female', label: 'FEMALE'},
-                                    {value: 'Other', label: 'OTHER PROTOCOL'}
+                                    {value: 'Other', label: 'OTHER'}
                                 ]}
                                 required 
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic font-bold">Primary Email Node</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic font-bold">Email Address</label>
                                 <div className="relative group">
                                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-500 transition-colors" size={18} />
                                     <input 
                                         type="email" name="email" value={formData.email} onChange={handleChange} 
                                         className="w-full pl-12 pr-4 py-5 rounded-[1.5rem] font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none text-[var(--text-dark)]"
-                                        placeholder="EX: VENDOR@ENTITY.COM" required 
+                                        placeholder="EX: VENDOR@EXAMPLE.COM" required 
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic font-bold">Voice Frequency (Phone)</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic font-bold">Phone Number</label>
                                 <div className="relative group">
                                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-500 transition-colors" size={18} />
                                     <input 
                                         type="text" name="phone" value={formData.phone} onChange={handleChange} 
                                         className="w-full pl-12 pr-4 py-5 rounded-[1.5rem] font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none text-[var(--text-dark)]"
-                                        placeholder="10-15 DIGITS" maxLength={15} required 
+                                        placeholder="10 DIGITS" maxLength={10} required 
                                     />
                                 </div>
                             </div>
@@ -173,36 +173,35 @@ const VendorCreate = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic font-bold">Status Protocol</label>
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic font-bold">Vendor Status</label>
                                 <CustomSelect 
                                     name="status" value={formData.status} onChange={handleChange}                                    
                                       options={[
-                                    {value: 'Active', label: 'ACTIVE PROTOCOL'},
-                                    {value: 'Inactive', label: 'INACTIVE PROTOCOL'}
+                                    {value: 'Active', label: 'ACTIVE'},
+                                    {value: 'Inactive', label: 'INACTIVE'}
                                 ]}
                                 required 
                                 />
-                                
                             </div>
                         </div>
                     </div>
 
-                    {/* Network Referral Matrix */}
+                    {/* Referral & Networking Section */}
                     <div className="card shadow-2xl rounded-[3rem] border border-[var(--border-color)] bg-[var(--surface-color)]">
                         <div className="p-10 border-b border-[var(--border-color)] bg-[var(--bg-color)]/30">
                             <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-3">
                                 <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500 shadow-inner">
                                     <Building size={24} />
                                 </div>
-                                Network Linkage Matrix
+                                Referral & Networking
                             </h3>
-                            <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic mt-2 ml-14">Define parent nodes and referral inheritance parameters</p>
+                            <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic mt-2 ml-14">Manage referral settings and parent vendor relationship</p>
                         </div>
 
                         <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic font-bold">Personal Referral Code</label>
-                                <div className="relative group">
+                                 <div className="relative group">
                                     <BadgeInfo className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-amber-500 transition-colors" size={18} />
                                     <input 
                                         type="text" name="referral_code" value={formData.referral_code} onChange={handleChange} 
@@ -213,15 +212,15 @@ const VendorCreate = () => {
                                         type="button"
                                         onClick={() => setFormData({ ...formData, referral_code: generateReferralCode() })}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-all active:scale-90"
-                                        title="Regenerate unguessable link protocol"
+                                        title="Generate new referral code"
                                     >
                                         <RefreshCcw size={16} />
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic font-bold">Parent Node ID (Optional)</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic font-bold">Referrer Vendor ID (Optional)</label>
                                 <div className="relative group">
                                     <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-amber-500 transition-colors" size={18} />
                                     <input 
@@ -246,7 +245,7 @@ const VendorCreate = () => {
                             ) : (
                                 <>
                                     <Save size={20} />
-                                    Initialize Vendor Protocol
+                                    Create Vendor Account
                                 </>
                             )}
                         </button>
@@ -255,7 +254,7 @@ const VendorCreate = () => {
                             onClick={() => navigate('/vendors')}
                             className="px-12 py-6 bg-[var(--bg-color)] text-[var(--text-muted)] font-black uppercase text-xs tracking-[0.2em] rounded-[1.5rem] hover:bg-red-500/10 hover:text-red-500 transition-all border border-transparent hover:border-red-500/20"
                         >
-                            Abort
+                            Cancel
                         </button>
                     </div>
                 </form>

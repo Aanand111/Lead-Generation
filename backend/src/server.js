@@ -13,26 +13,26 @@ const swaggerSetup = require('./config/swagger');
 
 const app = express();
 
-// Global Logger
-app.use((req, res, next) => {
-    if (process.env.NODE_ENV !== 'test') {
-        console.log(`[LOG] ${new Date().toLocaleTimeString()} - ${req.method} ${req.url}`);
-    }
-    next();
-});
-
 // Graceful Shutdown & Process Handlers
 process.on('uncaughtException', (err) => {
-    console.error('[PROCESS] Uncaught Exception:', err);
+    console.error('[FATAL] Uncaught Exception:', err.message);
     process.exit(1); 
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('[PROCESS] Unhandled Rejection at:', promise, 'reason:', reason);
+process.on('unhandledRejection', (reason) => {
+    console.error('[FATAL] Unhandled Rejection:', reason);
 });
 
-// Security & Optimization Middlewares
-const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'];
+// CORS Configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+    ? process.env.ALLOWED_ORIGINS.split(',') 
+    : [
+        'http://localhost:3000', 
+        'http://localhost:5173', 
+        'http://localhost:5174',
+        'https://lead-generation-hp33p72jp-aaanandjoshiii-1651s-projects.vercel.app'
+      ];
+
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin || allowedOrigins.includes(origin)) {
@@ -46,23 +46,23 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(helmet()); // Set security headers
-app.use(compression()); // Gzip compression for faster response delivery
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+app.use(compression());
 
-// Parsing Middlewares
-app.use(express.json({ limit: '10kb' })); // Body limit to prevent large payload attacks
+// Body Parsers
+app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(hpp());
 
-// Sanitization Middlewares (Must be after body parser)
-app.use(hpp());    // Prevent HTTP Parameter Pollution
-
-// Distributed Rate Limiter (Redis-backed for 1M+ scaling)
+// Rate Limiters
 const { RedisStore } = require('rate-limit-redis');
 const { redisConnection } = require('./config/redis');
 
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, 
-    max: 5000, // Increased for high-scale app
+    max: 5000,
     standardHeaders: true,
     legacyHeaders: false,
     store: new RedisStore({
@@ -88,12 +88,11 @@ const contactLimiter = rateLimit({
     message: { success: false, message: 'Contact limit exceeded. Please try again after an hour.' },
 });
 
- 
-// Logging (Morgan)
+// HTTP Logging
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 } else {
-    app.use(morgan('combined')); // Detailed logging for production
+    app.use(morgan('combined'));
 }
 
 // Swagger API Documentation
@@ -121,7 +120,7 @@ app.use('/api/user', require('./routes/userRoutes'));
 const { submitMessage } = require('./controllers/contactController');
 app.post('/api/contact', contactLimiter, submitMessage);
 
-// Static assets (if any)
+// Static assets
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Global Error Handler
@@ -129,19 +128,21 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 const { scheduleJobs } = require('./queues/cronQueue');
-const server = app.listen(PORT, () => {
-    console.log(`[SERVER] Running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-    console.log(`[SERVER] Health: http://localhost:${PORT}/api/health`);
-    
-    // Initializing Automated Maintenance Protocol
+const http = require('http');
+const server = http.createServer(app);
+
+// Initialize Socket.io
+require('./utils/socket').init(server);
+
+server.listen(PORT, () => {
+    console.log(`[SERVER] Port ${PORT} | Mode: ${process.env.NODE_ENV || 'development'}`);
     scheduleJobs();
 });
 
-// Handle graceful shutdowns
+// Graceful Shutdown
 process.on('SIGTERM', () => {
-    console.log('SIGTERM signal received: closing HTTP server');
     server.close(() => {
-        console.log('HTTP server closed');
+        process.exit(0);
     });
 });
 

@@ -3,6 +3,8 @@ import {
     Wallet, TrendingUp, Clock, CheckCircle, AlertCircle, 
     ArrowUpRight, Download, Filter, Search, Activity, Zap
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { useConfirm } from '../context/ConfirmContext';
 
 const VendorEarnings = () => {
     const [stats, setStats] = useState({ 
@@ -55,7 +57,31 @@ const VendorEarnings = () => {
                     <h1 className="text-4xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-none mb-2">Commission Ledger</h1>
                     <p className="text-xs font-bold text-[var(--text-muted)] italic">Monitor your financial performance and payout benchmarks.</p>
                 </div>
-                <button className="btn btn-primary px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-3">
+                <button 
+                    onClick={async () => {
+                        const confirmed = confirm('Broadcast settlement request for all pending commission nodes to Admin Hub?', 'Initiate Settlement');
+                        if (!confirmed) return;
+                        
+                        try {
+                            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+                            const token = localStorage.getItem('token');
+                            const res = await fetch(`${API_BASE_URL}/vendor/request-settlement`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                toast.success('Settlement request synchronized.');
+                                window.location.reload(); 
+                            } else {
+                                toast.error(data.message || 'Protocol rejection.');
+                            }
+                        } catch (err) {
+                            toast.error('Network synchronization failure.');
+                        }
+                    }}
+                    className="btn btn-primary px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-3"
+                >
                     <ArrowUpRight size={16} /> Request Settlement
                 </button>
             </header>
@@ -161,10 +187,11 @@ const VendorEarnings = () => {
                                             <td className="text-right px-8">
                                                 <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all ${
                                                     item.status.toLowerCase() === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 
+                                                    item.status.toLowerCase() === 'requested' ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20 animate-pulse' :
                                                     item.status.toLowerCase() === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 
                                                     'bg-red-500/10 text-red-500 border-red-500/20'
                                                 }`}>
-                                                    <div className={`w-1 h-1 rounded-full ${item.status.toLowerCase() === 'completed' ? 'bg-emerald-500' : item.status.toLowerCase() === 'pending' ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`}></div>
+                                                    <div className={`w-1 h-1 rounded-full ${item.status.toLowerCase() === 'completed' ? 'bg-emerald-500' : (item.status.toLowerCase() === 'pending' || item.status.toLowerCase() === 'requested') ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`}></div>
                                                     {item.status}
                                                 </span>
                                             </td>

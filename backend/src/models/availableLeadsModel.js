@@ -3,30 +3,54 @@ const { pool } = require('../config/db');
 const getAvailableLeads = async () => {
     const query = `
         SELECT 
-            l.*
+            COALESCE(l.id::text, av.id::text) as id,
+            COALESCE(l.lead_id, av.lead_uid) as lead_id,
+            COALESCE(l.customer_name, av.name) as customer_name,
+            COALESCE(l.customer_phone, av.phone) as customer_phone,
+            COALESCE(l.customer_email, av.email) as customer_email,
+            COALESCE(l.category, lc.name) as category,
+            COALESCE(l.city, av.city) as city,
+            COALESCE(l.state, av.state) as state,
+            COALESCE(l.pincode, '') as pincode,
+            l.lead_value,
+            l.expiry_date,
+            l.created_by,
+            COALESCE(l.created_at, av.created_at) as created_at,
+            COALESCE(l.assigned_to::text, av.assigned_to::text) as assigned_to,
+            COALESCE(l.assigned_at, av.assigned_at) as assigned_at,
+            COALESCE(l.assignment_status, 'UNASSIGNED') as assignment_status,
+            COALESCE(l.status, av.status, 'ACTIVE') as status,
+            COALESCE(av.name, l.customer_name) AS name,
+            COALESCE(av.lead_uid, l.lead_id) AS lead_uid,
+            av.source AS source,
+            COALESCE(lc.name, l.category) AS category_name,
+            COALESCE(av.city, l.city) AS city_display,
+            COALESCE(av.state, l.state) AS state_display,
+            av.phone AS av_phone,
+            av.email AS av_email,
+            av.priority AS priority,
+            av.notes AS notes,
+            av.address AS address
         FROM leads l
-        WHERE l.assignment_status = 'UNASSIGNED'
-        ORDER BY l.created_at DESC
+        FULL OUTER JOIN available_leads av ON l.lead_id = av.lead_uid
+        LEFT JOIN lead_categories lc ON av.category_id = lc.id
+        WHERE COALESCE(l.assignment_status, 'UNASSIGNED') = 'UNASSIGNED'
+        AND COALESCE(l.status, 'ACTIVE') IN ('ACTIVE', 'PENDING')
+        ORDER BY COALESCE(l.created_at, av.created_at) DESC
     `;
     const result = await pool.query(query);
     return result.rows;
 };
 
 /**
- * Smart Lead Assignment Logic (Logic for "predefined rules like location, lead type, or availability of vendor credits.")
- * 1. Find all vendors whose operating pincodes match the lead's pincode.
- * 2. Find all vendors whose operating categories match the lead's category.
- * 3. Match both criteria for highest priority, or fallback to one.
- * 4. Filter by availability (wallet balance or activity).
+ * Smart Lead Assignment Logic
  */
 const findBestMatchesForLead = async (leadId) => {
-    // Lead info (category, pincode)
     const leadRes = await pool.query(`SELECT category, pincode FROM leads WHERE id = $1`, [leadId]);
     if (leadRes.rows.length === 0) return [];
-    
+
     const { category, pincode } = leadRes.rows[0];
 
-    // Query vendors that match category, pincode or both
     const query = `
         SELECT 
             u.id, 
@@ -34,9 +58,9 @@ const findBestMatchesForLead = async (leadId) => {
             u.phone,
             (SELECT COUNT(*) FROM leads WHERE assigned_to = u.id) as current_load,
             (CASE 
-                WHEN vp.pincode = $1 AND vc.category_id = (SELECT id FROM lead_categories WHERE name = $2) THEN 10 -- Both match
-                WHEN vp.pincode = $1 THEN 5 -- Pincode match
-                WHEN vc.category_id = (SELECT id FROM lead_categories WHERE name = $2) THEN 2 -- Category match
+                WHEN vp.pincode = $1 AND vc.category_id = (SELECT id FROM lead_categories WHERE name = $2) THEN 10
+                WHEN vp.pincode = $1 THEN 5
+                WHEN vc.category_id = (SELECT id FROM lead_categories WHERE name = $2) THEN 2
                 ELSE 0 
             END) as match_score
         FROM users u

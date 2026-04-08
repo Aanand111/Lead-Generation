@@ -80,6 +80,7 @@ const getAvailableLeads = async (req, res, next) => {
             SELECT l.*, l.category as category_name, 10 as credit_cost 
             FROM leads l
             WHERE l.id NOT IN (SELECT lead_id FROM lead_purchases WHERE user_id = $1)
+            AND l.status = 'ACTIVE'
         `;
         const values = [userId];
 
@@ -310,7 +311,13 @@ const getReferralStats = async (req, res, next) => {
 // --- News & Banners ---
 const getNews = async (req, res, next) => {
     try {
-        const result = await pool.query('SELECT * FROM news ORDER BY created_at DESC');
+        const result = await pool.query(`
+            SELECT n.*, c.name as category_name 
+            FROM news n 
+            LEFT JOIN news_categories c ON n.category_id = c.id 
+            WHERE n.status = true OR n.status = 'Publish'
+            ORDER BY n.created_at DESC
+        `);
         res.status(200).json({ success: true, data: result.rows });
     } catch (error) {
         next(error);

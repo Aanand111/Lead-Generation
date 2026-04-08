@@ -28,11 +28,9 @@ const updateVendorCommission = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { commission_rate } = req.body;
-        console.log(`[DEBUG] Updating commission for Vendor ID: ${id} to ${commission_rate}%`);
 
         const updated = await adminDb.updateVendorCommission(id, commission_rate);
         if (!updated) {
-            console.warn(`[DEBUG] Update failed: Vendor ${id} not found or role is not 'vendor'`);
             return res.status(404).json({ success: false, message: 'Vendor not found or not a vendor' });
         }
 

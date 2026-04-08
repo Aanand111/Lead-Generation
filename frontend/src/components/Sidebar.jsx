@@ -55,7 +55,6 @@ const Sidebar = ({ isOpen }) => {
         { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
         { path: '/customers', label: 'Customers', icon: <Users size={20} /> },
         { path: '/vendors', label: 'Vendors', icon: <Briefcase size={20} /> },
-        { path: '/payouts', label: 'Payout Requests', icon: <Wallet size={20} /> },
         { path: '/commissions/approval', label: 'Commission Approval', icon: <UserCheck size={20} /> },
         { path: '/analytics', label: 'Reporting & Analytics', icon: <BarChart3 size={20} /> },
         { path: '/sub-vendors', label: 'SubVendors', icon: <UserPlus size={20} /> },
@@ -64,6 +63,7 @@ const Sidebar = ({ isOpen }) => {
             icon: <Layers size={20} />,
             subItems: [
                 { path: '/leads/categories', label: 'Leads Category' },
+                { path: '/leads/approval', label: 'Lead Approvals' },
                 { path: '/leads', label: 'Leads' },
                 { path: '/leads/purchased', label: 'Purchased Leads' },
                 { path: '/leads/available', label: 'Available Leads' },

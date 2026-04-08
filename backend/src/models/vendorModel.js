@@ -22,17 +22,20 @@ const getAllVendors = async (page = 1, limit = 10, search = '') => {
             COALESCE(r_count.count, 0) as total_referrals,
             COALESCE(e_total.amount, 0) as total_earnings
         FROM vendors v
+        LEFT JOIN users u ON v.phone = u.phone
         LEFT JOIN (
-            SELECT referred_by_vendor_id, COUNT(*) as count 
-            FROM vendors 
-            GROUP BY referred_by_vendor_id
-        ) r_count ON v.id = r_count.referred_by_vendor_id
+            SELECT u_inner.phone, COUNT(*) as count 
+            FROM vendors v_inner
+            JOIN vendors v_parent ON v_inner.referred_by_vendor_id = v_parent.id
+            JOIN users u_inner ON v_parent.phone = u_inner.phone
+            GROUP BY u_inner.phone
+        ) r_count ON v.phone = r_count.phone
         LEFT JOIN (
             SELECT vendor_id, SUM(amount) as amount 
             FROM commission_transactions 
             WHERE status = 'COMPLETED'
             GROUP BY vendor_id
-        ) e_total ON v.id = e_total.vendor_id
+        ) e_total ON u.id = e_total.vendor_id
         WHERE v.referred_by_vendor_id IS NULL
         ${searchClause}
         ORDER BY v.created_at DESC
@@ -127,12 +130,13 @@ const getVendorStats = async (vendorId) => {
         ORDER BY created_at DESC
     `, [vendorId]);
 
-    // 3. Get earnings summary from transactions
+    // 3. Get earnings summary from transactions (matching by matching user ID)
     const earningsRes = await pool.query(`
-        SELECT * FROM commission_transactions 
-        WHERE vendor_id = $1 
-        ORDER BY created_at DESC LIMIT 50
-    `, [vendorId]);
+        SELECT ct.* FROM commission_transactions ct
+        JOIN users u ON ct.vendor_id = u.id
+        WHERE u.phone = $1
+        ORDER BY ct.created_at DESC LIMIT 50
+    `, [vendor.phone]);
 
     // 4. Calculate stats
     const totalEarnings = earningsRes.rows

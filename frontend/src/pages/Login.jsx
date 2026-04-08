@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import api from '../utils/api';
 import InsureBg from '../assets/Insure.png';
 import InsureeLogo from '../assets/insuree.png';
 
@@ -13,13 +14,11 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-            const res = await fetch(`${API_BASE_URL}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-            const data = await res.json();
+            const submitData = {
+                ...formData,
+                email: formData.email.trim().toLowerCase()
+            };
+            const { data } = await api.post('/auth/login', submitData);
             if (data.success) {
                 localStorage.setItem('token', data.token);
                 if (data.user) {
@@ -38,7 +37,7 @@ const Login = () => {
                 setError(data.message || 'Login failed');
             }
         } catch (err) {
-            setError('Connection error');
+            setError(err.response?.data?.message || 'Connection error');
         }
     };
 
@@ -63,11 +62,11 @@ const Login = () => {
                     )}
 
                     <div className="form-group text-left">
-                        <label className="form-label font-bold-600">Email Address <span className="text-red">*</span></label>
+                        <label className="form-label font-bold-600">Mobile Number or Email Address <span className="text-red">*</span></label>
                         <input
-                            type="email"
+                            type="text"
                             className="form-control"
-                            placeholder="EX: user@example.com"
+                            placeholder="EX: 9876543210 or user@example.com"
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             required

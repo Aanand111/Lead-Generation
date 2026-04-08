@@ -3,13 +3,15 @@ import { MoreVertical, User, Phone, Mail, Award, CheckCircle, XCircle, Search, P
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import CustomSelect from '../components/CustomSelect';
+import { useConfirm } from '../context/ConfirmContext';
+import { toast } from 'react-hot-toast';
 
 const SubVendors = () => {
     const navigate = useNavigate();
+    const { confirm } = useConfirm();
     const [subvendors, setSubVendors] = useState([]);
     const [openActionId, setOpenActionId] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [message, setMessage] = useState({ type: '', text: '' });
 
     // Pagination & Search State
     const [page, setPage] = useState(1);
@@ -64,30 +66,31 @@ const SubVendors = () => {
         
         try {
             await api.put(`/admin/subvendors/${id}`, { status: newStatus });
-            setMessage({ type: 'success', text: `Agent node status toggled to ${newStatus}.` });
+            toast.success(`Agent status updated to ${newStatus}.`);
         } catch (err) {
             console.error("Failed to update status", err);
             setSubVendors(originalData);
-            setMessage({ type: 'error', text: 'Protocol rejection: status update failed.' });
-        } finally {
-            setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+            toast.error('Failed to update status. Please try again.');
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to purge this independent agent node?')) return;
+        const confirmed = await confirm(
+            'Are you sure you want to delete this agent account?',
+            'Confirm Delete'
+        );
+        if (!confirmed) return;
         try {
             const { data } = await api.delete(`/admin/subvendors/${id}`);
             if (data.success) {
                 setSubVendors(prev => prev.filter(v => v.id !== id));
                 setPaginationProps(prev => ({ ...prev, total: prev.total - 1 }));
-                setMessage({ type: 'success', text: 'Agent node purged from global clusters.' });
+                toast.success('Agent account deleted successfully.');
             }
         } catch (err) {
-            setMessage({ type: 'error', text: 'Purge sequence failure.' });
+            toast.error('Error deleting agent account.');
         } finally {
             setOpenActionId(null);
-            setTimeout(() => setMessage({ type: '', text: '' }), 3000);
         }
     };
 
@@ -95,33 +98,25 @@ const SubVendors = () => {
         <div className="page-content animate-fade-in text-[var(--text-dark)]">
             <div className="pageHeader">
                 <div className="pageHeaderTitle">
-                    <h2>Agent Registry Matrix</h2>
-                    <p>Orchestrate and monitor independent agent nodes and service protocols</p>
+                    <h2>Agent Management</h2>
+                    <p>Manage and monitor sub-vendor/agent accounts and their performance</p>
                 </div>
                 <div className="pageHeaderActions">
                     <button 
                         className="btn btn-primary flex items-center gap-2 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/10" 
                         onClick={() => navigate('/sub-vendors/create')}
                     >
-                        <Plus size={16} /> New Agent Node
+                        <Plus size={16} /> Add New Agent
                     </button>
                 </div>
             </div>
 
-            {message.text && (
-                <div className={`mb-8 p-4 rounded-2xl flex items-center gap-4 transition-all animate-slide-up border ${
-                    message.type === 'error' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                }`}>
-                    {message.type === 'error' ? <XCircle size={20} /> : <CheckCircle size={20} />}
-                    <span className="text-[10px] font-black uppercase tracking-widest">{message.text}</span>
-                </div>
-            )}
 
-            <div className="card shadow-sm border border-[var(--border-color)] overflow-hidden bg-[var(--surface-color)]">
+            <div className="card shadow-sm border border-[var(--border-color)] bg-[var(--surface-color)]">
                 <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-[var(--bg-color)]/30 border-b border-[var(--border-color)]">
                     <div className="flex items-center gap-3">
                         <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest italic leading-none">
-                            Active Agents: <span className="text-[var(--text-dark)] not-italic font-black">{paginationProps.total} Nodes</span>
+                            Active Agents: <span className="text-[var(--text-dark)] not-italic font-black">{paginationProps.total}</span>
                         </span>
                         <div className="h-4 w-px bg-[var(--border-color)]"></div>
                         <div className="flex items-center gap-2">
@@ -145,7 +140,7 @@ const SubVendors = () => {
                         <input 
                             type="text" 
                             className="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-[var(--text-muted)]/50 text-[var(--text-dark)]" 
-                            placeholder="Trace agent by identity, contact or digital protocol..."
+                            placeholder="Search agents by name or email..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -157,12 +152,12 @@ const SubVendors = () => {
                         <thead className="bg-[var(--bg-color)]/50">
                             <tr>
                                 <th className="w-16 text-center text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest">Index</th>
-                                <th className="text-[var(--text-muted)]">Agent Persona</th>
-                                <th className="text-[var(--text-muted)]">Parent Entity</th>
-                                <th className="text-[var(--text-muted)]">Contact Protocol</th>
-                                <th className="text-[var(--text-muted)]">Allocation Code</th>
-                                <th className="text-[var(--text-muted)]">Operational State</th>
-                                <th className="text-right text-[var(--text-muted)]">Operations</th>
+                                <th className="text-[var(--text-muted)]">Agent Name</th>
+                                <th className="text-[var(--text-muted)]">Vendor (Parent)</th>
+                                <th className="text-[var(--text-muted)]">Contact Info</th>
+                                <th className="text-[var(--text-muted)]">Referral Code</th>
+                                <th className="text-[var(--text-muted)]">Status</th>
+                                <th className="text-right text-[var(--text-muted)]">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -171,7 +166,7 @@ const SubVendors = () => {
                                     <td colSpan="7" className="text-center py-24">
                                         <div className="flex flex-col items-center gap-3">
                                             <div className="spinner mb-2"></div>
-                                            <span className="text-[10px] uppercase font-black tracking-[0.2em] animate-pulse text-[var(--text-muted)]">Syncing Agent Region...</span>
+                                            <span className="text-[10px] uppercase font-black tracking-widest animate-pulse text-[var(--text-muted)]">Loading agents...</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -194,7 +189,7 @@ const SubVendors = () => {
                                     </td>
                                     <td>
                                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase tracking-tight border border-amber-500/20">
-                                            <Award size={10} /> {sub.vendor_name || 'LEGACY_NODE'}
+                                            <Award size={10} /> {sub.vendor_name || 'Individual'}
                                         </div>
                                     </td>
                                     <td>
@@ -233,21 +228,21 @@ const SubVendors = () => {
                                                             className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-indigo-500/10 hover:text-indigo-500 transition-all flex items-center gap-3 border-none bg-transparent cursor-pointer" 
                                                             onClick={() => { navigate(`/sub-vendors/edit/${sub.id}`); setOpenActionId(null); }}
                                                         >
-                                                            <Edit2 size={14} className="text-indigo-500" /> Refine Node
+                                                            <Edit2 size={14} className="text-indigo-500" /> Edit Agent
                                                         </button>
                                                         <button 
                                                             className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-indigo-500/10 transition-all flex items-center gap-3 border-none bg-transparent cursor-pointer" 
                                                             onClick={() => handleStatusToggle(sub.id, sub.status || 'Active')}
                                                         >
                                                             <Power size={14} className={sub.status === 'Active' ? 'text-rose-500' : 'text-emerald-500'} /> 
-                                                            {sub.status === 'Active' ? 'Suspend Node' : 'Enforce Active'}
+                                                            {sub.status === 'Active' ? 'Suspend Account' : 'Activate Account'}
                                                         </button>
                                                         <div className="h-px bg-[var(--border-color)] my-1 mx-2"></div>
                                                         <button 
                                                             className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase text-red-500 hover:bg-red-500/10 transition-all flex items-center gap-3 border-none bg-transparent cursor-pointer" 
                                                             onClick={() => handleDelete(sub.id)}
                                                         >
-                                                            <Trash2 size={14} /> Purge Agent
+                                                            <Trash2 size={14} /> Delete Agent
                                                         </button>
                                                     </div>
                                                 </>
@@ -261,7 +256,7 @@ const SubVendors = () => {
                                     <td colSpan="7" className="text-center py-24 text-[var(--text-muted)] italic">
                                         <div className="flex flex-col items-center gap-4 opacity-30">
                                             <Layers size={64} strokeWidth={1} />
-                                            <p className="font-black uppercase tracking-widest text-[10px]">No Agent Nodes Detected in Spectrum</p>
+                                            <p className="font-black uppercase tracking-widest text-[10px]">No agents found</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -272,7 +267,7 @@ const SubVendors = () => {
 
                 <div className="flex flex-wrap items-center justify-between gap-4 p-5 border-t border-[var(--border-color)] bg-[var(--bg-color)]/30">
                     <div className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest italic leading-none">
-                        Registry Scope: <span className="text-[var(--text-dark)] not-italic font-black">{subvendors.length > 0 ? (page - 1) * limit + 1 : 0} - {Math.min(page * limit, paginationProps.total)}</span> of {paginationProps.total} Nodes
+                        Showing <span className="text-[var(--text-dark)] not-italic font-black">{subvendors.length > 0 ? (page - 1) * limit + 1 : 0} - {Math.min(page * limit, paginationProps.total)}</span> of {paginationProps.total} agents
                     </div>
                     <div className="flex items-center gap-1.5">
                         <button 
@@ -280,7 +275,7 @@ const SubVendors = () => {
                             disabled={page === 1}
                             onClick={() => setPage(prev => Math.max(1, prev - 1))}
                         >
-                            Previous Phase
+                            Previous
                         </button>
                         <div className="w-10 h-10 flex items-center justify-center bg-indigo-600 text-white rounded-xl font-black shadow-lg shadow-indigo-100">
                             {page}
@@ -290,7 +285,7 @@ const SubVendors = () => {
                             disabled={page >= paginationProps.pages}
                             onClick={() => setPage(prev => Math.min(paginationProps.pages, prev + 1))}
                         >
-                            Next Phase
+                            Next
                         </button>
                     </div>
                 </div>

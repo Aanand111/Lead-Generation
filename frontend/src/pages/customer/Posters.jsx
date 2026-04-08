@@ -5,6 +5,7 @@ import {
     Smartphone, ExternalLink, Activity, Info, Upload
 } from 'lucide-react';
 import api from '../../utils/api';
+import { toast } from 'react-hot-toast';
 
 const UserPosters = () => {
     const [posters, setPosters] = useState([]);
@@ -288,10 +289,10 @@ const UserPosters = () => {
                                                 if (res.data.success) {
                                                     setIsCreatorOpen(false);
                                                     fetchPostersData();
+                                                    toast.success('Visual asset synthesized successfully.');
                                                 }
                                             } catch (err) {
-                                                console.error("Generation failed", err);
-                                                alert(err.response?.data?.message || "Generation failed");
+                                                toast.error(err.response?.data?.message || "Synthesis sequence aborted.");
                                             } finally {
                                                 setSubmitting(false);
                                             }

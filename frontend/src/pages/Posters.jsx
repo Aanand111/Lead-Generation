@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { MoreVertical, Plus, Search, Layers, Trash2, Edit2, Zap, Sparkles, Palette, Share2, Activity, Globe, Shield, Calendar, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { useConfirm } from '../context/ConfirmContext';
+import { toast } from 'react-hot-toast';
 
 const Posters = () => {
     const navigate = useNavigate();
+    const { confirm } = useConfirm();
     const [posters, setPosters] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -31,15 +34,22 @@ const Posters = () => {
     }, []);
 
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to retire this visual asset?')) {
+        const confirmed = await confirm(
+            'Are you sure you want to delete this poster? This action cannot be undone.',
+            'Delete Poster'
+        );
+        if (confirmed) {
             try {
                 const { data } = await api.delete(`/admin/poster-management/${id}`);
                 if (data.success) {
                     setPosters(posters.filter(p => p.id !== id));
-                    setOpenActionId(null);
+                    toast.success('Poster deleted successfully.');
                 }
             } catch (err) {
+                toast.error('Failed to delete poster.');
                 console.error("Delete error:", err);
+            } finally {
+                setOpenActionId(null);
             }
         }
     };
@@ -55,31 +65,31 @@ const Posters = () => {
             <div className="pageHeader">
                 <div className="pageHeaderTitle">
                     <h2 className="flex items-center gap-3">
-                        Visual Assets
+                        Posters
                         <Palette className="text-indigo-500" size={24} />
                     </h2>
-                    <p>Manage and broadcast visual creative artifacts across the ecosystem</p>
+                    <p>Manage and organize visual posters for the application</p>
                 </div>
                 <div className="pageHeaderActions">
                     <button
                         className="btn btn-primary flex items-center gap-2 font-black uppercase tracking-widest text-[10px] px-6 py-3 rounded-2xl shadow-lg shadow-indigo-500/20"
                         onClick={() => navigate('/posters/create')}
                     >
-                        <Plus size={16} /> Mint New Poster
+                        <Plus size={16} /> Add Poster
                     </button>
                 </div>
             </div>
 
             {/* List Section */}
-            <div className="card shadow-2xl rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--surface-color)] overflow-hidden">
+            <div className="card shadow-2xl rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--surface-color)]">
                 <div className="p-8 bg-[var(--bg-color)]/30 border-b border-[var(--border-color)] flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-500">
-                            <Activity size={20} />
+                        <div className="p-3 rounded-2xl bg-white border border-[var(--border-color)] shadow-xl shadow-indigo-100/10">
+                            <Palette className="text-indigo-600" size={24} />
                         </div>
                         <div>
-                            <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] block leading-none mb-1">Asset Inventory</span>
-                            <span className="text-sm font-black uppercase tracking-tight italic">{filtered.length} Artifacts Synchronized</span>
+                            <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-1">Visual Asset Monitor</div>
+                            <div className="text-xs font-black text-indigo-600 uppercase tracking-tight">{posters.length} Posters Total</div>
                         </div>
                     </div>
 
@@ -88,7 +98,7 @@ const Posters = () => {
                         <input
                             type="text"
                             className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl pl-12 pr-4 py-3.5 text-xs font-bold shadow-inner focus:border-indigo-500 outline-none transition-all placeholder:text-[var(--text-muted)]/50"
-                            placeholder="SCAN BY TITLE OR CATEGORY..."
+                            placeholder="SEARCH BY TITLE OR CATEGORY..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -97,12 +107,12 @@ const Posters = () => {
 
                 <div className="table-responsive">
                     <table className="table table-hover align-middle mb-0">
-                        <thead>
+                         <thead>
                             <tr className="bg-[var(--bg-color)]/20 border-b border-[var(--border-color)]">
-                                <th className="ps-8 py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Rank</th>
-                                <th className="py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Visual Identity</th>
-                                <th className="py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Tier/Lang</th>
-                                <th className="py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Protocols</th>
+                                <th className="ps-8 py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">ID</th>
+                                <th className="py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Poster Description</th>
+                                <th className="py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Type / Lang</th>
+                                <th className="py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Details</th>
                                 <th className="py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Status</th>
                                 <th className="py-5 text-right pe-8 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Actions</th>
                             </tr>
@@ -113,27 +123,29 @@ const Posters = () => {
                                     <td colSpan="6" className="text-center py-24">
                                         <div className="flex flex-col items-center gap-4">
                                             <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">Syncing Assets...</span>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">Loading posters...</span>
                                         </div>
                                     </td>
                                 </tr>
                             ) : filtered.length > 0 ? (
-                                filtered.map((poster) => (
+                                filtered.map((poster, index) => (
                                     <tr key={poster.id} className="transition-all hover:bg-indigo-500/[0.01] group">
-                                        <td className="ps-8 py-5 text-[10px] font-black text-[var(--text-muted)] opacity-30">#{poster.id}</td>
+                                        <td className="ps-8 py-5 text-[10px] font-black text-[var(--text-muted)] opacity-30">#{(index + 1).toString().padStart(3, '0')}</td>
                                         <td className="py-5">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-14 h-14 rounded-2xl border-2 border-[var(--border-color)] overflow-hidden bg-[var(--bg-color)] shadow-sm group-hover:scale-110 transition-transform">
                                                     <img
-                                                        src={poster.thumbnail?.startsWith('http') ? poster.thumbnail : `${api.defaults?.baseURL?.replace('/api', '') || ''}${poster.thumbnail || ''}`}
-                                                        alt={poster.title || 'Asset'}
+                                                        src={poster.thumbnail?.startsWith('http') ? poster.thumbnail : `${import.meta.env.VITE_BASE_URL?.replace(/\/$/, '') || 'http://localhost:5000'}/${poster.thumbnail?.replace(/^\//, '') || ''}`}
+                                                        alt={poster.title || 'Poster'}
                                                         className="w-full h-full object-cover"
-                                                        onError={(e) => { e.target.src = 'https://placehold.co/150?text=ASSET'; }}
+                                                        onError={(e) => { e.target.src = 'https://placehold.co/150?text=NO+THUMBNAIL'; }}
                                                     />
                                                 </div>
                                                 <div>
                                                     <div className="font-black text-sm uppercase tracking-tight text-indigo-500">{poster.title || 'Untitled'}</div>
-                                                    <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest italic">{categories.find(c => c.id === poster.category_id)?.name || 'UNKNOWN TIER'}</div>
+                                                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[9px] font-black uppercase tracking-widest">
+                                                        <Layers size={10} /> {categories.find(c => c.id === poster.category_id)?.name || 'General'}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </td>
@@ -141,7 +153,7 @@ const Posters = () => {
                                             <div className="flex flex-col gap-1">
                                                 <span className={`inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest ${poster.is_premium ? 'text-amber-500' : 'text-emerald-500'}`}>
                                                     {poster.is_premium ? <Zap size={10} /> : <CheckCircle size={10} />}
-                                                    {poster.is_premium ? 'PREMIUM' : 'COMPLIMENTARY'}
+                                                    {poster.is_premium ? 'PREMIUM' : 'FREE'}
                                                 </span>
                                                 <span className="flex items-center gap-2 text-[10px] font-bold text-[var(--text-muted)] opacity-60">
                                                     <Globe size={10} /> {poster.language || 'ENGLISH'}
@@ -156,15 +168,14 @@ const Posters = () => {
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Share2 size={12} className="opacity-40" />
-                                                    PROMPTED
+                                                    SHARED
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="py-5">
-                                            <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${poster.status === 'Published' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                                                }`}>
-                                                <div className={`w-1.5 h-1.5 rounded-full ${poster.status === 'Published' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'}`}></div>
-                                                {poster.status}
+                                        <td className="py-6 text-center">
+                                            <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${poster.status ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20 opacity-50'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${poster.status ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
+                                                {poster.status ? 'ACTIVE' : 'INACTIVE'}
                                             </span>
                                         </td>
                                         <td className="py-5 text-right pe-8">
@@ -183,14 +194,14 @@ const Posters = () => {
                                                                 className="w-full text-left px-5 py-3 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-indigo-500/10 hover:text-indigo-500 transition-all flex items-center gap-4 border-none bg-transparent cursor-pointer"
                                                                 onClick={() => navigate(`/posters/edit/${poster.id}`)}
                                                             >
-                                                                <Edit2 size={16} /> Modify Asset
+                                                                <Edit2 size={16} /> Edit Poster
                                                             </button>
                                                             <div className="h-px bg-[var(--border-color)] my-2 opacity-50"></div>
                                                             <button
                                                                 className="w-full text-left px-5 py-3 text-[11px] font-black uppercase text-red-500 hover:bg-red-500/10 transition-all flex items-center gap-4 border-none bg-transparent cursor-pointer"
                                                                 onClick={() => handleDelete(poster.id)}
                                                             >
-                                                                <Trash2 size={16} /> Retire Artifact
+                                                                <Trash2 size={16} /> Delete Poster
                                                             </button>
                                                         </div>
                                                     </>
@@ -201,10 +212,10 @@ const Posters = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" className="text-center py-32 text-[var(--text-muted)]">
+                                    <td colSpan="6" className="text-center py-40">
                                         <div className="flex flex-col items-center gap-6 opacity-30">
                                             <Palette size={80} strokeWidth={1} />
-                                            <p className="font-black uppercase tracking-[0.2em] text-[10px]">No Artifacts Synchronized</p>
+                                            <p className="font-black uppercase tracking-widest text-xs">No posters found</p>
                                         </div>
                                     </td>
                                 </tr>

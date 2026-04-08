@@ -63,7 +63,6 @@ const addSubVendor = async (req, res, next) => {
                 full_name: vendorData.name,
                 referred_by: vendorData.referred_by_vendor_id || null
             });
-            console.log(`[SYNC] User account created for SubVendor: ${vendorData.email}`);
         } else {
             // Update existing user to have vendor role and new credentials
             const { pool } = require('../config/db');
@@ -79,7 +78,6 @@ const addSubVendor = async (req, res, next) => {
                 WHERE id = $4`,
                 [vendorData.name, vendorData.password, vendorData.referral_code, existingUser.id, vendorData.email, vendorData.phone]
             );
-            console.log(`[SYNC] Existing user account upgraded/synchronized for SubVendor: ${vendorData.email}`);
         }
 
         res.status(201).json({ success: true, data: newSubVendor });

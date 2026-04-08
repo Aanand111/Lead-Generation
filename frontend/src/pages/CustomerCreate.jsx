@@ -78,8 +78,10 @@ const CustomerCreate = () => {
             return;
         }
         if (['phone', 'whatsapp', 'pincode'].includes(name)) {
-            if (value === '' || /^[0-9]+$/.test(value)) {
-                setFormData({ ...formData, [name]: value });
+            const val = value.replace(/\D/g, '');
+            const limit = name === 'pincode' ? 6 : 10;
+            if (val.length <= limit) {
+                setFormData({ ...formData, [name]: val });
             }
         } else {
             setFormData({ ...formData, [name]: value });
@@ -200,7 +202,7 @@ const CustomerCreate = () => {
                                      <input 
                                          type="text" name="phone" value={formData.phone} onChange={handleChange} 
                                          className="w-full pl-12 pr-4 py-4 rounded-2xl font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none"
-                                         placeholder="10-15 DIGITS" maxLength={15} required 
+                                         placeholder="10 DIGITS" maxLength={10} required 
                                      />
                                 </div>
                             </div>
@@ -214,7 +216,7 @@ const CustomerCreate = () => {
                                      <input 
                                          type="text" name="whatsapp" value={formData.whatsapp} onChange={handleChange} 
                                          className="w-full pl-12 pr-4 py-4 rounded-2xl font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-emerald-500 transition-all shadow-inner outline-none"
-                                         placeholder="OPTIONAL (10-15 DIGITS)" maxLength={15} 
+                                         placeholder="OPTIONAL (10 DIGITS)" maxLength={10} 
                                      />
                                 </div>
                             </div>

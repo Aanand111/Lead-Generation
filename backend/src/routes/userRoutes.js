@@ -10,7 +10,7 @@ const {
 const { createSubscriptionOrder, verifySubscriptionPayment } = require('../controllers/DRozeerpayController');
 const { authenticateToken, authorizeRole } = require('../middlewares/authMiddleware');
 
-console.log('[DEBUG] Initializing User Subscription Routes...');
+
 
 const router = express.Router();
 

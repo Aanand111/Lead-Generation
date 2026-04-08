@@ -3,13 +3,8 @@ const availableLeadsDb = require('../models/availableLeadsModel');
 const getAvailableLeads = async (req, res, next) => {
     try {
         const data = await availableLeadsDb.getAvailableLeads();
-        console.log(`[DEBUG] getAvailableLeads called. Found ${data.length} leads.`);
-        if (data.length > 0) {
-            console.log(`[DEBUG] Sample Lead Data:`, JSON.stringify(data[0]));
-        }
         res.status(200).json({ success: true, data });
     } catch (error) {
-        console.error(`[ERROR] getAvailableLeads:`, error);
         next(error);
     }
 };

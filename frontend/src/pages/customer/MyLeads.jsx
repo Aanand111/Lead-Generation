@@ -32,9 +32,9 @@ const UserMyLeads = () => {
     }, []);
 
     const filteredLeads = leads.filter(l => 
-        l.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        l.phone.includes(searchTerm) ||
-        l.city.toLowerCase().includes(searchTerm.toLowerCase())
+        (l.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+        (l.phone || '').includes(searchTerm) ||
+        (l.city?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
 
     const handleCopy = (text) => {
@@ -64,7 +64,7 @@ const UserMyLeads = () => {
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `Acquired_Intelligence_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute("download", `Purchased_Leads_${new Date().toISOString().split('T')[0]}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -89,8 +89,8 @@ const UserMyLeads = () => {
             </style>
             <div className="pageHeader">
                 <div className="pageHeaderTitle">
-                    <h2>Acquired Intelligence</h2>
-                    <p>Access full identity protocols and contact details for your decrypted leads</p>
+                    <h2>My Leads</h2>
+                    <p>View and manage all your purchased lead details and contact information</p>
                 </div>
                 <div className="pageHeaderActions flex items-center gap-3">
                     <div className="flex bg-[var(--surface-color)] rounded-2xl border border-[var(--border-color)] overflow-hidden">
@@ -119,9 +119,10 @@ const UserMyLeads = () => {
             <div className="mb-10 relative group max-w-2xl">
                 <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-500 transition-colors" />
                 <input 
-                    type="text" 
-                    placeholder="Search Acquired Nodes (Name, Phone, Location)..." 
-                    className="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-2xl pl-14 pr-6 py-4 text-xs font-bold shadow-sm focus:border-indigo-500 transition-all outline-none italic placeholder:font-medium placeholder:text-[var(--text-muted)]/50" 
+                    type="text"
+                    className="w-full pl-12 pr-4 py-3.5 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-2xl text-xs font-black uppercase tracking-widest focus:border-indigo-500 transition-all placeholder:text-[var(--text-muted)]/50"
+                    placeholder="Search leads by name, phone or city..."
+                    value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
@@ -129,12 +130,14 @@ const UserMyLeads = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 {loading ? (
                     <div className="col-span-full py-40 text-center">
-                        <div className="spinner mb-4 mx-auto"></div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">Decrypting Identity Servers...</span>
+                        <div className="flex flex-col items-center gap-6">
+                            <div className="w-14 h-14 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] animate-pulse">Loading acquired leads...</span>
+                        </div>
                     </div>
                 ) : filteredLeads.length > 0 ? (
                     filteredLeads.map((lead) => (
-                        <div key={lead.id} className="card shadow-md border border-[var(--border-color)] overflow-hidden bg-[var(--surface-color)] hover:-translate-y-2 transition-all p-8 group flex flex-col h-full relative">
+                        <div key={lead.id} className="card shadow-md border border-[var(--border-color)] bg-[var(--surface-color)] hover:-translate-y-2 transition-all p-8 group flex flex-col h-full relative">
                             <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-10 transition-opacity">
                                 <CheckCircle size={100} strokeWidth={1} className="text-emerald-500" />
                             </div>
@@ -146,7 +149,7 @@ const UserMyLeads = () => {
                                     </div>
                                     <div>
                                         <h3 className="text-lg font-black text-[var(--text-dark)] leading-none uppercase tracking-tight">{lead.name}</h3>
-                                        <div className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-1 italic">Decryption Success</div>
+                                        <div className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-1 italic">Lead Verified</div>
                                     </div>
                                 </div>
                                 <button className="p-2.5 rounded-xl hover:bg-indigo-500/5 text-[var(--text-muted)] hover:text-indigo-500 transition-all bg-transparent border-none cursor-pointer">
@@ -158,7 +161,7 @@ const UserMyLeads = () => {
                                 <div onClick={() => handleCopy(lead.phone)} className="flex items-center gap-4 bg-[var(--bg-color)] p-4 rounded-2xl border border-[var(--border-color)] hover:border-indigo-400/30 transition-all cursor-pointer group/row">
                                     <Smartphone size={18} className="text-indigo-400" />
                                     <div className="flex-1">
-                                        <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Contact Sync</div>
+                                        <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Phone Number</div>
                                         <div className="text-xs font-black text-[var(--text-dark)] uppercase italic tracking-wider">{lead.phone}</div>
                                     </div>
                                     <Clipboard size={14} className="opacity-0 group-hover/row:opacity-20 transition-opacity" />
@@ -167,8 +170,9 @@ const UserMyLeads = () => {
                                 <div onClick={() => handleCopy(lead.email)} className="flex items-center gap-4 bg-[var(--bg-color)] p-4 rounded-2xl border border-[var(--border-color)] hover:border-indigo-400/30 transition-all cursor-pointer group/row">
                                     <Mail size={18} className="text-rose-400" />
                                     <div className="flex-1">
-                                        <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Identity Index</div>
-                                        <div className="text-xs font-black text-[var(--text-dark)] uppercase italic tracking-wider truncate max-w-[150px]">{lead.email || 'N/A'}</div>
+                                        <div className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1 italic">Customer Contact Acquired</div>
+                                        <h4 className="text-2xl font-black text-slate-800 tracking-tighter leading-none mb-1">{lead.name}</h4>
+                                        <div className="text-xs font-black text-[var(--text-dark)] uppercase italic tracking-wider truncate max-w-[150px]">{lead.email?.toLowerCase() || 'N/A'}</div>
                                     </div>
                                     <Clipboard size={14} className="opacity-0 group-hover/row:opacity-20 transition-opacity" />
                                 </div>
@@ -176,7 +180,7 @@ const UserMyLeads = () => {
                                 <div className="flex items-center gap-4 bg-[var(--bg-color)] p-4 rounded-2xl border border-[var(--border-color)]">
                                     <MapPin size={18} className="text-amber-400" />
                                     <div className="flex-1">
-                                        <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Geolocation Hub</div>
+                                        <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Location</div>
                                         <div className="text-xs font-black text-[var(--text-dark)] uppercase italic tracking-wider">{lead.city}, {lead.state}</div>
                                     </div>
                                 </div>
@@ -184,7 +188,7 @@ const UserMyLeads = () => {
 
                             <div className="pt-6 border-t border-dashed border-[var(--border-color)] flex items-center justify-between">
                                 <div className="space-y-1">
-                                    <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none">Acquired At</div>
+                                    <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none">Purchased On</div>
                                     <div className="text-[10px] font-bold text-[var(--text-muted)] italic tabular-nums">Mar 27, 2026</div>
                                 </div>
                                 <div className="flex gap-2">
@@ -200,10 +204,10 @@ const UserMyLeads = () => {
                     ))
                 ) : (
                     <div className="col-span-full py-40 text-center opacity-30">
-                        <div className="flex flex-col items-center gap-6">
-                            <HistoryIcon size={84} strokeWidth={1} />
-                            <p className="font-black uppercase tracking-[0.4em] text-xs italic">Decryption history is currently void</p>
-                            <button className="btn btn-primary px-8 py-3.5 font-black uppercase tracking-[0.2em] text-[10px] mt-4 shadow-xl shadow-indigo-500/10">Browse Spectrum</button>
+                        <div className="flex flex-col items-center gap-8 opacity-20">
+                            <Target size={100} strokeWidth={1} />
+                            <p className="font-black uppercase tracking-widest text-xs">No purchased leads found</p>
+                            <button className="btn btn-primary px-8 py-3.5 font-black uppercase tracking-widest text-[10px] mt-4 shadow-xl shadow-indigo-500/10">Browse Leads</button>
                         </div>
                     </div>
                 )}

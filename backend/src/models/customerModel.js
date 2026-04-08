@@ -8,9 +8,8 @@ const { pool } = require('../config/db');
 const getAllCustomers = async (page = 1, limit = 10, search = '') => {
     const offset = (page - 1) * limit;
 
-    // Use a CTE to combine real Users (role='user') and those manually in the legacy customers table
-    // For now, focusing on the unified 'users' table as the source of truth for the community.
-    
+    // Fetch customers with pagination and search functionality
+    // This query handles active users and maps their profile details
     let searchClause = " WHERE u.role = 'user'";
     let queryParams = [];
 
@@ -58,7 +57,8 @@ const getAllCustomers = async (page = 1, limit = 10, search = '') => {
 const createCustomer = async (data) => {
     const { name, email, phone, whatsapp, referral, state, city, pincode, status } = data;
     
-    // For consistency, we create them as a 'user' role in the users table
+    // Create a new customer record
+    // Adds a user and initializes their profile entry
     const query = `
         INSERT INTO users (full_name, email, phone, role, status)
         VALUES ($1, $2, $3, 'user', $4)
@@ -81,6 +81,8 @@ const createCustomer = async (data) => {
 const updateCustomer = async (id, data) => {
     const { name, email, phone, status, pincode, city, state } = data;
 
+    // Update customer core details and profile metadata
+    // Uses ON CONFLICT to sync profile data seamlessly
     const query = `
         UPDATE users
         SET 
@@ -110,6 +112,7 @@ const updateCustomer = async (id, data) => {
 };
 
 const updateCustomerStatus = async (id, status) => {
+    // Update specific account status (Active/Blocked)
     const query = `
         UPDATE users
         SET status = $1, updated_at = NOW()
@@ -121,7 +124,8 @@ const updateCustomerStatus = async (id, status) => {
 };
 
 const deleteCustomer = async (id) => {
-    // We don't actually delete from 'users' table easily due to FKs, but we can try
+    // Remove customer from the system
+    // Note: Soft delete or status disabling is generally preferred over hard delete
     const query = `DELETE FROM users WHERE id = $1 AND role = 'user' RETURNING id`;
     const result = await pool.query(query, [id]);
     return result.rows[0];

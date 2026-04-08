@@ -28,6 +28,7 @@ const getVendors = async (req, res, next) => {
 const addVendor = async (req, res, next) => {
     try {
         const vendorData = { ...req.body };
+        if (vendorData.email) vendorData.email = vendorData.email.trim().toLowerCase();
 
         if (!vendorData.name || !vendorData.phone || !vendorData.email) {
             return res.status(400).json({ success: false, message: 'Name, phone and email are required' });
@@ -64,7 +65,6 @@ const addVendor = async (req, res, next) => {
                 full_name: vendorData.name,
                 referred_by: vendorData.referred_by_vendor_id || null
             });
-            console.log(`[SYNC] User account created for Vendor: ${vendorData.email}`);
         } else {
             // Update existing user to have vendor role and new credentials
             const { pool } = require('../config/db');
@@ -80,7 +80,6 @@ const addVendor = async (req, res, next) => {
                 WHERE id = $4`,
                 [vendorData.name, vendorData.password, vendorData.referral_code, existingUser.id, vendorData.email, vendorData.phone]
             );
-            console.log(`[SYNC] Existing user account upgraded/synchronized for Vendor: ${vendorData.email}`);
         }
 
         res.status(201).json({

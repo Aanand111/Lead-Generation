@@ -10,6 +10,12 @@ const findUserByEmail = async (email) => {
     return result.rows[0];
 };
 
+const findUserByIdentifier = async (identifier) => {
+    const query = 'SELECT * FROM users WHERE email = $1 OR phone = $1';
+    const result = await pool.query(query, [identifier]);
+    return result.rows[0];
+};
+
 const createUser = async (userData) => {
     const { phone, email, password_hash, role, referral_code, status, referred_by, full_name } = userData;
     const result = await pool.query(
@@ -34,5 +40,6 @@ module.exports = {
     findUserByEmail,
     createUser,
     testFindUserById,
-    findUserByReferralCode
+    findUserByReferralCode,
+    findUserByIdentifier
 };

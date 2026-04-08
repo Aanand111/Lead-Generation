@@ -1,43 +1,43 @@
-const fakeDelay = (ms) => new Promise(res => setTimeout(res, ms));
+import axios from 'axios';
 
-const api = {
-  get: async (url) => {
-    await fakeDelay(300);
+const api = axios.create({
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+    timeout: 10000,
+    headers: {
+        'Content-Type': 'application/json',
+    }
+});
 
-    if (url.includes('dashboard')) {
-      return {
-        data: {
-          users: 120,
-          leads: 450,
-          revenue: 12000
+// Request interceptor for adding the auth token
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
         }
-      };
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
     }
+);
 
-    if (url.includes('vendors')) {
-      return {
-        data: [
-          { id: 1, name: "Vendor 1" },
-          { id: 2, name: "Vendor 2" }
-        ]
-      };
+// Response interceptor for handling 401 (Unauthorized) errors
+api.interceptors.response.use(
+    (response) => {
+        return response;
+    },
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            // Token expired or invalid - clear details and redirect to login
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            if (window.location.pathname !== '/') {
+                window.location.href = '/';
+            }
+        }
+        return Promise.reject(error);
     }
-
-    if (url.includes('customers')) {
-      return {
-        data: [
-          { id: 1, name: "Customer 1" },
-          { id: 2, name: "Customer 2" }
-        ]
-      };
-    }
-
-    return { data: [] };
-  },
-
-  post: async () => ({ data: { success: true } }),
-  put: async () => ({ data: { success: true } }),
-  delete: async () => ({ data: { success: true } }),
-};
+);
 
 export default api;

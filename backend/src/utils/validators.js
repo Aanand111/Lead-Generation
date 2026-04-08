@@ -5,8 +5,8 @@ const idSchema = Joi.alternatives().try(Joi.string().uuid(), Joi.number(), Joi.s
 const vendorSchema = Joi.object({
     name: Joi.string().min(2).max(100).required(),
     email: Joi.string().email().required(),
-    phone: Joi.string().pattern(/^[0-9]{10,15}$/).required().messages({
-        'string.pattern.base': 'Phone number must be between 10 and 15 digits'
+    phone: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
+        'string.pattern.base': 'Phone number must be exactly 10 digits'
     }),
     password: Joi.string().min(6).optional().allow(''),
     status: Joi.string().valid('Active', 'Inactive').optional(),
@@ -18,8 +18,8 @@ const vendorSchema = Joi.object({
 const subVendorSchema = Joi.object({
     name: Joi.string().min(2).max(100).required(),
     email: Joi.string().email().required(),
-    phone: Joi.string().pattern(/^[0-9]{10,15}$/).required().messages({
-        'string.pattern.base': 'Phone number must be between 10 and 15 digits'
+    phone: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
+        'string.pattern.base': 'Phone number must be exactly 10 digits'
     }),
     password: Joi.string().min(6).optional().allow(''),
     status: Joi.string().valid('Active', 'Inactive').optional(),
@@ -29,25 +29,27 @@ const subVendorSchema = Joi.object({
 }).unknown(true);
 
 const leadSchema = Joi.object({
-    lead_id: Joi.string().required(),
+    lead_id: Joi.string().optional().allow('', null),
     customer_name: Joi.string().min(2).required(),
     customer_phone: Joi.string().pattern(/^[0-9]{10}$/).required(),
-    customer_email: Joi.string().email().optional().allow(''),
+    customer_email: Joi.string().email().optional().allow('', null),
     category: Joi.string().required(),
     city: Joi.string().required(),
-    state: Joi.string().optional().allow(''),
-    pincode: Joi.string().optional().allow(''),
-    lead_value: Joi.number().precision(2).positive().optional().allow(null),
-    expiry_date: Joi.date().iso().optional()
+    state: Joi.string().optional().allow('', null),
+    pincode: Joi.string().optional().allow('', null),
+    lead_value: Joi.number().precision(2).min(0).optional().allow(null, 0, ''),
+    expiry_date: Joi.date().iso().optional().allow(null, '')
 }).unknown(true);
 
 const customerSchema = Joi.object({
     name: Joi.string().min(2).required(),
     email: Joi.string().email().optional().allow('', null),
-    phone: Joi.string().pattern(/^[0-9]{10,15}$/).required().messages({
-        'string.pattern.base': 'Phone number must be between 10 and 15 digits'
+    phone: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
+        'string.pattern.base': 'Phone number must be exactly 10 digits'
     }),
-    whatsapp: Joi.string().pattern(/^[0-9]{10,15}$/).optional().allow('', null),
+    whatsapp: Joi.string().pattern(/^[0-9]{10}$/).optional().allow('', null).messages({
+        'string.pattern.base': 'WhatsApp number must be exactly 10 digits'
+    }),
     referral: Joi.string().optional().allow('', null),
     state: Joi.string().optional().allow('', null),
     city: Joi.string().optional().allow('', null),
@@ -147,8 +149,13 @@ const transactionSchema = Joi.object({
 }).unknown(true);
 
 const registerSchema = Joi.object({
-    phone: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
-        'string.pattern.base': 'Phone number must be a 10-digit number'
+    name: Joi.string().min(2).max(100).optional().allow('', null),
+    email: Joi.string().email().required().messages({
+        'string.empty': 'Email is required',
+        'string.email': 'Please provide a valid email'
+    }),
+    phone: Joi.string().pattern(/^[0-9]{10}$/).optional().allow('', null).messages({
+        'string.pattern.base': 'Phone number must be exactly 10 digits'
     }),
     password: Joi.string().min(6).required(),
     role: Joi.string().valid('user', 'vendor', 'admin').required(),
@@ -156,8 +163,8 @@ const registerSchema = Joi.object({
 }).unknown(true);
 
 const loginSchema = Joi.object({
-    phone: Joi.string().required().messages({
-        'string.empty': 'Username or Phone is required'
+    email: Joi.string().required().messages({
+        'string.empty': 'Email or Phone is required',
     }),
     password: Joi.string().required()
 }).unknown(true);

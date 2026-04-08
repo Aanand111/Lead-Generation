@@ -83,7 +83,7 @@ const AdminProfile = () => {
         setPreviewImage(imageUrl);
 
         window.dispatchEvent(new Event('userProfileUpdated'));
-        setMessage({ type: 'success', text: 'Executive avatar updated successfully.' });
+        setMessage({ type: 'success', text: 'Profile picture updated successfully.' });
         setIsUploading(false);
 
         setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -104,10 +104,10 @@ const AdminProfile = () => {
                 localStorage.setItem('user', JSON.stringify(updatedUser));
                 
                 window.dispatchEvent(new Event('userProfileUpdated'));
-                setMessage({ type: 'success', text: 'Identity parameters synchronized with central matrix.' });
+                setMessage({ type: 'success', text: 'Profile information updated successfully.' });
             }
         } catch (err) {
-            setMessage({ type: 'error', text: 'Synchronization failure. Connectivity issues detected.' });
+            setMessage({ type: 'error', text: 'Failed to update profile. Please check your connection.' });
         } finally {
             setIsSaving(false);
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -117,22 +117,22 @@ const AdminProfile = () => {
     const handlePasswordChange = async (e) => {
         e.preventDefault();
         if (passwordData.newPassword !== passwordData.confirmPassword) {
-            setMessage({ type: 'error', text: 'Password mismatch detected. Please verify credentials.' });
+            setMessage({ type: 'error', text: 'Passwords do not match.' });
             return;
         }
         if (passwordData.newPassword.length < 6) {
-            setMessage({ type: 'error', text: 'Insufficient entropy. Password must be at least 6 characters.' });
+            setMessage({ type: 'error', text: 'Password must be at least 6 characters long.' });
             return;
         }
 
         setIsSaving(true);
         try {
-            // In a real production app, this would be an API call
+            // Placeholder for password update API call
             // await api.put('/admin/change-password', passwordData);
-            setMessage({ type: 'success', text: 'Security protocol updated. Key changed.' });
+            setMessage({ type: 'success', text: 'Password changed successfully.' });
             setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (err) {
-            setMessage({ type: 'error', text: 'Security update failed. Authorization required.' });
+            setMessage({ type: 'error', text: 'Failed to update password. Authentication failed.' });
         } finally {
             setIsSaving(false);
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -143,8 +143,8 @@ const AdminProfile = () => {
         <div className="page-content animate-fade-in text-[var(--text-dark)]">
             <div className="pageHeader">
                 <div className="pageHeaderTitle">
-                    <h2>Executive Profile</h2>
-                    <p>Manage administrative identity and security protocols</p>
+                    <h2>Admin Profile</h2>
+                    <p>Manage your account details and security settings</p>
                 </div>
             </div>
 
@@ -161,7 +161,7 @@ const AdminProfile = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 
-                {/* Identity Verification Card */}
+                {/* Profile Avatar Card */}
                 <div className="card shadow-sm border border-[var(--border-color)] bg-[var(--surface-color)] lg:col-span-1 overflow-hidden group relative">
                     <div className="h-32 bg-indigo-500/5 absolute top-0 left-0 right-0 z-0 border-b border-[var(--border-color)]"></div>
                     <div className="relative pt-10 pb-8 flex flex-col items-center z-10">
@@ -202,14 +202,14 @@ const AdminProfile = () => {
 
                         <div className="w-full px-8 space-y-4">
                             <div className="flex justify-between items-center group/info">
-                                <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Status</span>
-                                <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-500 uppercase italic">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> Authorized
+                                <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Account Status</span>
+                                <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-500 uppercase">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> Active
                                 </span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Node ID</span>
-                                <span className="text-[10px] font-black text-indigo-500 tabular-nums uppercase">ADMIN-X-01</span>
+                                <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Admin ID</span>
+                                <span className="text-[10px] font-black text-indigo-500 tabular-nums uppercase">ADMIN-01</span>
                             </div>
                         </div>
                     </div>
@@ -219,105 +219,105 @@ const AdminProfile = () => {
                 <div className="lg:col-span-2 space-y-8">
                     
                     {/* General Settings */}
+                    {/* Profile Information */}
                     <div className="card shadow-sm border border-[var(--border-color)] bg-[var(--surface-color)] p-8">
-                        <div className="flex items-center gap-4 mb-8">
+                         <div className="flex items-center gap-4 mb-8">
                             <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
                                 <User size={20} />
                             </div>
-                            <div>
-                                <h3 className="text-lg font-black text-[var(--text-dark)] uppercase tracking-tight">Identity Parameters</h3>
-                                <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase italic">Sync your administrative credentials</p>
+                             <div>
+                                <h3 className="text-lg font-black text-[var(--text-dark)] uppercase tracking-tight">Profile Details</h3>
+                                <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase">Update your basic account information</p>
                             </div>
                         </div>
 
-                        <form onSubmit={handleProfileUpdate} className="space-y-6">
+                         <form onSubmit={handleProfileUpdate} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Displayed Name</label>
+                                 <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Full Name</label>
                                     <input
                                         type="text"
                                         className="form-control !py-3 font-bold text-sm bg-[var(--bg-color)] border-[var(--border-color)] focus:bg-[var(--surface-color)] transition-all shadow-inner text-[var(--text-dark)]"
                                         value={user.name}
                                         onChange={(e) => setUser({ ...user, name: e.target.value })}
-                                        placeholder="Identification Name"
+                                        placeholder="Full Name"
                                     />
-                                </div>
+                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Operational Role</label>
+                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Designation</label>
                                     <input
                                         type="text"
                                         className="form-control !py-3 font-bold text-sm bg-[var(--bg-color)] border-[var(--border-color)] focus:bg-[var(--surface-color)] transition-all shadow-inner text-[var(--text-dark)]"
                                         value={user.designation}
                                         onChange={(e) => setUser({ ...user, designation: e.target.value })}
-                                        placeholder="Security Level"
+                                        placeholder="Administrator"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Email Address</label>
+                                 <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Email Address</label>
                                     <input
                                         type="email"
                                         className="form-control !py-3 font-bold text-sm bg-[var(--bg-color)] border-[var(--border-color)] focus:bg-[var(--surface-color)] transition-all shadow-inner text-[var(--text-dark)]"
                                         value={user.email}
                                         onChange={(e) => setUser({ ...user, email: e.target.value })}
-                                        placeholder="Identity Email"
+                                        placeholder="Email Address"
                                     />
                                 </div>
                             </div>
-                            
-                            <button 
-                                type="submit" 
-                                disabled={isSaving || isUploading}
-                                className="btn btn-primary w-full md:w-auto px-8 flex items-center justify-center gap-3 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-indigo-500/10"
-                            >
-                                {isSaving ? <RefreshCcw size={16} className="animate-spin" /> : <Save size={16} />}
-                                {isSaving ? 'Processing Evolution...' : 'Synchronize Identity'}
-                            </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSaving}
+                                    className="btn btn-primary px-10 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-widest flex items-center gap-3 shadow-2xl shadow-indigo-600/30 active:scale-95 transition-all w-full md:w-auto"
+                                >
+                                    {isSaving ? <RefreshCcw size={18} className="animate-spin" /> : <Save size={18} />}
+                                    {isSaving ? 'Updating...' : 'Save Profile Changes'}
+                                </button>
                         </form>
                     </div>
 
-                    {/* Authentication Protocols */}
+                    {/* Security Settings */}
                     <div className="card shadow-sm border border-[var(--border-color)] bg-[var(--surface-color)] p-8">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center text-rose-500">
-                                <Key size={20} />
+                         <div className="flex items-center gap-4 mb-8">
+                            <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
+                                <Lock size={20} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-black text-[var(--text-dark)] uppercase tracking-tight text-rose-500">Access Key Protocols</h3>
-                                <p className="text-[10px] font-medium text-rose-400 uppercase italic">Rotation of authorization keys recommended monthly</p>
+                                <h3 className="text-lg font-black text-[var(--text-dark)] uppercase tracking-tight text-rose-500">Security Settings</h3>
+                                <p className="text-[10px] font-medium text-rose-400 uppercase italic">We recommend changing your password regularly</p>
                             </div>
                         </div>
 
                         <form onSubmit={handlePasswordChange} className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Current Validation Key</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Current Password</label>
                                 <input
                                     type="password"
                                     className="form-control !py-3 font-bold border-[var(--border-color)] bg-[var(--bg-color)] focus:ring-4 focus:ring-rose-500/10 transition-all text-sm shadow-inner text-[var(--text-dark)]"
-                                    placeholder="Verify current authorization"
+                                    placeholder="Enter current password"
                                     value={passwordData.currentPassword}
                                     onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                                     required
                                 />
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Proposed New Key</label>
+                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">New Password</label>
                                     <input
                                         type="password"
                                         className="form-control !py-3 font-bold border-[var(--border-color)] bg-[var(--bg-color)] focus:ring-4 focus:ring-rose-500/10 transition-all text-sm shadow-inner text-[var(--text-dark)]"
-                                        placeholder="Input new sequence"
+                                        placeholder="Enter new password"
                                         value={passwordData.newPassword}
                                         onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                                         required
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Verify Proposed Key</label>
+                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Confirm New Password</label>
                                     <input
                                         type="password"
                                         className="form-control !py-3 font-bold border-[var(--border-color)] bg-[var(--bg-color)] focus:ring-4 focus:ring-rose-500/10 transition-all text-sm shadow-inner text-[var(--text-dark)]"
-                                        placeholder="Confirm sequence"
+                                        placeholder="Confirm new password"
                                         value={passwordData.confirmPassword}
                                         onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                                         required
@@ -330,7 +330,7 @@ const AdminProfile = () => {
                                 disabled={isSaving || isUploading}
                                 className="btn w-full md:w-auto px-8 bg-rose-600 text-white hover:bg-rose-700 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/10 py-3 rounded-xl transition-all flex items-center justify-center gap-3 border-none cursor-pointer"
                             >
-                                <Lock size={16} /> Update Authentication Key
+                                <Lock size={16} /> Update Password
                             </button>
                         </form>
                     </div>

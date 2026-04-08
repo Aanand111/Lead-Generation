@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Calendar, CreditCard, Clock, CheckCircle, XCircle, RefreshCcw, DollarSign, Activity, FileText, Filter } from 'lucide-react';
+import { Search, Calendar, CreditCard, Clock, CheckCircle, XCircle, RefreshCcw, IndianRupee, Activity, FileText, Filter } from 'lucide-react';
 import api from '../utils/api';
 import CustomSelect from '../components/CustomSelect';
 
@@ -80,8 +80,8 @@ const Transactions = () => {
             {/* Page Header */}
             <div className="pageHeader">
                 <div className="pageHeaderTitle">
-                    <h2>Financial Ledger</h2>
-                    <p>Track subscription revenue and verify transaction integrity</p>
+                    <h2>Transaction History</h2>
+                    <p>Track subscription payments and financial records</p>
                 </div>
                 <div className="pageHeaderActions">
                     <button onClick={fetchTransactions} className="btn bg-[var(--surface-color)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-indigo-500 p-3 rounded-xl transition-all shadow-sm">
@@ -92,11 +92,11 @@ const Transactions = () => {
 
             {/* Enhanced Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-6">
-                {[
-                    { label: 'Total Logs', value: stats.count, icon: FileText, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
-                    { label: 'Net Revenue', value: `₹${stats.completed.toLocaleString('en-IN')}`, icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-                    { label: 'Holdings', value: `₹${stats.pending.toLocaleString('en-IN')}`, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-                    { label: 'Health Rate', value: `${stats.count > 0 ? Math.round((transactions.filter(t => t.status === 'COMPLETED').length / stats.count) * 100) : 0}%`, icon: Activity, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+                 {[
+                    { label: 'Total Transactions', value: stats.count, icon: FileText, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+                    { label: 'Total Revenue', value: `₹${stats.completed.toLocaleString('en-IN')}`, icon: IndianRupee, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+                    { label: 'Pending Payments', value: `₹${stats.pending.toLocaleString('en-IN')}`, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+                    { label: 'Success Rate', value: `${stats.count > 0 ? Math.round((transactions.filter(t => t.status === 'COMPLETED').length / stats.count) * 100) : 0}%`, icon: Activity, color: 'text-blue-500', bg: 'bg-blue-500/10' },
                 ].map((stat, i) => (
                     <div key={i} className="card !p-6 flex items-center gap-5 group hover:border-indigo-500 transition-all cursor-default bg-[var(--surface-color)] border-[var(--border-color)]">
                         <div className={`w-14 h-14 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center transition-all shadow-inner border border-[var(--border-color)]/50`}>
@@ -111,7 +111,7 @@ const Transactions = () => {
             </div>
 
             {/* Main Data Table */}
-            <div className="card shadow-sm border border-[var(--border-color)] overflow-hidden bg-[var(--surface-color)]">
+            <div className="card shadow-sm border border-[var(--border-color)] bg-[var(--surface-color)]">
                 <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-[var(--bg-color)]/30 border-b border-[var(--border-color)]">
                     <div className="flex items-center gap-4">
                         <div className="relative w-full md:w-80 group">

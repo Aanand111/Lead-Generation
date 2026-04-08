@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const { findUserByPhone, findUserByEmail, createUser, findUserByReferralCode } = require('../models/userModel');
+const { findUserByPhone, findUserByEmail, createUser, findUserByReferralCode, findUserByIdentifier } = require('../models/userModel');
 
 // --- Helper functions ---
 const generateToken = (id, role) => {
@@ -13,7 +13,8 @@ const generateToken = (id, role) => {
 
 const registerUser = async (req, res, next) => {
     try {
-        const { phone, email, password, role, referral_code, name } = req.body;
+        const { phone, password, role, referral_code, name } = req.body;
+        const email = req.body.email?.trim().toLowerCase();
 
         // validation
         if (!email || !password || !role) {
@@ -33,7 +34,6 @@ const registerUser = async (req, res, next) => {
 
         // Handle referral link
         let referredById = null;
-        console.log(`[AUTH_REG] Processing referral code: "${referral_code}" for role: ${role}`);
         
         if (referral_code) {
             const isVendorReferral = referral_code.endsWith('-V');
@@ -42,30 +42,20 @@ const registerUser = async (req, res, next) => {
             
             const referrer = await findUserByReferralCode(cleanCode);
             if (referrer) {
-                console.log(`[AUTH_REG] Referrer found: ${referrer.id} | Code match: ${cleanCode}`);
-                
-                // Check if vendor referral is allowed (Only Primary Vendors)
                 if (isVendorReferral && role === 'vendor') {
                     if (referrer.referred_by) {
-                        console.log(`[AUTH_REG] Denied: Secondary vendor ${referrer.id} cannot refer other vendors.`);
                         return res.status(403).json({ success: false, message: 'This referral link is only valid for users, not vendors.' });
                     }
                     referredById = referrer.id;
                 } else if (isUserReferral && role === 'user') {
                     referredById = referrer.id;
                 } else if (!isVendorReferral && !isUserReferral) {
-                    // Legacy or manual entry
                     referredById = referrer.id;
                 } else {
-                    console.log(`[AUTH_REG] Mismatch: Code ${cleanCode} used for ${role} (isVendorRef: ${isVendorReferral}, isUserRef: ${isUserReferral})`);
                     return res.status(400).json({ success: false, message: 'Invalid referral code for the selected role.' });
                 }
-            } else {
-                console.log(`[AUTH_REG] Failed: Referrer not found for code: "${cleanCode}"`);
             }
         }
-        
-        console.log(`[AUTH_REG] Final Linkage -> referred_by: ${referredById || 'NULL'}`);
 
         // Hash password
         const salt = await bcrypt.genSalt(10);
@@ -110,18 +100,15 @@ const registerUser = async (req, res, next) => {
 const loginUser = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        console.log(`[AUTH_PROBE] Login attempt for node: ${email}`);
 
         if (!email || !password) {
             return res.status(400).json({ success: false, message: 'Missing email or password payload.' });
         }
 
-        const user = await findUserByEmail(email.trim().toLowerCase());
+        const user = await findUserByIdentifier(email.trim().toLowerCase());
 
         if (user) {
-            console.log(`[AUTH_PROBE] Node identity verified in mesh: ${user.email} [Role: ${user.role}]`);
             const isMatch = await bcrypt.compare(password, user.password_hash);
-            console.log(`[AUTH_PROBE] Cryptographic handshake status: ${isMatch ? 'PASSED' : 'FAILED'}`);
 
             if (isMatch) {
                 if (user.status === 'PENDING') {
@@ -148,11 +135,9 @@ const loginUser = async (req, res, next) => {
                     },
                 });
             } else {
-                console.warn(`[AUTH_FAIL] Signal mismatch for node: ${user.email}`);
                 res.status(401).json({ success: false, message: 'Identity verification failed.' });
             }
         } else {
-            console.warn(`[AUTH_FAIL] Identity not found in network mesh: ${email}`);
             res.status(401).json({ success: false, message: 'Identity verification failed.' });
         }
     } catch (error) {

@@ -70,7 +70,7 @@ const CustomerEdit = () => {
                 }
             } catch (err) {
                 console.error("Failed to fetch customer profile:", err);
-                setMessage({ type: 'error', text: 'Identity retrieval failure.' });
+                setMessage({ type: 'error', text: 'Failed to retrieve customer data.' });
             } finally {
                 setLoading(false);
             }
@@ -85,7 +85,15 @@ const CustomerEdit = () => {
             setCustomer({ ...customer, state: value, city: '' });
             return;
         }
-        setCustomer({ ...customer, [name]: value });
+        if (['phone', 'whatsapp', 'pincode'].includes(name)) {
+            const val = value.replace(/\D/g, '');
+            const limit = name === 'pincode' ? 6 : 10;
+            if (val.length <= limit) {
+                setCustomer({ ...customer, [name]: val });
+            }
+        } else {
+            setCustomer({ ...customer, [name]: value });
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -94,14 +102,14 @@ const CustomerEdit = () => {
         try {
             const { data } = await api.put(`/admin/customers/${id}`, customer);
             if (data.success) {
-                setMessage({ type: 'success', text: 'Identity spectrum synchronized successfully.' });
+                setMessage({ type: 'success', text: 'Customer profile updated successfully.' });
                 setTimeout(() => navigate("/customers"), 1500);
             } else {
-                setMessage({ type: 'error', text: data.message || 'Update sequence rejected.' });
+                setMessage({ type: 'error', text: data.message || 'Failed to update customer.' });
             }
         } catch (err) {
             console.error("Update failure:", err);
-            setMessage({ type: 'error', text: err.response?.data?.message || 'Critical synchronization error.' });
+            setMessage({ type: 'error', text: err.response?.data?.message || 'Error updating profile. Please try again.' });
         } finally {
             setSaving(false);
         }
@@ -111,7 +119,7 @@ const CustomerEdit = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
                 <div className="w-16 h-16 border-4 border-indigo-500/10 border-t-indigo-500 rounded-full animate-spin"></div>
-                <span className="text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">Syncing Identity...</span>
+                <span className="text-[10px] font-black uppercase tracking-widest animate-pulse">Loading Profile...</span>
             </div>
         );
     }
@@ -119,16 +127,16 @@ const CustomerEdit = () => {
     return (
         <div className="page-content animate-fade-in text-[var(--text-dark)] pb-20">
             {/* Header Area */}
-            <div className="pageHeader">
+             <div className="pageHeader">
                 <div className="pageHeaderTitle">
                     <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-indigo-600 transition-colors mb-4 bg-transparent border-none cursor-pointer p-0">
-                        <ArrowLeft size={14} /> Back to Community Matrix
+                        <ArrowLeft size={14} /> Back to Customers
                     </button>
-                    <h2 className="flex items-center gap-3 italic font-black uppercase tracking-tight">
-                        Identity Refinement
-                        <Shield size={24} className="text-indigo-600 animate-pulse" />
+                    <h2 className="flex items-center gap-3 font-black uppercase tracking-tight">
+                        Edit Customer Profile
+                        <Shield size={24} className="text-indigo-600" />
                     </h2>
-                    <p>Reconfigure subscriber parameters and interaction protocols for Node ID: {id}</p>
+                    <p>Update customer information and preferences</p>
                 </div>
             </div>
 
@@ -145,48 +153,48 @@ const CustomerEdit = () => {
                 <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Basic Identity Card */}
                     <div className="card shadow-2xl rounded-[3rem] border border-[var(--border-color)] overflow-hidden bg-[var(--surface-color)] p-10 ring-1 ring-black/5">
-                        <div className="p-0 mb-10 border-b border-[var(--border-color)] pb-8 flex justify-between items-center">
+                         <div className="p-0 mb-10 border-b border-[var(--border-color)] pb-8 flex justify-between items-center">
                             <div>
                                 <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-4">
                                     <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-500 shadow-inner">
                                         <Sparkles size={24} />
                                     </div>
-                                    Identity Verification
+                                    Basic Information
                                 </h3>
-                                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic mt-2">Primary account credentials and access sequences</p>
+                                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mt-2">Primary account credentials and access details</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 block">Legal Designation *</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 block">Full Name *</label>
                                 <div className="relative group">
                                     <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-600 transition-colors" />
-                                    <input type="text" name="name" value={customer.name} onChange={handleChange} required className="w-full p-5 pl-12 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm uppercase tracking-tight text-[var(--text-dark)] focus:bg-white focus:border-indigo-600 transition-all shadow-inner outline-none" placeholder="FULL_IDENTITY_TAG" />
+                                    <input type="text" name="name" value={customer.name} onChange={handleChange} required className="w-full p-5 pl-12 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm uppercase tracking-tight text-[var(--text-dark)] focus:bg-white focus:border-indigo-600 transition-all shadow-inner outline-none" placeholder="FULL NAME" />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 block">Digital Protocol (Email)</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 block">Email Address</label>
                                 <div className="relative group">
                                     <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-600 transition-colors" />
-                                    <input type="email" name="email" value={customer.email} onChange={handleChange} className="w-full p-5 pl-12 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm text-[var(--text-dark)] focus:bg-white focus:border-indigo-600 transition-all shadow-inner outline-none" placeholder="PROTOCOL_SIGNAL@DOMAIN.COM" />
+                                    <input type="email" name="email" value={customer.email} onChange={handleChange} className="w-full p-5 pl-12 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm text-[var(--text-dark)] focus:bg-white focus:border-indigo-600 transition-all shadow-inner outline-none" placeholder="EMAIL ADDRESS" />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 block">Voice Frequency (Phone) *</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 block">Phone Number *</label>
                                 <div className="relative group">
                                     <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-600 transition-colors" />
-                                    <input type="text" name="phone" value={customer.phone} onChange={handleChange} required maxLength={15} className="w-full p-5 pl-12 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm text-[var(--text-dark)] focus:bg-white focus:border-indigo-600 transition-all shadow-inner outline-none" placeholder="10-15_DIGIT_TEL" />
+                                    <input type="text" name="phone" value={customer.phone} onChange={handleChange} required maxLength={10} className="w-full p-5 pl-12 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm text-[var(--text-dark)] focus:bg-white focus:border-indigo-600 transition-all shadow-inner outline-none" placeholder="10 DIGIT PHONE" />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 block">Chat Tunnel (WhatsApp)</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 block">WhatsApp Number</label>
                                 <div className="relative group">
                                     <Smartphone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-600 transition-colors" />
-                                    <input type="text" name="whatsapp" value={customer.whatsapp} onChange={handleChange} maxLength={15} className="w-full p-5 pl-12 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm text-[var(--text-dark)] focus:bg-white focus:border-indigo-600 transition-all shadow-inner outline-none" placeholder="WA_SIGNAL_ID (10-15 DIGITS)" />
+                                    <input type="text" name="whatsapp" value={customer.whatsapp} onChange={handleChange} maxLength={10} className="w-full p-5 pl-12 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm text-[var(--text-dark)] focus:bg-white focus:border-indigo-600 transition-all shadow-inner outline-none" placeholder="WHATSAPP NUMBER" />
                                 </div>
                             </div>
                         </div>
@@ -194,14 +202,14 @@ const CustomerEdit = () => {
 
                     {/* Network Geolocation Card */}
                     <div className="card shadow-2xl rounded-[3rem] border border-[var(--border-color)] overflow-hidden bg-[var(--surface-color)] p-10 ring-1 ring-black/5">
-                        <div className="p-0 mb-10 border-b border-[var(--border-color)] pb-8">
+                         <div className="p-0 mb-10 border-b border-[var(--border-color)] pb-8">
                             <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-4">
                                 <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500 shadow-inner">
                                     <MapPin size={24} />
                                 </div>
-                                Regional Spectrum
+                                Location Details
                             </h3>
-                            <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic mt-2">Geographic distribution and proximity parameters</p>
+                            <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mt-2">Geographic distribution and address details</p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -219,55 +227,55 @@ const CustomerEdit = () => {
                                     {customer.state && citiesByState[customer.state]?.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
                                 </select>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Postal Mask (Pin)</label>
-                                <input type="text" name="pincode" value={customer.pincode} onChange={handleChange} className="w-full p-5 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm text-[var(--text-dark)] focus:bg-white focus:border-emerald-600 transition-all shadow-inner outline-none" placeholder="000000" />
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Pincode</label>
+                                <input type="text" name="pincode" value={customer.pincode} onChange={handleChange} maxLength={6} className="w-full p-5 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm text-[var(--text-dark)] focus:bg-white focus:border-emerald-600 transition-all shadow-inner outline-none" placeholder="PINCODE" />
                             </div>
                         </div>
                     </div>
 
                     {/* Professional Matrix Card */}
                     <div className="card shadow-2xl rounded-[3rem] border border-[var(--border-color)] overflow-hidden bg-[var(--surface-color)] p-10 ring-1 ring-black/5">
-                        <div className="p-0 mb-10 border-b border-[var(--border-color)] pb-8">
+                         <div className="p-0 mb-10 border-b border-[var(--border-color)] pb-8">
                             <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-4">
                                 <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500 shadow-inner">
                                     <Briefcase size={24} />
                                 </div>
-                                Occupational Grid
+                                Professional Details
                             </h3>
-                            <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic mt-2">Professional identity and entitlement hierarchies</p>
+                            <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mt-2">Professional identity and work hierarchy</p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Designation Tier</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Designation</label>
                                 <select name="designation" value={customer.designation} onChange={handleChange} className="w-full p-5 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm text-[var(--text-dark)] focus:bg-white focus:border-amber-600 transition-all shadow-inner outline-none cursor-pointer">
-                                    <option value="">SELECT TIER</option>
+                                    <option value="">SELECT DESIGNATION</option>
                                     <option value="Manager">MANAGER</option>
                                     <option value="Owner">OWNER</option>
                                     <option value="Director">DIRECTOR</option>
                                     <option value="Consultant">CONSULTANT</option>
                                 </select>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Domain Expertise</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Domain / Industry</label>
                                 <div className="relative group">
                                     <Globe size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-amber-600 transition-colors" />
                                     <input type="text" name="domain" value={customer.domain} onChange={handleChange} className="w-full pl-12 p-5 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm text-[var(--text-dark)] focus:bg-white focus:border-amber-600 transition-all shadow-inner outline-none uppercase" placeholder="EX: TECHNOLOGY, SALES" />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Primary Entity (Company)</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Company Name</label>
                                 <div className="relative group">
                                     <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-amber-600 transition-colors" />
-                                    <input type="text" name="company" value={customer.company} onChange={handleChange} className="w-full pl-12 p-5 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm text-[var(--text-dark)] focus:bg-white focus:border-amber-600 transition-all shadow-inner outline-none uppercase" placeholder="ENTITY_NAME" />
+                                    <input type="text" name="company" value={customer.company} onChange={handleChange} className="w-full pl-12 p-5 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm text-[var(--text-dark)] focus:bg-white focus:border-amber-600 transition-all shadow-inner outline-none uppercase" placeholder="COMPANY NAME" />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 block">Allocation Origin</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 block">Referral Source</label>
                                 <div className="relative group">
                                     <Share2 size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-600 transition-colors" />
-                                    <input type="text" name="referral" value={customer.referral} onChange={handleChange} className="w-full p-5 pl-12 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm uppercase tracking-tight text-[var(--text-dark)] focus:bg-white focus:border-indigo-600 transition-all shadow-inner outline-none" placeholder="DIRECT_LINK" />
+                                    <input type="text" name="referral" value={customer.referral} onChange={handleChange} className="w-full p-5 pl-12 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl font-black text-sm uppercase tracking-tight text-[var(--text-dark)] focus:bg-white focus:border-indigo-600 transition-all shadow-inner outline-none" placeholder="REFERRAL SOURCE" />
                                 </div>
                             </div>
                         </div>
@@ -287,26 +295,26 @@ const CustomerEdit = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 block">Node Lifecycle Status</label>
+                         <div className="space-y-2">
+                            <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 block">Account Status</label>
                             <div className="bg-[var(--bg-color)] p-1.5 rounded-2xl flex gap-1 border border-[var(--border-color)]">
                                 <button type="button" onClick={() => setCustomer({ ...customer, status: 'Active' })} className={`flex-1 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${customer.status === 'Active' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/20' : 'bg-transparent text-[var(--text-muted)] hover:text-indigo-600'} border-none cursor-pointer outline-none`}>
-                                    Authorized_Live
+                                    Active
                                 </button>
                                 <button type="button" onClick={() => setCustomer({ ...customer, status: 'Inactive' })} className={`flex-1 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${customer.status === 'Inactive' ? 'bg-red-600 text-white shadow-xl shadow-red-600/20' : 'bg-transparent text-[var(--text-muted)] hover:text-red-500'} border-none cursor-pointer outline-none`}>
-                                    Protocol_Suspend
+                                    Inactive
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    <div className="pt-10 border-t border-[var(--border-color)] flex flex-col md:flex-row gap-6">
+                     <div className="pt-10 border-t border-[var(--border-color)] flex flex-col md:flex-row gap-6">
                         <button type="submit" className="flex-1 py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[11px] tracking-[0.4em] rounded-[2.5rem] shadow-2xl shadow-indigo-600/20 flex items-center justify-center gap-4 transition-all active:scale-95 disabled:opacity-50 border-none cursor-pointer outline-none" disabled={saving}>
                             {saving ? <RefreshCcw size={20} className="animate-spin" /> : <Save size={20} />}
-                            {saving ? 'TRANSMITTING IDENTITY...' : 'COMMIT PROFILE SYNCHRONIZATION'}
+                            {saving ? 'UPDATING...' : 'SAVE CHANGES'}
                         </button>
                         <button type="button" onClick={() => navigate(-1)} className="px-12 py-6 bg-transparent text-[var(--text-muted)] hover:text-red-500 font-black uppercase text-[11px] tracking-[0.4em] rounded-[2.5rem] transition-all border-none cursor-pointer outline-none">
-                            ABORT_OPERATION
+                            CANCEL
                         </button>
                     </div>
                 </form>

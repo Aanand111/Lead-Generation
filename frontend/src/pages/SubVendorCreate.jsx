@@ -39,8 +39,9 @@ const SubVendorCreate = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === 'phone') {
-            if (value === '' || /^[0-9]+$/.test(value)) {
-                setFormData({ ...formData, [name]: value });
+            const val = value.replace(/\D/g, '');
+            if (val.length <= 10) {
+                setFormData({ ...formData, [name]: val });
             }
         } else {
             setFormData({ ...formData, [name]: value });
@@ -131,7 +132,7 @@ const SubVendorCreate = () => {
                                         <input
                                             type="text" name="phone" value={formData.phone} onChange={handleChange}
                                             className="w-full pl-12 pr-4 py-5 rounded-[1.5rem] font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none text-[var(--text-dark)]"
-                                            placeholder="10-15 DIGITS" maxLength={15} required
+                                            placeholder="10 DIGITS" maxLength={10} required
                                         />
                                     </div>
                                 </div>

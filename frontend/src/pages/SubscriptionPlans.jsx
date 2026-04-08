@@ -82,8 +82,8 @@ const SubscriptionPlans = () => {
                             <Activity size={20} />
                         </div>
                         <div>
-                            <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] block leading-none mb-1">Plan Registry</span>
-                            <span className="text-sm font-black uppercase tracking-tight italic">{filtered.length} Active Configurations</span>
+                            <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest block leading-none mb-1">Available Plans</span>
+                            <span className="text-sm font-black uppercase tracking-tight">{filtered.length} Plans Registered</span>
                         </div>
                     </div>
 
@@ -92,7 +92,7 @@ const SubscriptionPlans = () => {
                         <input
                             type="text"
                             className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl pl-12 pr-4 py-3.5 text-xs font-bold shadow-inner focus:border-indigo-500 focus:bg-[var(--surface-color)] outline-none transition-all placeholder:text-[var(--text-muted)]/50"
-                            placeholder="SEARCH PLANS BY NAME OR CATEGORY..."
+                            placeholder="Search plans by name..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
@@ -108,7 +108,7 @@ const SubscriptionPlans = () => {
                                 <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest">Pricing</th>
                                 <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest">Duration</th>
                                 <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest">Credits</th>
-                                <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest">Resource Quotas</th>
+                                <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest">Resource Limits</th>
                                 <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest">Status</th>
                                 <th className="text-right px-8 text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest">Actions</th>
                             </tr>
@@ -119,7 +119,7 @@ const SubscriptionPlans = () => {
                                     <td colSpan="7" className="text-center py-24">
                                         <div className="flex flex-col items-center gap-4">
                                             <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">Syncing Plans...</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] animate-pulse">Loading Plans...</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -128,7 +128,7 @@ const SubscriptionPlans = () => {
                                     <td colSpan="7" className="text-center py-24 text-[var(--text-muted)]">
                                         <div className="flex flex-col items-center gap-6 opacity-40">
                                             <Package size={80} strokeWidth={1} />
-                                            <p className="font-black uppercase tracking-[0.2em] text-[10px]">No Plans Registered In System</p>
+                                            <p className="font-black uppercase tracking-widest text-[10px]">No Plans Found</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -142,9 +142,9 @@ const SubscriptionPlans = () => {
                                             <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center border transition-all group-hover:scale-110 ${categoryColors[plan.category] || categoryColors.BOTH}`}>
                                                 <Layers size={22} />
                                             </div>
-                                            <div>
+                                             <div>
                                                 <div className="font-black uppercase tracking-tight text-sm text-indigo-500">{plan.name}</div>
-                                                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest italic">{plan.category} PROTOCOL</div>
+                                                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{plan.category}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -159,14 +159,14 @@ const SubscriptionPlans = () => {
                                             <Clock size={16} className="text-amber-500" />
                                             {plan.duration} Days
                                         </div>
-                                        <div className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-widest opacity-50">Validity Period</div>
+                                        <div className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-widest opacity-50">Validity</div>
                                     </td>
                                     <td>
                                         <div className="flex items-center gap-2 font-black text-sm tabular-nums text-amber-500">
                                             <Wallet size={16} />
                                             {plan.credits || 0}
                                         </div>
-                                        <div className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-widest opacity-50">Digital Tokens</div>
+                                        <div className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-widest opacity-50">Credits</div>
                                     </td>
                                     <td>
                                         <div className="flex items-center gap-8">
@@ -205,18 +205,18 @@ const SubscriptionPlans = () => {
                                                 <>
                                                     <div className="fixed inset-0 z-[100]" onClick={() => setOpenActionId(null)} />
                                                     <div className="absolute right-0 top-12 bg-[var(--surface-color)] shadow-2xl rounded-2xl border border-[var(--border-color)] z-[110] min-w-[200px] py-3 overflow-hidden animate-zoom-in origin-top-right">
-                                                        <button 
+                                                         <button 
                                                             className="w-full text-left px-5 py-3 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-indigo-500/10 hover:text-indigo-500 transition-all flex items-center gap-4 border-none bg-transparent cursor-pointer"
                                                             onClick={() => navigate(`/subscriptions/plan/edit/${plan.id}`)}
                                                         >
-                                                            <Edit2 size={16} /> Modify Plan
+                                                            <Edit2 size={16} /> Edit Plan
                                                         </button>
                                                         <div className="h-px bg-[var(--border-color)] my-2 opacity-50"></div>
                                                         <button 
                                                             className="w-full text-left px-5 py-3 text-[11px] font-black uppercase text-red-500 hover:bg-red-500/10 transition-all flex items-center gap-4 border-none bg-transparent cursor-pointer"
                                                             onClick={() => { setDeleteConfirm(plan); setOpenActionId(null); }}
                                                         >
-                                                            <Trash2 size={16} /> Retire Tier
+                                                            <Trash2 size={16} /> Delete Plan
                                                         </button>
                                                     </div>
                                                 </>
@@ -237,22 +237,22 @@ const SubscriptionPlans = () => {
                         <div className="w-20 h-20 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-6 border border-red-500/20 shadow-inner">
                             <Trash2 size={32} />
                         </div>
-                        <h3 className="text-2xl font-black text-[var(--text-dark)] uppercase tracking-tight">Retire Plan?</h3>
+                        <h3 className="text-2xl font-black text-[var(--text-dark)] uppercase tracking-tight">Delete Plan?</h3>
                         <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-4 italic leading-relaxed px-4 opacity-70">
-                            Retiring <span className="text-red-500 font-black">"{deleteConfirm.name}"</span> will freeze entry for new subscribers while honoring existing cycles.
+                            Deleting <span className="text-red-500 font-black">"{deleteConfirm.name}"</span> will prevent new users from subscribing to this plan.
                         </p>
                         <div className="flex flex-col gap-3 mt-10">
                             <button 
                                 className="w-full py-5 bg-red-600 text-white hover:bg-red-700 font-black uppercase text-xs tracking-widest rounded-3xl transition-all shadow-xl shadow-red-500/20 border-none cursor-pointer active:scale-95" 
                                 onClick={() => handleDelete(deleteConfirm.id)}
                             >
-                                Confirm Retirement
+                                Confirm Delete
                             </button>
                             <button 
                                 className="w-full py-5 bg-[var(--bg-color)] text-[var(--text-muted)] hover:bg-[var(--border-color)] font-black uppercase text-xs tracking-widest rounded-3xl transition-all border-none cursor-pointer active:scale-95" 
                                 onClick={() => setDeleteConfirm(null)}
                             >
-                                Negative, Stay Active
+                                Cancel
                             </button>
                         </div>
                     </div>

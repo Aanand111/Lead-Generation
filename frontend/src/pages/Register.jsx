@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Tag, User, Mail, Phone, Lock, UserPlus, Briefcase, Users, Zap, ShieldCheck, Activity } from 'lucide-react';
+import api from '../utils/api';
 import InsureBg from '../assets/Insure.png';
 import InsureeLogo from '../assets/insuree.png';
 
@@ -53,14 +54,8 @@ const Register = () => {
         }
 
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-            const res = await fetch(`${API_BASE_URL}/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-            const data = await res.json();
-            if (res.ok || data.success) {
+            const { data } = await api.post('/auth/register', formData);
+            if (data.success) {
                 setSuccess('Account created successfully! Redirecting to login...');
                 setTimeout(() => {
                     navigate('/');
@@ -69,7 +64,7 @@ const Register = () => {
                 setError(data.message || 'Registration failed');
             }
         } catch (err) {
-            setError('Connection error');
+            setError(err.response?.data?.message || 'Connection error');
         } finally {
             setIsSubmitting(false);
         }
@@ -147,7 +142,14 @@ const Register = () => {
                                     className="form-control"
                                     placeholder="EX: 9876543210"
                                     value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '');
+                                        if (val.length <= 10) {
+                                            setFormData({ ...formData, phone: val });
+                                        }
+                                    }}
+                                    maxLength="10"
+                                    pattern="[0-9]{10}"
                                 />
                             </div>
 

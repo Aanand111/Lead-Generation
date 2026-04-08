@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { MoreVertical, Plus, Search, Check, X, Layers, Calendar, Trash2, Edit2, Palette, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { useConfirm } from '../context/ConfirmContext';
+import { toast } from 'react-hot-toast';
 
 const PosterCategory = () => {
     const navigate = useNavigate();
+    const { confirm } = useConfirm();
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openActionId, setOpenActionId] = useState(null);
@@ -29,15 +32,22 @@ const PosterCategory = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to retire this category tier?')) {
+        const confirmed = await confirm(
+            'Are you sure you want to delete this category? This action cannot be undone.',
+            'Delete Category'
+        );
+        if (confirmed) {
             try {
                 const { data } = await api.delete(`/admin/poster-categories/${id}`);
                 if (data.success) {
                     setCategories(categories.filter(c => c.id !== id));
-                    setOpenActionId(null);
+                    toast.success('Category deleted successfully.');
                 }
             } catch (err) {
+                toast.error('Failed to delete category.');
                 console.error("Failed to delete", err);
+            } finally {
+                setOpenActionId(null);
             }
         }
     };
@@ -61,7 +71,7 @@ const PosterCategory = () => {
                         Poster Categories
                         <Palette className="text-indigo-500" size={24} />
                     </h2>
-                    <p>Manage classification tiers for visual creative assets</p>
+                    <p>Manage and organize categories for poster templates</p>
                 </div>
                 <div className="pageHeaderActions">
                     <button 
@@ -82,8 +92,8 @@ const PosterCategory = () => {
                                 <Activity size={20} />
                             </div>
                             <div>
-                                <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] block leading-none mb-1">Catalog Status</span>
-                                <span className="text-sm font-black uppercase tracking-tight italic">{filtered.length} Categorical Tiers active</span>
+                                <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] block leading-none mb-1">Status Overview</span>
+                                <span className="text-sm font-black uppercase tracking-tight italic">{filtered.length} Categories active</span>
                             </div>
                         </div>
 
@@ -92,7 +102,7 @@ const PosterCategory = () => {
                             <input
                                 type="text"
                                 className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl pl-12 pr-4 py-3 text-xs font-bold shadow-inner focus:border-indigo-500 outline-none transition-all placeholder:text-[var(--text-muted)]/50"
-                                placeholder="SCAN TIERS..."
+                                placeholder="SEARCH CATEGORIES..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -103,10 +113,10 @@ const PosterCategory = () => {
                         <table className="table table-hover align-middle mb-0">
                             <thead>
                                 <tr className="bg-[var(--bg-color)]/20 border-b border-[var(--border-color)]">
-                                    <th className="ps-8 py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Rank</th>
-                                    <th className="py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Designation</th>
+                                    <th className="ps-8 py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">ID</th>
+                                    <th className="py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Category Name</th>
                                     <th className="py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest text-center">Status</th>
-                                    <th className="py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Protocol Date</th>
+                                    <th className="py-5 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Date Created</th>
                                     <th className="py-5 text-right pe-8 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Actions</th>
                                 </tr>
                             </thead>
@@ -116,14 +126,14 @@ const PosterCategory = () => {
                                         <td colSpan="5" className="text-center py-24">
                                             <div className="flex flex-col items-center gap-4">
                                                 <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-                                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">Syncing Matrix...</span>
+                                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">Loading...</span>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : filtered.length > 0 ? (
-                                    filtered.map((category) => (
+                                    filtered.map((category, index) => (
                                         <tr key={category.id} className="transition-all hover:bg-indigo-500/[0.01] group">
-                                            <td className="ps-8 py-5 text-[10px] font-black text-[var(--text-muted)] opacity-30">#{category.id}</td>
+                                            <td className="ps-8 py-5 text-[10px] font-black text-[var(--text-muted)] opacity-30">#{(index + 1).toString().padStart(3, '0')}</td>
                                             <td className="py-5">
                                                 <div className="font-black text-sm uppercase tracking-tight text-indigo-500 group-hover:translate-x-1 transition-transform">{category.name}</div>
                                             </td>
@@ -157,14 +167,14 @@ const PosterCategory = () => {
                                                                     className="w-full text-left px-5 py-3 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-indigo-500/10 hover:text-indigo-500 transition-all flex items-center gap-4 border-none bg-transparent cursor-pointer"
                                                                     onClick={() => navigate(`/posters/category/edit/${category.id}`)}
                                                                 >
-                                                                    <Edit2 size={16} /> Modify Tier
+                                                                    <Edit2 size={16} /> Edit Category
                                                                 </button>
                                                                 <div className="h-px bg-[var(--border-color)] my-2 opacity-50"></div>
                                                                 <button 
                                                                     className="w-full text-left px-5 py-3 text-[11px] font-black uppercase text-red-500 hover:bg-red-500/10 transition-all flex items-center gap-4 border-none bg-transparent cursor-pointer"
                                                                     onClick={() => handleDelete(category.id)}
                                                                 >
-                                                                    <Trash2 size={16} /> Retire Tier
+                                                                    <Trash2 size={16} /> Delete Category
                                                                 </button>
                                                             </div>
                                                         </>
@@ -178,7 +188,7 @@ const PosterCategory = () => {
                                         <td colSpan="5" className="text-center py-32 text-[var(--text-muted)]">
                                             <div className="flex flex-col items-center gap-6 opacity-30">
                                                 <Palette size={80} strokeWidth={1} />
-                                                <p className="font-black uppercase tracking-[0.2em] text-[10px]">No Category Tiers found</p>
+                                                <p className="font-black uppercase tracking-[0.2em] text-[10px]">No Categories found</p>
                                             </div>
                                         </td>
                                     </tr>

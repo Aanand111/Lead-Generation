@@ -4,6 +4,7 @@ import {
     Sparkles, ShieldCheck, Activity, Bell, Zap, Layers, Plus, Briefcase
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 const VendorDashboard = () => {
     const [stats, setStats] = useState({ 
@@ -50,14 +51,14 @@ const VendorDashboard = () => {
         const suffix = target === 'vendor' ? '-V' : '-U';
         const code = `${stats.referral_code || 'CODE'}${suffix}`;
         navigator.clipboard.writeText(code);
-        alert(`Professional ${target.toUpperCase()} Access Token copied!`);
+        toast.success(`Professional ${target.toUpperCase()} Access Token copied!`);
     };
 
     const handleCopyLink = (target) => {
         const suffix = target === 'vendor' ? '-V' : '-U';
         const referralLink = `${window.location.origin}/register?ref=${stats.referral_code || 'JOIN'}${suffix}`;
         navigator.clipboard.writeText(referralLink);
-        alert(`${target.toUpperCase()} invitation URL copied!`);
+        toast.success(`${target.toUpperCase()} invitation URL copied!`);
     };
 
     const handleWhatsAppShare = (target) => {
@@ -149,14 +150,14 @@ Protocol Token: ${stats.referral_code || 'JOIN'}${suffix}`;
                 <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-64 h-64 bg-indigo-400 rounded-full opacity-10 blur-2xl"></div>
 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-                    <div className="max-w-2xl">
+                    <div className="w-full">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/30 text-indigo-100 text-[10px] font-black uppercase tracking-[0.2em] mb-4 backdrop-blur-md border border-white/10">
                             <Sparkles size={12} /> Partner Command Center
                         </div>
                         <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight leading-tight">
                             {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-100 to-white/70">{user.full_name || user.name || 'Partner'}</span>
                         </h1>
-                        <p className="text-indigo-100/70 font-medium text-lg leading-relaxed max-w-xl">
+                        <p className="text-indigo-100/70 font-medium text-lg leading-relaxed w-full">
                             Track your network expansion and commission flow in real-time. Optimize your growth protocols.
                         </p>
                     </div>

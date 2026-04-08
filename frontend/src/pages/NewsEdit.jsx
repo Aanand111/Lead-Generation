@@ -1,31 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
-    ArrowLeft, 
-    Save, 
-    Image as ImageIcon, 
-    FileText, 
-    Share2, 
-    Globe, 
-    Activity, 
-    Calendar,
-    ChevronRight,
-    Sparkles,
-    Trash2,
-    MonitorIcon,
-    TerminalIcon
+    ArrowLeft, Save, Image as ImageIcon, FileText, Share2, Globe, Activity, Calendar, ChevronRight, Sparkles, Trash2, MonitorIcon, TerminalIcon
 } from 'lucide-react';
 import api from '../utils/api';
 import CustomSelect from '../components/CustomSelect';
+import { useConfirm } from '../context/ConfirmContext';
+import { toast } from 'react-hot-toast';
 
 const NewsEdit = () => {
+    const { confirm } = useConfirm();
     const { id } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [categories, setCategories] = useState([]);
     const [previewUrl, setPreviewUrl] = useState(null);
-    const [message, setMessage] = useState({ type: '', text: '' });
 
     const [formData, setFormData] = useState({
         title: '',
@@ -70,12 +60,11 @@ const NewsEdit = () => {
                             setPreviewUrl(imgPath);
                         }
                     } else {
-                        setMessage({ type: 'error', text: 'Article node not found in archives.' });
+                        toast.error('Article node not found in archives.');
                     }
                 }
             } catch (err) {
-                console.error("Failed to fetch data", err);
-                setMessage({ type: 'error', text: 'Synchronization failure.' });
+                toast.error('Synchronization failure.');
             } finally {
                 setLoading(false);
             }
@@ -94,7 +83,6 @@ const NewsEdit = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
-        setMessage({ type: '', text: '' });
 
         try {
             const data = new FormData();
@@ -113,25 +101,30 @@ const NewsEdit = () => {
             });
 
             if (res.data.success) {
-                setMessage({ type: 'success', text: 'Article updated and synchronized successfully.' });
+                toast.success('Article updated and synchronized successfully.');
                 setTimeout(() => navigate('/news'), 1000);
             }
         } catch (err) {
-            setMessage({ type: 'error', text: err.response?.data?.message || 'Sync update failed.' });
+            toast.error(err.response?.data?.message || 'Sync update failed.');
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to purge this article node?')) return;
+        const confirmed = await confirm(
+            'This action will permanently purge this article node from the archives.',
+            'Purge Article node'
+        );
+        if (!confirmed) return;
         try {
             const res = await api.delete(`/admin/news/${id}`);
             if (res.data.success) {
+                toast.success('Article node purged.');
                 navigate('/news');
             }
         } catch (err) {
-            console.error("Delete failure", err);
+            toast.error('Purge sequence failure.');
         }
     };
 
@@ -183,16 +176,6 @@ const NewsEdit = () => {
                 </div>
             </div>
 
-            {message.text && (
-                <div className={`mb-8 p-5 rounded-2.5xl flex items-center gap-4 animate-slide-up border ${
-                    message.type === 'error' ? 'bg-red-500/10 text-red-500 border-red-500/20 shadow-red-500/5' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-emerald-500/5 shadow-lg'
-                }`}>
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${message.type === 'error' ? 'bg-red-500/20' : 'bg-emerald-500/20'}`}>
-                        <Activity size={20} />
-                    </div>
-                    <span className="text-xs font-black uppercase tracking-widest">{message.text}</span>
-                </div>
-            )}
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 <div className="lg:col-span-8 space-y-8">

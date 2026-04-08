@@ -144,7 +144,7 @@ const getCommissions = async (status = null) => {
 
 const approveCommission = async (transactionId) => {
     const result = await pool.query(
-        "UPDATE commission_transactions SET status = 'COMPLETED', updated_at = NOW() WHERE id = $1 RETURNING id, amount, status",
+        "UPDATE commission_transactions SET status = 'COMPLETED' WHERE id = $1 RETURNING id, amount, status",
         [transactionId]
     );
     return result.rows[0];

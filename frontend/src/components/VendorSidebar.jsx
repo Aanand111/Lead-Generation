@@ -25,6 +25,7 @@ const VendorSidebar = ({ isOpen }) => {
             ]
         },
         { path: '/vendor/earnings', label: 'My Earnings', icon: <Wallet size={20} /> },
+        { path: '/vendor/leads/upload', label: 'Forge Leads', icon: <Activity size={20} /> },
         { path: '/settings', label: 'Settings', icon: <Settings size={20} /> },
     ];
 

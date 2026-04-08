@@ -4,13 +4,13 @@ import {
     Activity, Zap, Sparkles, Clock, Briefcase, Layers, Bell, TrendingUp, Users
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 const VendorReferMember = ({ mode = 'user' }) => {
     const [formData, setFormData] = useState({ phone: '', email: '', password: '', full_name: '' });
     const [loading, setLoading] = useState(false);
     const [referrals, setReferrals] = useState([]);
     const [tableLoading, setTableLoading] = useState(true);
-    const [msg, setMsg] = useState({ text: '', type: '' });
     const [stats, setStats] = useState({ referral_code: '' });
     const navigate = useNavigate();
 
@@ -52,7 +52,6 @@ const VendorReferMember = ({ mode = 'user' }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setMsg({ text: '', type: '' });
         try {
             const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
             const token = localStorage.getItem('token');
@@ -64,14 +63,14 @@ const VendorReferMember = ({ mode = 'user' }) => {
             });
             const data = await res.json();
             if (data.success) {
-                setMsg({ text: `${mode.toUpperCase()} Node Authorized Successfully!`, type: 'success' });
+                toast.success(`${mode.toUpperCase()} Node Authorized Successfully!`);
                 setFormData({ phone: '', email: '', password: '', full_name: '' });
                 fetchReferrals();
             } else {
-                setMsg({ text: data.message || 'Authorization failed', type: 'error' });
+                toast.error(data.message || 'Authorization failed');
             }
         } catch (err) {
-            setMsg({ text: 'Sync Error', type: 'error' });
+            toast.error('Sync Error');
         } finally {
             setLoading(false);
         }
@@ -81,7 +80,7 @@ const VendorReferMember = ({ mode = 'user' }) => {
         const suffix = isVendorMode ? '-V' : '-U';
         const link = `${window.location.origin}/register?ref=${stats.referral_code || 'CODE'}${suffix}`;
         navigator.clipboard.writeText(link);
-        alert('Referral Link Copied!');
+        toast.success('Referral Link Copied!');
     };
 
     return (
@@ -107,12 +106,6 @@ const VendorReferMember = ({ mode = 'user' }) => {
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
-                            {msg.text && (
-                                <div className={`p-4 rounded-xl flex items-center gap-3 animate-slide-up border ${msg.type === 'error' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'}`}>
-                                    <Activity size={18} className={msg.type === 'success' ? 'animate-pulse' : ''} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">{msg.text}</span>
-                                </div>
-                            )}
                             
                             <div className="space-y-2">
                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Identity Designation *</label>
@@ -134,7 +127,18 @@ const VendorReferMember = ({ mode = 'user' }) => {
                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Contact Sequence (Phone) *</label>
                                <div className="relative group/field">
                                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500/50 group-focus-within/field:text-indigo-500 transition-colors" size={18} />
-                                  <input type="text" className="form-control !pl-12 !py-4 font-black tracking-tight text-sm bg-[var(--bg-color)]/30 border-[var(--border-color)] text-[var(--text-dark)] focus:border-indigo-500 focus:bg-[var(--surface-color)] transition-all outline-none rounded-2xl w-full" placeholder="9666966767" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required />
+                                  <input 
+                                    type="text" 
+                                    className="form-control !pl-12 !py-4 font-black tracking-tight text-sm bg-[var(--bg-color)]/30 border-[var(--border-color)] text-[var(--text-dark)] focus:border-indigo-500 focus:bg-[var(--surface-color)] transition-all outline-none rounded-2xl w-full" 
+                                    placeholder="10 DIGIT PHONE" 
+                                    value={formData.phone} 
+                                    maxLength={10}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '');
+                                        if (val.length <= 10) setFormData({ ...formData, phone: val });
+                                    }} 
+                                    required 
+                                  />
                                </div>
                             </div>
 
@@ -184,7 +188,7 @@ const VendorReferMember = ({ mode = 'user' }) => {
                                         onClick={() => {
                                             const code = `${stats.referral_code}${isVendorMode ? '-V' : '-U'}`;
                                             navigator.clipboard.writeText(code);
-                                            alert(`Professional code ${code} copied to clipboard!`);
+                                            toast.success(`Professional code ${code} copied to clipboard!`);
                                         }} 
                                         className="h-14 w-14 bg-white text-indigo-700 rounded-xl shadow-[0_10px_20px_rgba(255,255,255,0.2)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center flex-shrink-0"
                                         title="Copy Professional Code"

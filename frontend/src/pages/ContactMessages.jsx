@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Trash2, Eye, RefreshCw, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { useConfirm } from '../context/ConfirmContext';
+import { toast } from 'react-hot-toast';
 
 const ContactMessages = () => {
+    const { confirm } = useConfirm();
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedMsg, setSelectedMsg] = useState(null);
@@ -45,7 +48,11 @@ const ContactMessages = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this message?')) return;
+        const confirmed = await confirm(
+            'This action will permanently purge this inquiry from the digital archives.',
+            'Purge Inquiry'
+        );
+        if (!confirmed) return;
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`http://localhost:5000/api/admin/contact-messages/${id}`, {
@@ -56,9 +63,12 @@ const ContactMessages = () => {
             if (data.success) {
                 setMessages(prev => prev.filter(m => m.id !== id));
                 if (selectedMsg?.id === id) setSelectedMsg(null);
+                toast.success('Inquiry purged.');
+            } else {
+                toast.error(data.message || 'Purge protocol failure.');
             }
         } catch (err) {
-            console.error('Failed to delete message', err);
+            toast.error('System synchronization failure.');
         }
     };
 
