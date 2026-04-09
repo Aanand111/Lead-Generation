@@ -1,21 +1,29 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const pool = new Pool({
-    user: process.env.DB_USER || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'leadgen',
-    password: process.env.DB_PASSWORD || 'postgres',
-    port: process.env.DB_PORT || 5432,
+const poolConfig = process.env.DATABASE_URL
+    ? {
+          connectionString: process.env.DATABASE_URL,
+      }
+    : {
+          user: process.env.DB_USER || 'postgres',
+          host: process.env.DB_HOST || 'localhost',
+          database: process.env.DB_NAME || 'leadgen',
+          password: process.env.DB_PASSWORD || 'postgres',
+          port: process.env.DB_PORT || 5432,
+      };
 
-    // ── Optimized Pool Configuration for 1M+ Users ──
+// ── Optimized Pool Configuration for 1M+ Users ──
+Object.assign(poolConfig, {
     max: 100,                      // Increase max connections for higher throughput
     min: 10,                       // Maintain more warm connections ready
     idleTimeoutMillis: 30000,      // Close idle connections after 30 seconds
     connectionTimeoutMillis: 5000, // Slightly longer timeout for peak loads
-    maxUses: 7500,                  // Periodically rotate connections to prevent memory leaks
+    maxUses: 7500,                 // Periodically rotate connections to prevent memory leaks
     allowExitOnIdle: false,
 });
+
+const pool = new Pool(poolConfig);
 
 // Log when a new connection is established
 pool.on('connect', (client) => {

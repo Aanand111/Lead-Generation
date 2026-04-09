@@ -18,12 +18,12 @@ const logger = winston.createLogger({
         // - Write all logs with importance level of `error` or less to `error.log`
         // - Write all logs with importance level of `info` or less to `combined.log`
         //
-        new winston.transports.File({ 
-            filename: path.join(__dirname, '../../logs/error.log'), 
-            level: 'error' 
+        new winston.transports.File({
+            filename: path.join(__dirname, '../../logs/error.log'),
+            level: 'error'
         }),
-        new winston.transports.File({ 
-            filename: path.join(__dirname, '../../logs/combined.log') 
+        new winston.transports.File({
+            filename: path.join(__dirname, '../../logs/combined.log')
         }),
     ],
 });
