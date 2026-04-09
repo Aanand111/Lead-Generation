@@ -16,7 +16,7 @@ const app = express();
 // Graceful Shutdown & Process Handlers
 process.on('uncaughtException', (err) => {
     console.error('[FATAL] Uncaught Exception:', err.message);
-    process.exit(1); 
+    process.exit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
@@ -24,15 +24,16 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // CORS Configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-    ? process.env.ALLOWED_ORIGINS.split(',') 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
     : [
-        'http://localhost:3000', 
-        'http://localhost:5173', 
+        'http://localhost:3000',
+        'http://localhost:5173',
         'http://localhost:5174',
         'https://lead-generation-hp33p72jp-aaanandjoshiii-1651s-projects.vercel.app',
-        'https://lead-generation-ivory-two.vercel.app'
-      ];
+        'https://lead-generation-ivory-two.vercel.app',
+        'https://lead-generation-lcnf9bgx3-aaanandjoshiii-1651s-projects.vercel.app',
+    ];
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -62,7 +63,7 @@ const { RedisStore } = require('rate-limit-redis');
 const { redisConnection } = require('./config/redis');
 
 const generalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
+    windowMs: 15 * 60 * 1000,
     max: 5000,
     standardHeaders: true,
     legacyHeaders: false,
