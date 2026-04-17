@@ -5,12 +5,13 @@ import api from '../utils/api';
 const AdminProfile = () => {
     // We get the current user from localStorage
     const [user, setUser] = useState(() => {
-        const storedUser = JSON.parse(localStorage.getItem('user')) || {
-            name: 'Admin',
-            designation: 'Administrator',
-            profilePic: ''
+        const storedUser = JSON.parse(localStorage.getItem('user')) || {};
+        return {
+            name: storedUser.name || 'Admin',
+            designation: storedUser.designation || 'Administrator',
+            email: storedUser.email || '',
+            profilePic: storedUser.profilePic || ''
         };
-        return storedUser;
     });
 
     const [previewImage, setPreviewImage] = useState(user.profilePic);
@@ -95,19 +96,30 @@ const AdminProfile = () => {
         setMessage({ type: '', text: '' });
         
         try {
-            const { data } = await api.put('/admin/profile', { name: user.name });
+            const { data } = await api.put('/admin/profile', { 
+                name: user.name,
+                email: user.email,
+                designation: user.designation 
+            });
             
             if (data.success) {
-                // Update localStorage with new name
+                // Update localStorage with new data
                 const existingUser = JSON.parse(localStorage.getItem('user') || '{}');
-                const updatedUser = { ...existingUser, name: user.name };
+                const updatedUser = { 
+                    ...existingUser, 
+                    name: user.name,
+                    email: user.email,
+                    designation: user.designation
+                };
                 localStorage.setItem('user', JSON.stringify(updatedUser));
                 
                 window.dispatchEvent(new Event('userProfileUpdated'));
                 setMessage({ type: 'success', text: 'Profile information updated successfully.' });
             }
         } catch (err) {
-            setMessage({ type: 'error', text: 'Failed to update profile. Please check your connection.' });
+            console.error("Profile Update Error:", err.response?.data || err.message);
+            const errorMsg = err.response?.data?.message || 'Failed to update profile. Verification failed.';
+            setMessage({ type: 'error', text: errorMsg });
         } finally {
             setIsSaving(false);
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -238,7 +250,7 @@ const AdminProfile = () => {
                                     <input
                                         type="text"
                                         className="form-control !py-3 font-bold text-sm bg-[var(--bg-color)] border-[var(--border-color)] focus:bg-[var(--surface-color)] transition-all shadow-inner text-[var(--text-dark)]"
-                                        value={user.name}
+                                        value={user.name || ''}
                                         onChange={(e) => setUser({ ...user, name: e.target.value })}
                                         placeholder="Full Name"
                                     />
@@ -248,7 +260,7 @@ const AdminProfile = () => {
                                     <input
                                         type="text"
                                         className="form-control !py-3 font-bold text-sm bg-[var(--bg-color)] border-[var(--border-color)] focus:bg-[var(--surface-color)] transition-all shadow-inner text-[var(--text-dark)]"
-                                        value={user.designation}
+                                        value={user.designation || ''}
                                         onChange={(e) => setUser({ ...user, designation: e.target.value })}
                                         placeholder="Administrator"
                                     />
@@ -258,7 +270,7 @@ const AdminProfile = () => {
                                     <input
                                         type="email"
                                         className="form-control !py-3 font-bold text-sm bg-[var(--bg-color)] border-[var(--border-color)] focus:bg-[var(--surface-color)] transition-all shadow-inner text-[var(--text-dark)]"
-                                        value={user.email}
+                                        value={user.email || ''}
                                         onChange={(e) => setUser({ ...user, email: e.target.value })}
                                         placeholder="Email Address"
                                     />

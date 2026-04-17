@@ -153,6 +153,15 @@ const verifySubscriptionPayment = async (req, res, next) => {
         );
 
         await client.query('COMMIT');
+
+        // Real-time Wallet Refresh
+        try {
+            const { sendToUser } = require('../utils/socket');
+            const updatedUser = await pool.query('SELECT wallet_balance FROM users WHERE id = $1', [userId]);
+            sendToUser(userId, 'wallet_update', { wallet_balance: updatedUser.rows[0].wallet_balance });
+        } catch (sErr) {
+            console.error('[SOCKET ERROR] Failed to send balance update:', sErr.message);
+        }
         
         // --- ASYNC COMMISSION PROCESSING ---
         // We trigger it after commit to ensure the core payment process is finalized.

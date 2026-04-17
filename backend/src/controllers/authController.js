@@ -3,6 +3,9 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const { findUserByPhone, findUserByEmail, createUser, findUserByReferralCode, findUserByIdentifier } = require('../models/userModel');
+const mailService = require('../services/mailService');
+const NotificationService = require('../services/notificationService');
+
 
 // --- Helper functions ---
 const generateToken = (id, role) => {
@@ -58,7 +61,9 @@ const registerUser = async (req, res, next) => {
         }
 
         // Hash password
-        const salt = await bcrypt.genSalt(10);
+        // Reduced salt from 10 to 8 for EXTREME scalability. 
+        // 8 is still secure but 4x faster to process on CPU, preventing event loop blocking.
+        const salt = await bcrypt.genSalt(8);
         const password_hash = await bcrypt.hash(password, salt);
 
         // Create user with status check
@@ -79,7 +84,21 @@ const registerUser = async (req, res, next) => {
             status: role === 'vendor' ? 'PENDING' : 'ACTIVE' // Vendors need approval
         });
 
+        // Send Welcome Email (non-blocking)
+        mailService.sendWelcomeEmail(email, name || 'User').catch(err => {
+            console.error('[REGISTRATION EMAIL ERROR]', err.message);
+        });
+
+        // Send In-App Bell Notification
+        NotificationService.sendPushToUserId(user.id, 'Welcome!', 'Thank you for joining our platform.', {
+            type: 'WELCOME',
+            target: '/dashboard'
+        }).catch(err => {
+            console.error('[BELL NOTIFICATION ERROR]', err.message);
+        });
+
         res.status(201).json({
+
             success: true,
             message: role === 'vendor' 
                 ? 'Registration successful. Please wait for admin approval.' 
@@ -102,7 +121,7 @@ const loginUser = async (req, res, next) => {
         const { email, password } = req.body;
 
         if (!email || !password) {
-            return res.status(400).json({ success: false, message: 'Missing email or password payload.' });
+            return res.status(400).json({ success: false, message: 'Please provide both email and password.' });
         }
 
         const user = await findUserByIdentifier(email.trim().toLowerCase());
@@ -112,10 +131,10 @@ const loginUser = async (req, res, next) => {
 
             if (isMatch) {
                 if (user.status === 'PENDING') {
-                    return res.status(403).json({ success: false, message: 'Your account is pending hierarchy approval.' });
+                    return res.status(403).json({ success: false, message: 'Your account is pending approval by the admin.' });
                 }
                 if (user.status === 'BLOCKED') {
-                    return res.status(403).json({ success: false, message: 'This node has been decommissioned by the admin.' });
+                    return res.status(403).json({ success: false, message: 'Your account has been blocked. Please contact support.' });
                 }
 
                 const token = generateToken(user.id, user.role);
@@ -135,10 +154,10 @@ const loginUser = async (req, res, next) => {
                     },
                 });
             } else {
-                res.status(401).json({ success: false, message: 'Identity verification failed.' });
+                res.status(401).json({ success: false, message: 'Invalid email or password.' });
             }
         } else {
-            res.status(401).json({ success: false, message: 'Identity verification failed.' });
+            res.status(401).json({ success: false, message: 'Invalid email or password.' });
         }
     } catch (error) {
         next(error);

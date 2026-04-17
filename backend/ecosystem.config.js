@@ -6,7 +6,7 @@ module.exports = {
     {
       name: "leadgen-api",
       script: "./src/server.js",
-      instances: 4,           // Run 4 instances of API for load balancing
+      instances: "max",       // Use ALL available CPU cores
       exec_mode: "cluster",
       watch: false,
       max_memory_restart: "1G",
@@ -17,7 +17,7 @@ module.exports = {
     {
       name: "leadgen-worker",
       script: "./src/worker-entry.js",
-      instances: 4,           // Run 4 instances of Workers to process 1M+ queue fast
+      instances: "max",       // Use ALL available CPU cores for workers
       exec_mode: "cluster",
       watch: false,
       max_memory_restart: "1G",

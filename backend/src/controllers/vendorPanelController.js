@@ -11,7 +11,8 @@ const getVendorStats = async (req, res, next) => {
                 (SELECT COALESCE(SUM(amount), 0) FROM commission_transactions WHERE vendor_id = $1 AND status = 'COMPLETED') as total_earnings,
                 (SELECT COALESCE(SUM(amount), 0) FROM commission_transactions WHERE vendor_id = $1 AND status IN ('PENDING', 'REQUESTED')) as pending_earnings,
                 (SELECT COALESCE(SUM(amount), 0) FROM commission_transactions WHERE vendor_id = $1 AND status = 'REQUESTED') as active_request_amount,
-                (SELECT referral_code FROM users WHERE id = $1) as referral_code
+                (SELECT referral_code FROM users WHERE id = $1) as referral_code,
+                (SELECT wallet_balance FROM users WHERE id = $1) as wallet_balance
         `;
 
         const result = await pool.query(statsQuery, [vendorId]);
@@ -79,7 +80,7 @@ const referUser = async (req, res, next) => {
         const vendorId = req.user.id;
         const { phone, email, password, full_name } = req.body;
 
-        if (!email) return res.status(400).json({ success: false, message: 'Email sequence required for user enrollment.' });
+        if (!email) return res.status(400).json({ success: false, message: 'Email is required for user registration.' });
 
         const bcrypt = require('bcryptjs');
         const salt = await bcrypt.genSalt(10);
@@ -101,7 +102,7 @@ const referVendor = async (req, res, next) => {
         const vendorId = req.user.id;
         const { phone, email, password, full_name } = req.body;
 
-        if (!email) return res.status(400).json({ success: false, message: 'Email signal required for sub-vendor orchestration.' });
+        if (!email) return res.status(400).json({ success: false, message: 'Email is required for sub-vendor registration.' });
 
         // BRD Section 1.3: Secondary Vendor Restriction
         // Primary Vendors have referred_by = NULL (added by Admin).
@@ -110,14 +111,13 @@ const referVendor = async (req, res, next) => {
         const vendor = checkVendor.rows[0];
 
         if (!vendor || vendor.status !== 'ACTIVE') {
-            return res.status(403).json({ success: false, message: 'AUTHENTICATION_FAILURE: Vendor node is inactive or unauthorized.' });
+            return res.status(403).json({ success: false, message: 'Unauthorized: Your account is inactive or you do not have permission.' });
         }
 
         if (vendor.referred_by) {
             console.warn(`[HIERARCHY_BLOCK] Sub-Vendor ${vendorId} attempted to add a 3rd-tier vendor.`);
             return res.status(403).json({ 
-                success: false, 
-                message: 'HIERARCHY_RESTRICTION: Only Primary/Direct vendors are authorized to orchestrate new vendor nodes.' 
+                message: 'Access Denied: Only primary vendors can refer other vendors.' 
             });
         }
 
@@ -143,7 +143,7 @@ const referVendor = async (req, res, next) => {
                 }
             }
         } catch (err) {
-            console.error('[HIERARCHY_SYNC] Failed to resolve parent vendor node:', err.message);
+            console.error('[SYNC_ERROR] Failed to resolve parent vendor:', err.message);
         }
 
         // Synchronize with 'vendors' table for Admin visibility
@@ -173,7 +173,7 @@ const referVendor = async (req, res, next) => {
             const { getIO } = require('../utils/socket');
             const io = getIO();
             io.emit('new_vendor_referral', {
-                message: `New Vendor Node Initialized: ${full_name}`,
+                message: `New Sub-Vendor Added: ${full_name}`,
                 phone: phone,
                 referrer: req.user.full_name || 'Primary Node',
                 timestamp: new Date()
@@ -184,12 +184,12 @@ const referVendor = async (req, res, next) => {
 
         res.status(201).json({ 
             success: true, 
-            message: 'Sub-Vendor identity registered successfully in the hierarchy.', 
+            message: 'Sub-Vendor registered successfully.', 
             data: { id: result.rows[0].id, phone: result.rows[0].phone, email: result.rows[0].email, referral_code: newReferralCode } 
         });
     } catch (error) {
         if (error.code === '23505') { // Unique constraint (phone/code)
-             return res.status(400).json({ success: false, message: 'Identity Conflict: Smartphone signature or Referral code already exists in the mesh.' });
+             return res.status(400).json({ success: false, message: 'Identity Conflict: Phone number or Referral code already exists.' });
         }
         next(error);
     }
@@ -201,16 +201,17 @@ const requestSettlement = async (req, res, next) => {
 
         // Check if there are any pending commissions to request
         const checkPending = await pool.query(
-            "SELECT COUNT(*) FROM commission_transactions WHERE vendor_id = $1 AND status = 'PENDING'",
+            "SELECT COUNT(*), COALESCE(SUM(amount), 0) as total_amount FROM commission_transactions WHERE vendor_id = $1 AND status = 'PENDING'",
             [vendorId]
         );
 
         if (parseInt(checkPending.rows[0].count) === 0) {
             return res.status(400).json({ 
-                success: false, 
-                message: 'No pending commission nodes found for synchronization. Bandwidth at equilibrium.' 
+                message: 'You have no pending commissions to request at this time.' 
             });
         }
+
+        const amount = parseFloat(checkPending.rows[0].total_amount);
 
         // Update all PENDING to REQUESTED
         await pool.query(
@@ -218,9 +219,46 @@ const requestSettlement = async (req, res, next) => {
             [vendorId]
         );
 
+        // Get vendor info for notification
+        let vendorName = 'A Vendor';
+        try {
+            const vendorRes = await pool.query('SELECT full_name FROM users WHERE id = $1', [vendorId]);
+            if (vendorRes.rows.length > 0) {
+                vendorName = vendorRes.rows[0].full_name;
+            }
+        } catch (err) {
+            console.error('[VENDOR_INFO_ERROR] Failed to fetch vendor name:', err.message);
+        }
+
+        // Add socket notification exclusively to Admins
+        try {
+            const { getIO } = require('../utils/socket');
+            const io = getIO();
+            
+            // Get all admin users
+            const adminsRes = await pool.query("SELECT id FROM users WHERE role = 'admin'");
+            const adminIds = adminsRes.rows.map(row => row.id.toString());
+            
+            adminIds.forEach(adminId => {
+                // To show Bell Icon Notification Dropdown
+                io.to(adminId).emit('notification', {
+                    title: 'Commission Request',
+                    body: `${vendorName} requested ₹${amount.toFixed(2)}.`
+                });
+                
+                // To show Toast Notification
+                io.to(adminId).emit('admin_notification', {
+                    title: 'New Commission Request',
+                    body: `${vendorName} has requested a withdrawal of ₹${amount.toFixed(2)}.`
+                });
+            });
+        } catch (sErr) {
+            console.error('[SOCKET_ERROR] Failed to emit commission request notification:', sErr.message);
+        }
+
         res.status(200).json({ 
             success: true, 
-            message: 'Settlement request broadcasted to Admin Hub. Authorization pending.' 
+            message: 'Payout request submitted successfully. Our team will review it shortly.' 
         });
     } catch (error) {
         next(error);

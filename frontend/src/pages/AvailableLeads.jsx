@@ -32,11 +32,27 @@ const AvailableLeads = () => {
         try {
             const { data } = await api.get('/admin/available-leads');
             if (data.success && data.data) {
-                setLeads(data.data);
+                // Get user city from localStorage
+                const userStr = localStorage.getItem('user');
+                const user = userStr ? JSON.parse(userStr) : null;
+                const userCity = (user?.city || '').toLowerCase().trim();
+
+                // Sort leads: Priority to matching city
+                const sortedLeads = [...data.data].sort((a, b) => {
+                    const cityA = (a.city || '').toLowerCase().trim();
+                    const cityB = (b.city || '').toLowerCase().trim();
+                    
+                    if (cityA === userCity && cityB !== userCity) return -1;
+                    if (cityA !== userCity && cityB === userCity) return 1;
+                    return 0;
+                });
+
+                setLeads(sortedLeads);
                 setLastSync(new Date());
             } else {
                 setError(data.message || "Failed to fetch data");
             }
+
         } catch (err) {
             console.error("Failed to fetch available leads", err);
             setError("Network Error: Could not connect to backend");
@@ -374,6 +390,7 @@ const AvailableLeads = () => {
                                         className="w-4 h-4 rounded border-[var(--border-color)] text-indigo-600 focus:ring-indigo-500"
                                     />
                                 </th>
+                                <th className="w-12 text-center text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest">#</th>
                                 <th className="text-[var(--text-muted)]">Lead Name</th>
                                 <th className="text-[var(--text-muted)]">Source</th>
                                 <th className="text-[var(--text-muted)]">Location</th>
@@ -404,15 +421,19 @@ const AvailableLeads = () => {
                                                 className="w-4 h-4 rounded border-[var(--border-color)] text-indigo-600 focus:ring-indigo-500"
                                             />
                                         </td>
+                                        <td className="text-center font-black text-[var(--text-muted)]/40 text-[10px]">
+                                            #{ (index + 1).toString().padStart(3, '0') }
+                                        </td>
                                         <td>
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 flex items-center justify-center text-indigo-500 shadow-sm transition-all group-hover:-translate-y-0.5 group-hover:shadow-md">
                                                     <User size={18} />
                                                 </div>
-                                                <div>
-                                                    <div className="font-black text-[var(--text-dark)] tracking-tight text-[11px] group-hover:text-indigo-500 transition-colors uppercase">{lead.name}</div>
-                                                    <div className="text-[10px] text-[var(--text-muted)] font-bold italic tracking-tighter">{lead.lead_uid}</div>
-                                                </div>
+                                                <td>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-black text-[var(--text-dark)] uppercase tracking-tight text-[11px] group-hover:text-indigo-600 transition-colors uppercase">{lead.name || 'Anonymous'}</span>
+                                                    </div>
+                                                </td>
                                             </div>
                                         </td>
                                         <td>
@@ -425,9 +446,21 @@ const AvailableLeads = () => {
                                                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-dark)]/80">
                                                     <MapPin size={10} className="text-indigo-400" /> {lead.city}, {lead.state}
                                                 </div>
-                                                <div className="text-[9px] font-black text-[var(--text-muted)]/60 ml-4 italic uppercase">{lead.category_name || 'GENERAL'}</div>
+                                                {/* NEARBY HIGHLIGHT BADGE */}
+                                                {(() => {
+                                                    const user = JSON.parse(localStorage.getItem('user') || '{}');
+                                                    if (user.city && lead.city && user.city.toLowerCase().trim() === lead.city.toLowerCase().trim()) {
+                                                        return (
+                                                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-500 text-white text-[8px] font-black uppercase tracking-[0.1em] shadow-sm animate-pulse border border-white/20">
+                                                                <ShieldCheck size={8} /> Near You
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return <div className="text-[9px] font-black text-[var(--text-muted)]/60 ml-4 italic uppercase">{lead.category_name || 'GENERAL'}</div>;
+                                                })()}
                                             </div>
                                         </td>
+
                                         <td>
                                             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
                                                 !lead.assigned_to ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'

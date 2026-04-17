@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { buildNumericColumnExpression, loadLeadPurchaseColumns } = require('../utils/leadPurchaseSchema');
 
 const createLead = async (leadData, adminId, status = 'PENDING') => {
     const { lead_id, customer_name, customer_phone, customer_email, category, city, state, pincode, lead_value, expiry_date } = leadData;
@@ -123,27 +124,36 @@ const deleteLead = async (leadId) => {
 
 const getPurchasedLeads = async (page = 1, limit = 10, search = '') => {
     const offset = (page - 1) * limit;
+    const leadPurchaseColumns = await loadLeadPurchaseColumns();
+    const totalLeadsExpr = buildNumericColumnExpression('lp', leadPurchaseColumns, 'total_leads');
+    const remainingLeadsExpr =
+        buildNumericColumnExpression('lp', leadPurchaseColumns, 'remaining_leads') ||
+        buildNumericColumnExpression('lp', leadPurchaseColumns, 'remaing_leads') ||
+        buildNumericColumnExpression('lp', leadPurchaseColumns, 'remaing_lead');
+    const leadPriceExpr = buildNumericColumnExpression('lp', leadPurchaseColumns, 'lead_price');
 
     let queryStr = `
         SELECT 
             lp.id, 
-            COALESCE(u.full_name, lp.customer_name, u.phone) as customer_name,
-            COALESCE(lp.lead_id, lp.id) as lead_id,
-            p.name as package_name,
-            COALESCE(l.customer_name, lp.lead_name) as lead_name,
-            COALESCE(p.lead_limit, (lp.total_leads)::int) as total_leads,
-            COALESCE(up.leads_remaining, (lp.remaing_leads)::int) as remaining_leads,
-            lp.lead_price as price,
-            lp.purchase_date as starting_date,
-            lp.expiry_date as end_date
+            COALESCE(NULLIF(BTRIM(u.full_name), ''), NULLIF(BTRIM(lp.customer_name), ''), NULLIF(BTRIM(l.customer_name), ''), u.phone, 'N/A') as customer_name,
+            COALESCE(NULLIF(BTRIM(l.lead_id), ''), lp.lead_id::text, lp.id::text) as lead_id,
+            COALESCE(p.name, 'INDIVIDUAL') as package_name,
+            COALESCE(NULLIF(BTRIM(lp.lead_name), ''), NULLIF(BTRIM(l.customer_name), ''), NULLIF(BTRIM(lp.customer_name), ''), 'N/A') as lead_name,
+            COALESCE(${totalLeadsExpr || 'NULL'}, p.lead_limit::numeric, 1::numeric) as total_leads,
+            COALESCE(${remainingLeadsExpr || 'NULL'}, up.leads_remaining::numeric, 1::numeric) as remaining_leads,
+            COALESCE(${leadPriceExpr || 'NULL'}, l.lead_value, p.price, 0::numeric) as price,
+            lp.status as purchase_status,
+            COALESCE(lp.purchase_date, l.created_at, NOW()::timestamp) as starting_date,
+            COALESCE(lp.expiry_date, lp.purchase_date + INTERVAL '30 days', l.expiry_date, NOW()::timestamp + INTERVAL '30 days') as end_date
         FROM lead_purchases lp
         LEFT JOIN users u ON lp.user_id = u.id
         LEFT JOIN leads l ON lp.lead_id = l.id
         LEFT JOIN (
-            SELECT DISTINCT ON (user_id) user_id, package_id, leads_remaining, status
+            SELECT DISTINCT ON (user_id) user_id, package_id, leads_remaining, purchase_date
             FROM user_packages
+            WHERE status = 'ACTIVE'
             ORDER BY user_id, purchase_date DESC
-        ) up ON up.user_id = u.id AND up.status = 'ACTIVE'
+        ) up ON up.user_id = u.id
         LEFT JOIN packages p ON up.package_id = p.id
         WHERE 1=1
     `;
@@ -165,10 +175,11 @@ const getPurchasedLeads = async (page = 1, limit = 10, search = '') => {
         LEFT JOIN users u ON lp.user_id = u.id
         LEFT JOIN leads l ON lp.lead_id = l.id
         LEFT JOIN (
-            SELECT DISTINCT ON (user_id) user_id, package_id, status
+            SELECT DISTINCT ON (user_id) user_id, package_id, purchase_date
             FROM user_packages
+            WHERE status = 'ACTIVE'
             ORDER BY user_id, purchase_date DESC
-        ) up ON up.user_id = u.id AND up.status = 'ACTIVE'
+        ) up ON up.user_id = u.id
         LEFT JOIN packages p ON up.package_id = p.id
         WHERE 1=1
     `;

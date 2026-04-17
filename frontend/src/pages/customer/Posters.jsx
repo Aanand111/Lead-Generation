@@ -60,13 +60,13 @@ const UserPosters = () => {
         <div className="page-content animate-fade-in text-[var(--text-dark)] pb-20">
             <div className="pageHeader">
                 <div className="pageHeaderTitle">
-                    <h2>Artistic Studio</h2>
-                    <p>Generate high-impact marketing posters from lead intelligence templates</p>
+                    <h2>Poster Studio</h2>
+                    <p>Create professional marketing posters using our industry-ready templates.</p>
                 </div>
                 <div className="pageHeaderActions flex items-center gap-4">
                     <div className={`${hasPosterPlan ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-amber-500/5 border-amber-500/10'} px-6 py-3 rounded-2xl flex items-center gap-4 group hover:opacity-80 transition-all cursor-default`}>
                         <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none italic">
-                            {hasPosterPlan ? 'Premium Spectra' : 'Daily Protocol'}
+                            {hasPosterPlan ? 'Premium Plan' : 'Standard Plan'}
                         </div>
                         <div className="flex items-center gap-2">
                              {hasPosterPlan ? (
@@ -75,7 +75,7 @@ const UserPosters = () => {
                                 <Star size={16} fill="currentColor" className={freePosterAvailable ? "text-amber-500" : "text-[var(--text-muted)] opacity-30"} />
                              )}
                             <span className={`text-xl font-black tabular-nums ${hasPosterPlan ? 'text-indigo-500' : (freePosterAvailable ? "text-amber-500" : "text-[var(--text-muted)] opacity-30")}`}>
-                                {hasPosterPlan ? 'UNLIMITED' : (freePosterAvailable ? '1 PASS' : '0 PASS')}
+                                {hasPosterPlan ? 'UNLIMITED' : (freePosterAvailable ? '1 FREE' : '0 FREE')}
                             </span>
                         </div>
                     </div>
@@ -83,7 +83,7 @@ const UserPosters = () => {
                         onClick={() => setIsCreatorOpen(true)}
                         className="btn btn-primary px-8 py-3.5 flex items-center gap-3 font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all"
                     >
-                        <Plus size={18} strokeWidth={3} /> Invoke Constructor
+                        <Plus size={18} strokeWidth={3} /> Create Poster
                     </button>
                 </div>
             </div>
@@ -92,7 +92,7 @@ const UserPosters = () => {
                 {loading ? (
                     <div className="col-span-full py-40 text-center">
                         <div className="spinner mb-4 mx-auto"></div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">Initializing Rendering Engine...</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">Loading Your Designs...</span>
                     </div>
                 ) : posters.length > 0 ? (
                     posters.map((poster) => (
@@ -121,7 +121,7 @@ const UserPosters = () => {
                                 </div>
                             </div>
                             <div className="p-8 border-t border-[var(--border-color)]">
-                                <h3 className="text-xl font-black italic tracking-tighter uppercase text-[var(--text-dark)] mb-2 group-hover:text-indigo-500 transition-colors">{poster.title || 'Marketing Protocol'}</h3>
+                                <h3 className="text-xl font-black italic tracking-tighter uppercase text-[var(--text-dark)] mb-2 group-hover:text-indigo-500 transition-colors">{poster.title || 'Marketing Design'}</h3>
                                 <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic opacity-70 mb-6">Generated on {new Date(poster.created_at).toLocaleDateString()}</div>
                                 <div className="flex items-center justify-between">
                                     <div className="flex -space-x-3">
@@ -132,7 +132,7 @@ const UserPosters = () => {
                                         ))}
                                     </div>
                                     <button className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest group/btn italic">
-                                        Edit Parameters <Edit3 size={14} className="group-hover/btn:scale-110 transition-transform" />
+                                        Edit Design <Edit3 size={14} className="group-hover/btn:scale-110 transition-transform" />
                                     </button>
                                 </div>
                             </div>
@@ -142,8 +142,8 @@ const UserPosters = () => {
                     <div className="col-span-full py-40 text-center opacity-30 border-2 border-dashed border-[var(--border-color)] rounded-[3rem]">
                         <div className="flex flex-col items-center gap-6">
                             <ImageIcon size={84} strokeWidth={1} />
-                            <p className="font-black uppercase tracking-[0.4em] text-xs italic">Artistic studio is currently dormant</p>
-                            <button onClick={() => setIsCreatorOpen(true)} className="btn btn-primary px-8 py-3.5 font-black uppercase tracking-[0.2em] text-[10px] mt-4 shadow-xl shadow-indigo-500/10">Initialize Constructor</button>
+                            <p className="font-black uppercase tracking-[0.4em] text-xs italic">You haven't created any posters yet</p>
+                            <button onClick={() => setIsCreatorOpen(true)} className="btn btn-primary px-8 py-3.5 font-black uppercase tracking-[0.2em] text-[10px] mt-4 shadow-xl shadow-indigo-500/10">Start Creating</button>
                         </div>
                     </div>
                 )}
@@ -162,8 +162,8 @@ const UserPosters = () => {
                         <div className="grid grid-cols-1 lg:grid-cols-2">
                             <div className="p-12 border-r border-[var(--border-color)] flex flex-col justify-between min-h-[600px] bg-[var(--bg-color)]/20">
                                 <div>
-                                    <h3 className="text-4xl font-black italic tracking-tighter uppercase text-[var(--text-dark)] mb-2">Constructor Panel</h3>
-                                    <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-10 opacity-70 italic">Synchronize your brand identity with lead intelligence templates</p>
+                                    <h3 className="text-4xl font-black italic tracking-tighter uppercase text-[var(--text-dark)] mb-2">Poster Designer</h3>
+                                    <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-10 opacity-70 italic">Customize templates with your brand details to create stunning posters</p>
                                     
                                     <div className="space-y-8">
                                         <div className="space-y-3">
@@ -182,12 +182,12 @@ const UserPosters = () => {
                                         </div>
 
                                         <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-[var(--text-dark)] uppercase tracking-widest ml-1">Marketing Narrative</label>
+                                            <label className="text-[10px] font-black text-[var(--text-dark)] uppercase tracking-widest ml-1">Poster Content</label>
                                             <textarea 
                                                 value={userInputs.content}
                                                 onChange={(e) => setUserInputs({...userInputs, content: e.target.value})}
                                                 className="w-full h-24 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-3xl p-6 text-xs font-bold text-[var(--text-dark)] italic focus:border-indigo-500 transition-all outline-none resize-none shadow-inner"
-                                                placeholder="Inject your marketing message here..."
+                                                placeholder="Enter your marketing message here..."
                                             ></textarea>
                                         </div>
 
@@ -202,7 +202,7 @@ const UserPosters = () => {
                                                 />
                                             </div>
                                             <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-[var(--text-dark)] uppercase tracking-widest ml-1">Contact Protocol</label>
+                                                <label className="text-[10px] font-black text-[var(--text-dark)] uppercase tracking-widest ml-1">Contact Details</label>
                                                 <input 
                                                     value={userInputs.phone}
                                                     onChange={(e) => setUserInputs({...userInputs, phone: e.target.value})}
@@ -262,7 +262,7 @@ const UserPosters = () => {
                                 <div className="mt-12 flex items-center justify-between border-t border-[var(--border-color)] pt-8">
                                     <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest italic ${hasPosterPlan ? 'text-emerald-500' : (freePosterAvailable ? 'text-amber-500 animate-pulse' : 'text-indigo-500')}`}>
                                          {hasPosterPlan ? <Gem size={14} className="animate-pulse" /> : (freePosterAvailable ? <Zap size={14} fill="currentColor" /> : <Gem size={14} />)}
-                                         {hasPosterPlan ? 'VIP Unlimited Access' : (freePosterAvailable ? 'Using Daily Free Pass' : 'Premium Render Mode')}
+                                         {hasPosterPlan ? 'Unlimited VIP Access' : (freePosterAvailable ? 'Using Daily Free Design' : 'Premium Design Mode')}
                                     </div>
                                     <button 
                                         onClick={async () => {
@@ -289,10 +289,10 @@ const UserPosters = () => {
                                                 if (res.data.success) {
                                                     setIsCreatorOpen(false);
                                                     fetchPostersData();
-                                                    toast.success('Visual asset synthesized successfully.');
+                                                    toast.success('Poster created successfully.');
                                                 }
                                             } catch (err) {
-                                                toast.error(err.response?.data?.message || "Synthesis sequence aborted.");
+                                                toast.error(err.response?.data?.message || "Failed to create poster.");
                                             } finally {
                                                 setSubmitting(false);
                                             }
@@ -305,7 +305,7 @@ const UserPosters = () => {
                                         ) : (
                                             <>
                                                 <Save size={18} /> 
-                                                {hasPosterPlan ? 'FREE (VIP)' : (freePosterAvailable ? 'FREE RENDER' : 'RENDER (5 CREDITS)')}
+                                                {hasPosterPlan ? 'CREATE (FREE)' : (freePosterAvailable ? 'CREATE FREE' : 'CREATE (5 CREDITS)')}
                                             </>
                                         )}
                                     </button>
@@ -314,7 +314,7 @@ const UserPosters = () => {
 
                              <div className="p-12 flex flex-col items-center justify-center bg-[var(--bg-color)]/50 relative overflow-hidden group/preview">
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--primary-glow)_0%,transparent_70%)] opacity-30"></div>
-                                <div className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em] mb-8 relative z-10 animate-pulse italic">Live Rendering Spectrum</div>
+                                <div className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em] mb-8 relative z-10 animate-pulse italic">Live Preview</div>
                                 <div className="relative w-full max-w-[400px] aspect-[4/5] bg-white rounded-2xl shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-700 hover:rotate-2 hover:scale-105 group-hover/preview:shadow-[0_80px_150px_-30px_rgba(99,102,241,0.3)]">
                                     <div className="relative w-full h-full">
                                         {selectedTemplate ? (
@@ -360,7 +360,7 @@ const UserPosters = () => {
                                     </button>
                                     <div className="w-px h-4 bg-[var(--border-color)]"></div>
                                     <button className="flex items-center gap-2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest hover:text-indigo-500 transition-colors italic">
-                                        <ExternalLink size={14} /> Full Spectrum
+                                        <ExternalLink size={14} /> View Full
                                     </button>
                                 </div>
                             </div>

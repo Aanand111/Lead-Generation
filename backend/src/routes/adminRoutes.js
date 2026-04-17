@@ -203,8 +203,23 @@ router.put('/feedback/:id', resolveFeedback);
 router.get('/vendors-performance', getVendorPerformance);
 
 // Analytics & Metrics Routes (Granular Reports)
-const { fetchGranularAnalytics, recordBannerInteraction } = require('../controllers/adminAnalyticsController');
+const { fetchGranularAnalytics, recordBannerInteraction, getLeadReports, exportDetailedReports } = require('../controllers/adminAnalyticsController');
+const { sendTargetedNotification } = require('../controllers/adminNotificationController');
 router.get('/analytics/granular', fetchGranularAnalytics);
+router.get('/analytics/lead-reports', getLeadReports);
+router.get('/analytics/export-leads', exportDetailedReports);
+
+router.post('/notifications/send', sendTargetedNotification);
+
+const { runAllMaintenanceTasks } = require('../jobs/maintenanceJobs');
+router.post('/system/maintenance-trigger', async (req, res) => {
+    try {
+        await runAllMaintenanceTasks();
+        res.status(200).json({ success: true, message: 'Maintenance tasks initiated successfully.' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Maintenance failed: ' + err.message });
+    }
+});
 router.post('/banners/:id/interaction', recordBannerInteraction);
 
 module.exports = router;

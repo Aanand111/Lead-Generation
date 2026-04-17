@@ -18,7 +18,12 @@ const createBroadcast = async (req, res, next) => {
         const campaignId = rows[0].id;
 
         // 2. Start Processing in background (Non-blocking)
-        // Note: For TRUE 1M+ users production, use bullmq here. This is a robust batch implementation.
+        // ── STEP A: INSTANT REALTIME BROADCAST ──
+        // This hits all ONLINE users in < 1 second!
+        NotificationService.sendGlobalNotification(title, body, { campaignId });
+
+        // ── STEP B: MASS DELIVERY ──
+        // This processes all 1M users (Online + Offline) via Queue
         processBroadcast(campaignId, { title, body, role });
 
         res.status(202).json({
@@ -44,30 +49,36 @@ const processBroadcast = async (campaignId, { title, body, role }) => {
 
         let totalEnqueued = 0;
 
-        // Use BulkProcessor to safely iterate 1M users and ADD TO QUEUE (Seek Method)
+        // Fetch users in large batches and use addBulk for Redis
         await BulkProcessor.processUsersInBatches({
-            batchSize: 5000, // Fetch large batches to enqueue fast
+            batchSize: 1000, 
             role: role,
-            handler: async (user) => {
-              totalEnqueued++;
-              
-              // ── ENQUEUE TO BULLMQ (Scale-Ready) ──
-              // Job is now safe in Redis. A worker on ANY CPU core will pick this up!
-              await notificationQueue.add('broadcast-job', {
-                userId: user.id,
-                userPhone: user.phone,
-                title,
-                body,
-                campaignId
-              }, {
-                jobId: `${campaignId}-${user.id}` // Avoid double-sending
-              });
+            handler: async (batchRows) => {
+              // batchRows is an array of users from the DB
+              const jobs = batchRows.map(user => ({
+                name: 'broadcast-job',
+                data: {
+                  userId: user.id,
+                  userPhone: user.phone,
+                  title,
+                  body,
+                  campaignId
+                },
+                opts: {
+                  jobId: `${campaignId}-${user.id}`
+                }
+              }));
 
-              // Intermittent update to DB for admin tracking
+              // Send 1000 jobs to Redis in ONE call!
+              await notificationQueue.addBulk(jobs);
+              totalEnqueued += jobs.length;
+
+              // Periodic progress update
               if (totalEnqueued % 10000 === 0) {
                  await pool.query('UPDATE broadcast_campaigns SET total_users = $1 WHERE id = $2', [totalEnqueued, campaignId]);
               }
-            }
+            },
+            useBatchHandler: true // Custom flag to pass whole batch to handler
         });
 
         // Final count update

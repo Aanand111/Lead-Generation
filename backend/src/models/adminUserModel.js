@@ -48,7 +48,7 @@ const getAllUsers = async (page = 1, limit = 10, search = '', roleFilter = '') =
 
 const updateVendorCommission = async (userId, rate) => {
     const result = await pool.query(
-        'UPDATE users SET custom_commission_rate = $1 WHERE id = $2 AND role = \'vendor\' RETURNING id, custom_commission_rate',
+        'UPDATE users SET custom_commission_rate = $1 WHERE id = $2 AND LOWER(role) = \'vendor\' RETURNING id, custom_commission_rate',
         [rate, userId]
     );
     return result.rows[0];
@@ -143,11 +143,51 @@ const getCommissions = async (status = null) => {
 };
 
 const approveCommission = async (transactionId) => {
-    const result = await pool.query(
-        "UPDATE commission_transactions SET status = 'COMPLETED' WHERE id = $1 RETURNING id, amount, status",
-        [transactionId]
-    );
-    return result.rows[0];
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Fetch transaction details
+        const transRes = await client.query(
+            'SELECT vendor_id, amount, remarks FROM commission_transactions WHERE id = $1 AND status IN (\'PENDING\', \'REQUESTED\') FOR UPDATE',
+            [transactionId]
+        );
+
+        if (transRes.rows.length === 0) {
+            throw new Error('Commission transaction not found or already processed.');
+        }
+
+        const { vendor_id, amount, remarks } = transRes.rows[0];
+
+        // 2. Update Transaction Status
+        await client.query(
+            "UPDATE commission_transactions SET status = 'COMPLETED' WHERE id = $1",
+            [transactionId]
+        );
+
+        // 3. Increment Vendor Wallet & Lifetime Earnings
+        await client.query(
+            'UPDATE users SET wallet_balance = wallet_balance + $1, total_earnings = total_earnings + $1 WHERE id = $2',
+            [amount, vendor_id]
+        );
+
+        // 4. Record a global transaction log for history
+        await client.query(
+            'INSERT INTO transactions (user_id, type, amount, status, remarks) VALUES ($1, $2, $3, $4, $5)',
+            [vendor_id, 'REFERRAL_CREDIT', amount, 'SUCCESS', `Approved: ${remarks}`]
+        );
+
+        await client.query('COMMIT');
+        
+        // Notify vendor internally (optional logic could be added here)
+        
+        return { id: transactionId, status: 'COMPLETED', amount };
+    } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+    } finally {
+        client.release();
+    }
 };
 
 module.exports = {

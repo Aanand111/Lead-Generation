@@ -54,12 +54,12 @@ const VendorEarnings = () => {
             {/* Premium Header */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
                 <div>
-                    <h1 className="text-4xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-none mb-2">Commission Ledger</h1>
-                    <p className="text-xs font-bold text-[var(--text-muted)] italic">Monitor your financial performance and payout benchmarks.</p>
+                    <h1 className="text-4xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-none mb-2">My Earnings</h1>
+                    <p className="text-xs font-bold text-[var(--text-muted)] italic">Track your commissions and manage your payouts.</p>
                 </div>
                 <button 
                     onClick={async () => {
-                        const confirmed = confirm('Broadcast settlement request for all pending commission nodes to Admin Hub?', 'Initiate Settlement');
+                        const confirmed = confirm('Do you want to request a payout for all your pending commissions?', 'Request Payout');
                         if (!confirmed) return;
                         
                         try {
@@ -71,53 +71,80 @@ const VendorEarnings = () => {
                             });
                             const data = await res.json();
                             if (data.success) {
-                                toast.success('Settlement request synchronized.');
+                                toast.success('Payout request sent successfully.');
                                 window.location.reload(); 
                             } else {
-                                toast.error(data.message || 'Protocol rejection.');
+                                toast.error(data.message || 'Request could not be processed.');
                             }
                         } catch (err) {
-                            toast.error('Network synchronization failure.');
+                            toast.error('Network error. Please try again.');
                         }
                     }}
                     className="btn btn-primary px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-3"
                 >
-                    <ArrowUpRight size={16} /> Request Settlement
+                    <ArrowUpRight size={16} /> Request Payout
                 </button>
             </header>
 
-            {/* Financial Grid */}
+            {/* Earnings Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
-                    { title: 'Total Revenue', value: stats.total_earnings, icon: TrendingUp, color: 'indigo', subtitle: 'Lifetime Earnings' },
-                    { title: 'Processing Node', value: stats.pending_earnings, icon: Clock, color: 'amber', subtitle: 'Awaiting Settlement' },
-                    { title: 'Settled Credit', value: Number(stats.total_earnings) - Number(stats.pending_earnings), icon: CheckCircle, color: 'emerald', subtitle: 'Successfully Paid' }
-                ].map((card, i) => (
-                    <div key={i} className="card p-8 border border-[var(--border-color)] bg-[var(--surface-elevated)] rounded-[2.5rem] relative overflow-hidden group shadow-lg">
-                        <div className={`absolute top-0 right-0 p-8 text-${card.color}-500/5 group-hover:scale-150 transition-transform duration-700 pointer-events-none`}>
-                            <card.icon size={120} />
-                        </div>
-                        <div className="relative z-10 flex flex-col gap-4">
-                            <div className={`w-12 h-12 rounded-2xl bg-${card.color}-500/10 text-${card.color}-500 flex items-center justify-center`}>
-                                <card.icon size={24} />
+                    { 
+                        title: 'Lifetime Revenue', 
+                        value: Number(stats.total_earnings) + Number(stats.pending_earnings), 
+                        icon: TrendingUp, 
+                        color: 'indigo', 
+                        subtitle: 'Total Money Earned' 
+                    },
+                    { 
+                        title: 'Pending Payout', 
+                        value: stats.pending_earnings, 
+                        icon: Clock, 
+                        color: 'amber', 
+                        subtitle: 'Awaiting Transfer' 
+                    },
+                    { 
+                        title: 'Settled Amount', 
+                        value: stats.total_earnings, 
+                        icon: CheckCircle, 
+                        color: 'emerald', 
+                        subtitle: 'Successfully Paid' 
+                    }
+                ].map((card, i) => {
+                    // Helper to get consistent colors that definitely work in the build
+                    const bgIconClass = card.color === 'indigo' ? 'text-indigo-500/5' : 
+                                      card.color === 'amber' ? 'text-amber-500/5' : 'text-emerald-500/5';
+                    
+                    const smallBgClass = card.color === 'indigo' ? 'bg-indigo-500/10 text-indigo-500' : 
+                                       card.color === 'amber' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500';
+
+                    return (
+                        <div key={i} className="card p-8 border border-[var(--border-color)] bg-[var(--surface-elevated)] rounded-[2.5rem] relative overflow-hidden group shadow-lg">
+                            <div className={`absolute top-0 right-0 p-8 ${bgIconClass} group-hover:scale-150 transition-transform duration-700 pointer-events-none`}>
+                                <card.icon size={120} />
                             </div>
-                            <div>
-                                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{card.title}</p>
-                                <h3 className="text-3xl font-black text-[var(--text-dark)] tracking-tighter tabular-nums">
-                                    ₹{Number(card.value || 0).toLocaleString()}
-                                </h3>
-                                <p className="text-[9px] font-bold text-[var(--text-muted)] italic mt-2 opacity-60">{card.subtitle}</p>
+                            <div className="relative z-10 flex flex-col gap-4">
+                                <div className={`w-12 h-12 rounded-2xl ${smallBgClass} flex items-center justify-center`}>
+                                    <card.icon size={24} />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{card.title}</p>
+                                    <h3 className="text-3xl font-black text-[var(--text-dark)] tracking-tighter tabular-nums">
+                                        ₹{Number(card.value || 0).toLocaleString()}
+                                    </h3>
+                                    <p className="text-[9px] font-bold text-[var(--text-muted)] italic mt-2 opacity-60">{card.subtitle}</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
-            {/* Activity Matrix */}
+            {/* Earnings History */}
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
                     <div className="flex items-center gap-6">
-                        <h2 className="text-xl font-black text-[var(--text-dark)] uppercase tracking-tight">Financial Stream</h2>
+                        <h2 className="text-xl font-black text-[var(--text-dark)] uppercase tracking-tight">Earnings History</h2>
                         <div className="flex bg-[var(--bg-color)]/50 p-1 rounded-xl border border-[var(--border-color)]">
                             {['all', 'completed', 'pending', 'failed'].map(tab => (
                                 <button 
@@ -133,7 +160,7 @@ const VendorEarnings = () => {
                     <div className="flex items-center gap-3">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={12} />
-                            <input type="text" placeholder="Search Matrix..." className="bg-[var(--surface-elevated)] border border-[var(--border-color)] rounded-xl py-2 pl-9 pr-4 text-[10px] font-bold outline-none focus:border-indigo-500 transition-all w-64" />
+                            <input type="text" placeholder="Search Transactions..." className="bg-[var(--surface-elevated)] border border-[var(--border-color)] rounded-xl py-2 pl-9 pr-4 text-[10px] font-bold outline-none focus:border-indigo-500 transition-all w-64" />
                         </div>
                         <button className="p-2.5 bg-[var(--surface-elevated)] border border-[var(--border-color)] rounded-xl text-[var(--text-muted)] hover:text-indigo-500 transition-all">
                             <Download size={14} />
@@ -146,17 +173,17 @@ const VendorEarnings = () => {
                         <table className="table hover-highlight mb-0">
                             <thead className="bg-[var(--bg-color)]/50 border-b border-[var(--border-color)]">
                                 <tr>
-                                    <th className="px-8 py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Reference Node</th>
-                                    <th className="py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Operational Value</th>
-                                    <th className="py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Sync Date</th>
-                                    <th className="py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none text-right px-8">Audit State</th>
+                                    <th className="px-8 py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Referral Type</th>
+                                    <th className="py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Amount</th>
+                                    <th className="py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Date</th>
+                                    <th className="py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none text-right px-8">Payout Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan="4" className="py-24 text-center text-[10px] font-black text-indigo-500/50 uppercase tracking-[0.2em] animate-pulse">Decrypting financial stream...</td></tr>
+                                    <tr><td colSpan="4" className="py-24 text-center text-[10px] font-black text-indigo-500/50 uppercase tracking-[0.2em] animate-pulse">Loading your earnings...</td></tr>
                                 ) : filteredTransactions.length === 0 ? (
-                                    <tr><td colSpan="4" className="py-24 text-center text-xs font-bold text-[var(--text-muted)] italic px-12 leading-relaxed">No financial linkages detected in this sector. Commission bandwidth is currently idle.</td></tr>
+                                    <tr><td colSpan="4" className="py-24 text-center text-xs font-bold text-[var(--text-muted)] italic px-12 leading-relaxed">No transactions found yet. Start referring to see your earnings here!</td></tr>
                                 ) : (
                                     filteredTransactions.map(item => (
                                         <tr key={item.id} className="group border-b border-[var(--border-color)]/30 last:border-0 hover:bg-white/[0.01]">
@@ -166,7 +193,7 @@ const VendorEarnings = () => {
                                                         <Activity size={18} />
                                                     </div>
                                                     <div>
-                                                        <div className="font-black text-[11px] text-[var(--text-dark)] uppercase tracking-tight mb-1">{item.description || 'System Commission'}</div>
+                                                        <div className="font-black text-[11px] text-[var(--text-dark)] uppercase tracking-tight mb-1">{item.description || 'Referral Commission'}</div>
                                                         <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-60">ID: {item.id.slice(0, 8)}</div>
                                                     </div>
                                                 </div>

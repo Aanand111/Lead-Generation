@@ -50,7 +50,7 @@
 
 const { Queue, Worker } = require('bullmq');
 const Redis = require('ioredis');
-const { archiveExpiredPosters, expirePurchasedLeads } = require('../jobs/maintenanceJobs');
+const { archiveExpiredPosters, expirePurchasedLeads, checkPackageRenewals } = require('../jobs/maintenanceJobs');
 const { redisConnection } = require('../config/redis'); // local fallback
 
 // Correct Redis connection for BullMQ
@@ -71,6 +71,8 @@ const worker = new Worker('MaintenanceQueue', async (job) => {
         await archiveExpiredPosters();
     } else if (job.name === 'DailyLeadCleanup') {
         await expirePurchasedLeads();
+    } else if (job.name === 'DailyRenewalCheck') {
+        await checkPackageRenewals();
     }
 }, { connection }); // same connection
 
@@ -84,6 +86,9 @@ const scheduleJobs = async () => {
     
     // Daily cron at 02:00 AM
     await maintenanceQueue.add('DailyLeadCleanup', {}, { repeat: { pattern: '0 2 * * *' } });
+
+    // Daily cron at 09:00 AM
+    await maintenanceQueue.add('DailyRenewalCheck', {}, { repeat: { pattern: '0 9 * * *' } });
 
     console.log('[CRON] Maintenance jobs successfully scheduled in Redis.');
 };

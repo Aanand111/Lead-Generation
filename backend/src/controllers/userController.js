@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { buildLeadPurchaseInsert, loadLeadPurchaseColumns } = require('../utils/leadPurchaseSchema');
 
 // --- Dashboard Stats ---
 const getDashboardStats = async (req, res, next) => {
@@ -145,8 +146,14 @@ const purchaseLead = async (req, res, next) => {
         const userId = req.user.id;
         const { id: leadId } = req.params;
 
-        // 1. Get lead cost (fixed 10 for now or fetch from DB)
-        const cost = 10;
+        // 1. Get lead details for price and metadata
+        const leadCheck = await client.query('SELECT lead_value FROM leads WHERE id = $1', [leadId]);
+        if (leadCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, message: 'Lead not found.' });
+        }
+        const leadPriceValue = leadCheck.rows[0].lead_value || 0;
+        const cost = 10; // Fixed credit cost
 
         // 2. Check user balance
         const userRes = await client.query('SELECT wallet_balance FROM users WHERE id = $1 FOR UPDATE', [userId]);
@@ -160,10 +167,16 @@ const purchaseLead = async (req, res, next) => {
         // 3. Deduct balance
         await client.query('UPDATE users SET wallet_balance = wallet_balance - $1 WHERE id = $2', [cost, userId]);
 
-        // 4. Create purchase record
+        // Keep inserts compatible with the live lead_purchases schema, which has drifted across environments.
+        const leadPurchaseColumns = await loadLeadPurchaseColumns(client);
+        const leadPurchaseInsert = buildLeadPurchaseInsert(leadPurchaseColumns, leadPriceValue);
+        const insertParams = [userId, leadId, cost, 'ACQUIRED', ...leadPurchaseInsert.values];
+        const placeholders = insertParams.map((_, index) => `$${index + 1}`).join(', ');
+
         await client.query(
-            'INSERT INTO lead_purchases (user_id, lead_id, credits_used, status) VALUES ($1, $2, $3, $4)',
-            [userId, leadId, cost, 'ACQUIRED']
+            `INSERT INTO lead_purchases (${leadPurchaseInsert.insertColumns.join(', ')}) 
+             VALUES (${placeholders})`,
+            insertParams
         );
 
         // 5. Create transaction log
@@ -173,6 +186,16 @@ const purchaseLead = async (req, res, next) => {
         );
 
         await client.query('COMMIT');
+
+        // Real-time Wallet Refresh
+        try {
+            const { sendToUser } = require('../utils/socket');
+            const updatedUser = await pool.query('SELECT wallet_balance FROM users WHERE id = $1', [userId]);
+            sendToUser(userId, 'wallet_update', { wallet_balance: updatedUser.rows[0].wallet_balance });
+        } catch (sErr) {
+            console.error('[SOCKET ERROR] Failed to send balance update:', sErr.message);
+        }
+
         res.status(200).json({ success: true, message: 'Lead purchased successfully.' });
     } catch (error) {
         await client.query('ROLLBACK');
@@ -204,6 +227,8 @@ const getMyLeads = async (req, res, next) => {
                 email: r.customer_email,
                 city: r.city,
                 state: r.state,
+                pincode: r.pincode,
+                category: r.category,
                 purchase_date: r.purchase_date,
                 status: r.purchase_status
             }))
@@ -487,6 +512,15 @@ const generatePoster = async (req, res, next) => {
                  VALUES ($1, $2, $3, $4, $5, $6)`,
                 [userId, 'PURCHASE', 0, extraPosterCost, 'SUCCESS', `Premium Poster Render: ${title}`]
             );
+
+            // Real-time Wallet Refresh
+            try {
+                const { sendToUser } = require('../utils/socket');
+                const updatedUser = await pool.query('SELECT wallet_balance FROM users WHERE id = $1', [userId]);
+                sendToUser(userId, 'wallet_update', { wallet_balance: updatedUser.rows[0].wallet_balance });
+            } catch (sErr) {
+                console.error('[SOCKET ERROR] Failed to send balance update:', sErr.message);
+            }
         }
 
         // Store generated poster (referencing template layout) with expiry_date
@@ -539,49 +573,33 @@ const purchaseSubscriptionPlan = async (req, res, next) => {
             [userId, 'PLAN_PURCHASE', plan.price, creditsToAward, 'SUCCESS', `Activated Plan: ${plan.name}`]
         );
 
-        // 5. Handle Referrer Commission (Dynamic Payout Rules)
-        const userReferrerRes = await client.query('SELECT referred_by FROM users WHERE id = $1', [userId]);
-        const referrerId = userReferrerRes.rows[0].referred_by;
-
-        if (referrerId) {
-            const referrerRes = await client.query('SELECT role, custom_commission_rate FROM users WHERE id = $1', [referrerId]);
-            const referrer = referrerRes.rows[0];
-
-            if (referrer && referrer.role === 'vendor') {
-                // Get Global Rate
-                const globalRateRes = await client.query("SELECT setting_value FROM system_settings WHERE setting_key = 'referral_vendor_commission_rate'");
-                const globalRate = parseFloat(globalRateRes.rows[0]?.setting_value || 5);
-                
-                // Use custom rate if available, else global
-                const rate = referrer.custom_commission_rate !== null ? parseFloat(referrer.custom_commission_rate) : globalRate;
-                const commissionAmount = parseFloat(plan.price) * (rate / 100);
-
-                if (commissionAmount > 0) {
-                    // Award Commission to Vendor Wallet & Total Earnings
-                    await client.query(
-                        'UPDATE users SET wallet_balance = wallet_balance + $1, total_earnings = total_earnings + $1 WHERE id = $2',
-                        [commissionAmount, referrerId]
-                    );
-
-                    // Log Commission Transaction for specialized vendor tracking
-                    await client.query(
-                        `INSERT INTO commission_transactions (vendor_id, amount, type, status, remarks, created_at) 
-                         VALUES ($1, $2, $3, $4, $5, NOW())`,
-                        [referrerId, commissionAmount, 'REFERRAL_COMMISSION', 'COMPLETED', `Commission from purchase of ${plan.name} by referred user`]
-                    );
-
-                    // Add to general transactions for vendor ledger history
-                    await client.query(
-                        'INSERT INTO transactions (user_id, type, amount, status, remarks) VALUES ($1, $2, $3, $4, $5)',
-                        [referrerId, 'REFERRAL_CREDIT', commissionAmount, 'SUCCESS', `Referral Commission: ${rate}% on ${plan.name} purchase`]
-                    );
-                    
-                    console.log(`[PAYOUT] Commission of ${commissionAmount} awarded to Vendor ${referrerId}`);
-                }
+        // 5. Handle Referrer Commission (Unified via commissionService)
+        try {
+            if (plan.price > 0) {
+                const { processCommission } = require('../services/commissionService');
+                await processCommission(userId, parseFloat(plan.price), `Package Purchase: ${plan.name} (Direct Activation)`);
             }
+        } catch (commErr) {
+            console.error('[COMMISSION ERROR] Failed to process during direct activation:', commErr.message);
         }
 
         await client.query('COMMIT');
+
+        // Real-time Wallet Refresh
+        try {
+            const { sendToUser } = require('../utils/socket');
+            const updatedUser = await pool.query('SELECT wallet_balance FROM users WHERE id = $1', [userId]);
+            sendToUser(userId, 'wallet_update', { wallet_balance: updatedUser.rows[0].wallet_balance });
+
+            // Also notify referrer if commission was awarded
+            if (referrerId) {
+                const updatedReferrer = await pool.query('SELECT wallet_balance FROM users WHERE id = $1', [referrerId]);
+                sendToUser(referrerId, 'wallet_update', { wallet_balance: updatedReferrer.rows[0].wallet_balance });
+            }
+        } catch (sErr) {
+            console.error('[SOCKET ERROR] Failed to send balance update:', sErr.message);
+        }
+
         res.status(200).json({ 
             success: true, 
             message: `Plan ${plan.name} activated. ${creditsToAward} credits added to your wallet.`,

@@ -8,6 +8,8 @@ const { pool } = require('../config/db');
  */
 const processCommission = async (userId, purchaseAmount, remarks) => {
     try {
+        console.log(`[COMMISSION DEBUG] Initiating calculation for User: ${userId} | Purchase: ₹${purchaseAmount}`);
+        
         // 1. Find if the user was referred by a vendor
         const userRes = await pool.query(
             'SELECT referred_by FROM users WHERE id = $1',
@@ -16,11 +18,11 @@ const processCommission = async (userId, purchaseAmount, remarks) => {
         
         const referrerId = userRes.rows[0]?.referred_by;
         if (!referrerId) {
-            console.log(`[COMMISSION] Skip: User ${userId} has no referrer.`);
+            console.log(`[COMMISSION] Skip: User ${userId} has no referrer node.`);
             return;
         }
 
-        // 2. Fetch Referrer (Vendor) details to get their custom rate
+        // 2. Fetch Referrer (Vendor) details
         const vendorRes = await pool.query(
             'SELECT id, role, custom_commission_rate FROM users WHERE id = $1',
             [referrerId]
@@ -28,46 +30,46 @@ const processCommission = async (userId, purchaseAmount, remarks) => {
         
         const vendor = vendorRes.rows[0];
         if (!vendor || vendor.role !== 'vendor') {
-            console.log(`[COMMISSION] Skip: Referrer ${referrerId} is not a valid vendor node.`);
+            console.log(`[COMMISSION] Skip: Referrent ${referrerId} is not a vendor role (Found: ${vendor?.role}).`);
             return;
         }
 
-        // 3. Get the Commission Rate (Logic: Individual Override -> Global Protocol)
+        // 3. Resolve Commission Rate (Priority: Local Override -> Global Protocol)
         let commissionRate = vendor.custom_commission_rate;
-        let mode = 'CUSTOM_OVERRIDE';
-        
-        if (commissionRate === null || commissionRate === undefined) {
-            // Use global setting if custom isn't set
+        let strategy = 'LOCAL_OVERRIDE';
+
+        if (commissionRate === null || commissionRate === undefined || commissionRate === '') {
             const settingRes = await pool.query(
                 "SELECT setting_value FROM system_settings WHERE setting_key = 'referral_vendor_commission_rate'"
             );
-            commissionRate = parseFloat(settingRes.rows[0]?.setting_value || 5); // Default to 5% if setting missing
-            mode = 'GLOBAL_PROTOCOL';
+            commissionRate = parseFloat(settingRes.rows[0]?.setting_value || 5);
+            strategy = 'GLOBAL_PROTOCOL';
         } else {
-             commissionRate = parseFloat(commissionRate);
+            commissionRate = parseFloat(commissionRate);
         }
 
-        // 4. Calculate Amount
-        const commissionAmount = (purchaseAmount * commissionRate) / 100;
+        // 4. Execute Calculation
+        const commissionAmount = parseFloat(((purchaseAmount * commissionRate) / 100).toFixed(2));
+
+        console.log(`[COMMISSION] Resolved Rate: ${commissionRate}% | Strategy: ${strategy} | Result: ₹${commissionAmount}`);
 
         if (commissionAmount <= 0) {
-            console.log(`[COMMISSION] Skip: Calculated amount is zero.`);
+            console.log(`[COMMISSION] Skip: Resulting credit is zero.`);
             return;
         }
 
-        // 5. Record the transaction in the ledger
-        // Initially PENDING: Requires Admin Approval before it moves to COMPLETED status and reflects in cleared earnings.
+        // 5. Record in Ledger (PENDING status for Audit)
         await pool.query(
             `INSERT INTO commission_transactions (vendor_id, amount, status, remarks, type) 
              VALUES ($1, $2, 'PENDING', $3, 'REFERRAL_COMMISSION')`,
             [referrerId, commissionAmount, remarks]
         );
 
-        console.log(`[COMMISSION] Success: Processed for Vendor ${referrerId} | Amount: ₹${commissionAmount} | Mode: ${mode} (${commissionRate}%) | Context: ${remarks}`);
-        
+        console.log(`[COMMISSION] Success: Transaction logged for Vendor ${referrerId}`);
+        return commissionAmount;
+
     } catch (error) {
-        console.error('[COMMISSION SERVICE CRITICAL]:', error);
-        // We don't throw here to ensure the core purchase flow (e.g. subscription activation) doesn't fail due to commission logic errors.
+        console.error('[COMMISSION SERVICE CRITICAL FAILURE]:', error);
     }
 };
 

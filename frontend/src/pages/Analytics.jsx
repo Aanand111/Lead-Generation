@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { 
     TrendingUp, TrendingDown, Star, AlertTriangle, 
     Search, RefreshCcw, ChevronRight, BarChart3, 
     Target, Award, Activity, ShieldAlert, CheckCircle, 
     Layers, PieChart, Info, ArrowUpRight, ArrowDownRight,
-    Users, Briefcase, MousePointer2
+    Users, Briefcase, MousePointer2, FileSpreadsheet,
+    Download, LayoutGrid, Calendar, Filter, UserCheck, ShieldCheck
 } from 'lucide-react';
+import { 
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
+    ResponsiveContainer, LineChart, Line, AreaChart, Area, 
+    Cell, Legend 
+} from 'recharts';
 import api from '../utils/api';
 
 const Analytics = () => {
@@ -14,8 +21,11 @@ const Analytics = () => {
         feedbackTrends: [],
         bannerPerformance: [],
         subscriptionStats: [],
-        leadLifecycle: { dailyVolume: [], categoryDistribution: [] }
+        leadLifecycle: { dailyVolume: [], categoryDistribution: [] },
+        vendorTrends: []
     });
+    const [leadReports, setLeadReports] = useState([]);
+    const [reportFilters, setReportFilters] = useState({ status: '', category: '' });
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('productivity');
     const [message, setMessage] = useState('');
@@ -47,11 +57,37 @@ const Analytics = () => {
             if (data.success) {
                 setAnalytics(data.data);
             }
+            
+            // Also fetch lead reports
+            const repData = await api.get('/admin/analytics/lead-reports');
+            if (repData.data.success) {
+                setLeadReports(repData.data.data);
+            }
         } catch (err) {
             console.error("Fetch analytics error:", err);
             setMessage('Failed to load analytics data. Please try again.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleExport = async (format = 'xlsx', type = 'leads') => {
+        try {
+            const response = await api.get('/admin/analytics/export-leads', {
+                params: { ...reportFilters, format, type },
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${type === 'leads' ? 'Lead_Report' : 'Vendor_Report'}_${new Date().toISOString().split('T')[0]}.${format}`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            toast.success(`${type.toUpperCase()} ${format.toUpperCase()} generated!`);
+        } catch (err) {
+            console.error("Export failed:", err);
+            toast.error("Generation failed. Try again.");
         }
     };
 
@@ -66,25 +102,30 @@ const Analytics = () => {
                     <h1 className="text-4xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-none mb-2">Performance Analytics</h1>
                     <p className="text-xs font-bold text-[var(--text-muted)] leading-none">Detailed analysis of vendor productivity, conversion rates, and quality reports.</p>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex gap-4 flex-wrap">
                     <button 
-                        onClick={() => {
-                            const dataToExport = activeTab === 'productivity' ? analytics.vendorProductivity :
-                                              activeTab === 'leads' ? analytics.leadLifecycle.dailyVolume :
-                                              activeTab === 'feedback' ? analytics.feedbackTrends :
-                                              activeTab === 'subscriptions' ? analytics.subscriptionStats :
-                                              analytics.bannerPerformance;
-                            exportToCSV(dataToExport, `${activeTab}_report_${new Date().toISOString().split('T')[0]}`);
-                        }}
-                        className="px-6 py-4 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 flex items-center gap-2 uppercase text-[10px] font-black tracking-widest border border-indigo-500"
+                        onClick={() => handleExport('xlsx', 'leads')}
+                        className="px-4 py-3 bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2 uppercase text-[9px] font-black tracking-widest border border-emerald-500"
                     >
-                        Export Report
+                        <FileSpreadsheet size={14} /> Leads (XLSX)
+                    </button>
+                    <button 
+                        onClick={() => handleExport('csv', 'leads')}
+                        className="px-4 py-3 bg-slate-700 text-white rounded-xl shadow-lg hover:bg-slate-800 transition-all active:scale-95 flex items-center gap-2 uppercase text-[9px] font-black tracking-widest"
+                    >
+                        <Download size={14} /> Leads (CSV)
+                    </button>
+                    <button 
+                        onClick={() => handleExport('xlsx', 'vendors')}
+                        className="px-4 py-3 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 flex items-center gap-2 uppercase text-[9px] font-black tracking-widest border border-indigo-500"
+                    >
+                        <UserCheck size={14} /> Vendors (XLSX)
                     </button>
                     <button 
                         onClick={fetchAnalytics}
-                        className="p-4 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-2xl text-[var(--text-muted)] hover:text-indigo-500 transition-all shadow-sm active:scale-95 flex items-center gap-2 uppercase text-[10px] font-black tracking-widest"
+                        className="p-3 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl text-[var(--text-muted)] hover:text-indigo-500 transition-all shadow-sm active:scale-95 flex items-center gap-2 uppercase text-[9px] font-black tracking-widest"
                     >
-                        <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} /> Refresh Data
+                        <RefreshCcw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
                     </button>
                 </div>
             </header>
@@ -93,6 +134,7 @@ const Analytics = () => {
                 {[
                     { id: 'productivity', label: 'Vendor Productivity', icon: Briefcase },
                     { id: 'leads', label: 'Lead Trends', icon: Target },
+                    { id: 'reports', label: 'Detailed Reports', icon: FileSpreadsheet },
                     { id: 'feedback', label: 'Quality Trends', icon: Award },
                     { id: 'subscriptions', label: 'Revenue & Subs', icon: PieChart },
                     { id: 'banners', label: 'Banner optimization', icon: MousePointer2 }
@@ -149,33 +191,56 @@ const Analytics = () => {
                                      <div className="relative z-10">
                                         <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3">Top Performers</p>
                                         <h3 className="text-4xl font-black text-rose-500 tracking-tighter leading-none">
-                                            {analytics.vendorProductivity.reduce((acc, v) => acc + (v.leads_uploaded > 50 ? 1 : 0), 0)} <span className="text-xs opacity-50 uppercase tracking-widest">High Vol</span>
+                                            {analytics.vendorProductivity.reduce((acc, v) => acc + (Number(v.leads_uploaded) >= 10 ? 1 : 0), 0)} <span className="text-xs opacity-50 uppercase tracking-widest">High Vol</span>
                                         </h3>
                                         <div className="flex items-center gap-1 mt-2 text-rose-600 font-black text-[9px] uppercase tracking-widest leading-none">
-                                            <ShieldAlert size={10} /> Top-Tier Vendors
+                                            <ShieldAlert size={10} /> Active Growth Nodes
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                             {/* Productivity Comparison Chart */}
-                            <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm">
-                                <h4 className="text-sm font-black uppercase tracking-tight text-[var(--text-dark)] mb-10 flex items-center gap-3"><Activity size={18} className="text-indigo-600" /> Performance Chart - Top Vendors</h4>
-                                <div className="flex items-end justify-between gap-4 h-48 mb-6 overflow-x-auto pb-4">
-                                    {analytics.vendorProductivity.slice(0, 10).map((vendor, i) => (
-                                        <div key={i} className="flex-1 min-w-[60px] flex flex-col items-center gap-3 group px-2">
-                                            <div className="w-full relative h-full flex flex-col justify-end">
-                                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-black text-indigo-600 opacity-0 group-hover:opacity-100 transition-all">{vendor.leads_uploaded}</div>
-                                                <div 
-                                                    className="w-full bg-indigo-50 dark:bg-indigo-900/20 rounded-t-xl group-hover:bg-indigo-600 transition-all cursor-default relative overflow-hidden border border-transparent group-hover:border-indigo-400 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.3)]"
-                                                    style={{ height: `${(vendor.leads_uploaded / (Math.max(...analytics.vendorProductivity.map(v => v.leads_uploaded)) || 1)) * 100}%`, minHeight: '8px' }}
-                                                >
-                                                    <div className="absolute top-0 right-0 w-8 h-32 bg-white/10 -rotate-45 translate-x-4 -translate-y-4"></div>
-                                                </div>
-                                            </div>
-                                            <span className="text-[8px] font-black uppercase text-[var(--text-muted)] tracking-widest text-center truncate w-full italic group-hover:text-indigo-600 transition-colors">{(vendor.vendor_name || '').split(' ')[0]}</span>
-                                        </div>
-                                    ))}
+                            {/* Advanced Trends: Vendor Performance (Recharts) */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm">
+                                    <h4 className="text-sm font-black uppercase tracking-tight text-[var(--text-dark)] mb-10 flex items-center gap-3"><TrendingUp size={18} className="text-indigo-600" /> Vendor Upload vs Sales (Trends)</h4>
+                                    <div className="h-[300px] w-full">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={analytics.vendorTrends}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
+                                                <XAxis dataKey="month" tick={{fontSize: 9, fontWeight: 'bold'}} axisLine={false} tickLine={false} />
+                                                <YAxis tick={{fontSize: 9, fontWeight: 'bold'}} axisLine={false} tickLine={false} />
+                                                <Tooltip 
+                                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
+                                                />
+                                                <Legend wrapperStyle={{ fontSize: '9px', fontWeight: 'black', textTransform: 'uppercase', paddingTop: '20px' }} />
+                                                <Bar dataKey="leads_uploaded" name="Uploaded" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={20} />
+                                                <Bar dataKey="leads_sold" name="Purchased" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                                <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm">
+                                    <h4 className="text-sm font-black uppercase tracking-tight text-[var(--text-dark)] mb-10 flex items-center gap-3"><Activity size={18} className="text-indigo-600" /> Top Performer Productivity</h4>
+                                    <div className="h-[300px] w-full">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={analytics.vendorProductivity.slice(0, 7)}>
+                                                <defs>
+                                                    <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
+                                                <XAxis dataKey="vendor_name" tick={{fontSize: 8, fontWeight: 'bold'}} axisLine={false} tickLine={false} />
+                                                <YAxis tick={{fontSize: 8, fontWeight: 'bold'}} axisLine={false} tickLine={false} />
+                                                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', fontSize: '10px' }} />
+                                                <Area type="monotone" dataKey="leads_uploaded" stroke="#6366f1" fillOpacity={1} fill="url(#colorLeads)" />
+                                                <Area type="monotone" dataKey="conversion_rate" stroke="#10b981" fillOpacity={0} />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
                                 </div>
                             </div>
 
@@ -269,7 +334,70 @@ const Analytics = () => {
                             </div>
                         </div>
                     )}
-                     {/* Tab 2: Lead Trends */}
+                    {/* Tab 6: Detailed Lead Reports (New) */}
+                    {activeTab === 'reports' && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <select 
+                                    className="p-4 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:border-indigo-500"
+                                    onChange={(e) => setReportFilters({...reportFilters, status: e.target.value})}
+                                >
+                                    <option value="">All Status</option>
+                                    <option value="ACTIVE">Active</option>
+                                    <option value="SOLD">Sold</option>
+                                    <option value="EXPIRED">Expired</option>
+                                </select>
+                                <select 
+                                    className="p-4 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:border-indigo-500"
+                                    onChange={(e) => setReportFilters({...reportFilters, category: e.target.value})}
+                                >
+                                    <option value="">All Categories</option>
+                                    {analytics.leadLifecycle.categoryDistribution.map(c => (
+                                        <option key={c.category} value={c.category}>{c.category}</option>
+                                    ))}
+                                </select>
+                                <button className="md:col-span-2 p-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest">
+                                    Apply Filter Protocol
+                                </button>
+                            </div>
+
+                            <div className="card shadow-2xl border border-[var(--border-color)] overflow-hidden bg-[var(--surface-color)] rounded-[2.5rem]">
+                                <div className="p-0 overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead className="bg-[var(--bg-color)]/30 border-b border-[var(--border-color)] text-[9px] uppercase font-black tracking-widest">
+                                            <tr>
+                                                <th className="px-6 py-4">Lead ID</th>
+                                                <th className="px-6 py-4">Customer</th>
+                                                <th className="px-6 py-4">Vendor</th>
+                                                <th className="px-6 py-4">Status</th>
+                                                <th className="px-6 py-4">Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {leadReports.map((lead, i) => (
+                                                <tr key={i} className="border-b border-[var(--border-color)]/30 hover:bg-white/5 transition-colors">
+                                                    <td className="px-6 py-4 text-[10px] font-black text-indigo-500 italic">{lead.lead_id}</td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-xs font-black text-[var(--text-dark)] uppercase">{lead.customer_name}</div>
+                                                        <div className="text-[9px] text-[var(--text-muted)] font-bold">{lead.city}, {lead.state}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-[10px] font-black uppercase text-[var(--text-muted)]">{lead.created_by_vendor}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest leading-none ${lead.purchase_date ? 'bg-emerald-500/10 text-emerald-500' : 'bg-indigo-500/10 text-indigo-500'}`}>
+                                                            {lead.purchase_date ? 'SOLD' : 'AVAILABLE'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-[10px] font-bold text-[var(--text-muted)] italic">
+                                                        {new Date(lead.upload_date).toLocaleDateString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {activeTab === 'leads' && (
                         <div className="space-y-8">
                             <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm">
@@ -277,31 +405,45 @@ const Analytics = () => {
                                     <h4 className="text-sm font-black uppercase tracking-tight text-[var(--text-dark)] flex items-center gap-3"><TrendingUp size={18} className="text-indigo-600" /> Upload vs Purchase Trends</h4>
                                      <div className="flex gap-4">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-indigo-600"></div>
+                                            <div className="w-2 h-2 rounded-full bg-indigo-600 shadow-[0_0_8px_rgba(99,102,241,0.4)]"></div>
                                             <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Uploaded</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
                                             <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Purchased</span>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-end justify-between gap-3 h-64 mb-6">
-                                    {analytics.leadLifecycle.dailyVolume.map((t, i) => (
-                                        <div key={i} className="flex-1 flex flex-col items-center gap-3 group h-full">
-                                            <div className="w-full relative h-[85%] flex gap-1 items-end justify-center">
-                                                <div 
-                                                    className="w-1.5 bg-indigo-200 dark:bg-indigo-900/30 rounded-t-full group-hover:bg-indigo-600 transition-all cursor-default"
-                                                    style={{ height: `${(t.uploaded / (Math.max(...analytics.leadLifecycle.dailyVolume.map(x => x.uploaded), 1)) ) * 100}%` }}
-                                                ></div>
-                                                <div 
-                                                    className="w-1.5 bg-emerald-200 dark:bg-emerald-900/30 rounded-t-full group-hover:bg-emerald-500 transition-all cursor-default"
-                                                    style={{ height: `${(t.purchased / (Math.max(...analytics.leadLifecycle.dailyVolume.map(x => x.uploaded), 1)) ) * 100}%` }}
-                                                ></div>
+                                <div className="flex items-end justify-between gap-1 h-64 mb-14 px-2">
+                                    {analytics.leadLifecycle.dailyVolume.map((t, i) => {
+                                        const maxVal = Math.max(...analytics.leadLifecycle.dailyVolume.map(x => x.uploaded), ...analytics.leadLifecycle.dailyVolume.map(x => x.purchased), 1);
+                                        const upHeight = Math.min((t.uploaded / maxVal) * 100, 100);
+                                        const purHeight = Math.min((t.purchased / maxVal) * 100, 100);
+                                        
+                                        return (
+                                            <div key={i} className="flex-1 flex flex-col items-center group h-full">
+                                                <div className="w-full relative h-[75%] flex gap-0.5 items-end justify-center overflow-hidden rounded-t-lg">
+                                                    <div 
+                                                        className="w-1.5 bg-indigo-500/20 dark:bg-indigo-900/40 rounded-t-full group-hover:bg-indigo-600 transition-all duration-500 cursor-pointer relative"
+                                                        style={{ height: `${upHeight}%` }}
+                                                    >
+                                                        {upHeight > 0 && <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity text-[7px] font-black p-0.5 bg-indigo-600 text-white rounded mb-0.5 z-20">{t.uploaded}</div>}
+                                                    </div>
+                                                    <div 
+                                                        className="w-1.5 bg-emerald-500/20 dark:bg-emerald-900/40 rounded-t-full group-hover:bg-emerald-500 transition-all duration-500 cursor-pointer relative"
+                                                        style={{ height: `${purHeight}%` }}
+                                                    >
+                                                        {purHeight > 0 && <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity text-[7px] font-black p-0.5 bg-emerald-500 text-white rounded mb-0.5 z-20">{t.purchased}</div>}
+                                                    </div>
+                                                </div>
+                                                <div className="h-[25%] flex items-start justify-center pt-4">
+                                                    <span className="text-[7px] font-black uppercase text-[var(--text-muted)] tracking-tighter rotate-[-45deg] whitespace-nowrap origin-top-right">
+                                                        {t.period}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <span className="text-[8px] font-black uppercase text-[var(--text-muted)] tracking-widest rotate-45 mt-2 origin-left">{t.period}</span>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
 

@@ -40,9 +40,14 @@ class BulkJobProcessor {
                 break;
             }
 
-            // Execute the handler (e.g., send notification)
-            // Using Promise.allSettled to process the batch concurrently
-            await Promise.allSettled(rows.map(user => handler(user)));
+            // Execute the handler
+            if (options.useBatchHandler) {
+                // Pass the whole array of rows to the handler (Massively faster for addBulk)
+                await handler(rows);
+            } else {
+                // Execute individual handlers concurrently
+                await Promise.allSettled(rows.map(user => handler(user)));
+            }
 
             processedCount += rows.length;
             lastSeenId = rows[rows.length - 1].id;

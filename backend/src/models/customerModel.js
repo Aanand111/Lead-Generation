@@ -45,18 +45,18 @@ const getAllCustomers = async (page = 1, limit = 10, search = '') => {
     queryParams.push(limit, offset);
     const result = await pool.query(queryStr, queryParams);
 
-    return { 
+    return {
         customers: result.rows.map(row => ({
             ...row,
             status: row.status === 'ACTIVE' ? 'Active' : 'Inactive'
-        })), 
-        total 
+        })),
+        total
     };
 };
 
 const createCustomer = async (data) => {
     const { name, email, phone, whatsapp, referral, state, city, pincode, status } = data;
-    
+
     // Create a new customer record
     // Adds a user and initializes their profile entry
     const query = `
@@ -97,7 +97,7 @@ const updateCustomer = async (id, data) => {
 
     const values = [name, email, phone, status === 'Active' ? 'ACTIVE' : 'BLOCKED', id];
     const result = await pool.query(query, values);
-    
+
     if (result.rows.length > 0) {
         await pool.query(
             `INSERT INTO user_profiles (user_id, pincode, city, state) 

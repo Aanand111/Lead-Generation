@@ -104,8 +104,8 @@ const UserProfile = () => {
                                 <div className="text-sm font-black text-emerald-500 tracking-widest tabular-nums uppercase leading-none">ACTIVE</div>
                              </div>
                              <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--bg-color)]/50 border border-[var(--border-color)] group hover:border-indigo-500/30 transition-all cursor-default relative overflow-hidden">
-                                <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">Yield Multiplier</div>
-                                <div className="text-sm font-black text-indigo-500 tracking-widest tabular-nums uppercase leading-none">X1.4 BONUS</div>
+                                <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">Referral Bonus</div>
+                                <div className="text-sm font-black text-indigo-500 tracking-widest tabular-nums uppercase leading-none">15% EXTRA</div>
                              </div>
                         </div>
                     </div>
@@ -169,7 +169,7 @@ const UserProfile = () => {
                                         type="email" value={profile.email} 
                                         onChange={(e) => setProfile({...profile, email: e.target.value})}
                                         className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl px-6 py-5 text-sm font-black text-[var(--text-dark)] italic focus:border-indigo-500 transition-all outline-none shadow-sm focus:shadow-indigo-500/10" 
-                                        placeholder="Email Identity"
+                                        placeholder="Email Address"
                                     />
                                 </div>
                                  <div className="space-y-4">
@@ -207,7 +207,7 @@ const UserProfile = () => {
                              <div className="pt-10 border-t border-[var(--border-color)] flex items-center justify-between">
                                 <div className="flex items-center gap-6">
                                      <div className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest italic">
-                                        <Zap size={14} fill="currentColor" /> Profile Sync Active
+                                        <CheckCircle size={14} /> Account Verified
                                     </div>
                                     <div className="flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest italic">
                                         <Gem size={14} fill="currentColor" /> Premium Status
@@ -215,8 +215,8 @@ const UserProfile = () => {
                                 </div>
                                <div className="flex gap-4">
                                     <button type="button" className="px-10 py-5 bg-[var(--bg-color)] text-[var(--text-muted)] hover:bg-[var(--border-color)] font-black uppercase tracking-widest text-[11px] rounded-3xl transition-all border-none cursor-pointer italic">Revert Changes</button>
-                                    <button type="submit" disabled={loading} className="btn btn-primary px-14 py-5 rounded-3xl font-black uppercase tracking-[0.2em] text-[11px] flex items-center gap-3 shadow-2xl shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all">
-                                        {loading ? <Activity size={18} className="animate-spin" /> : <Save size={18} />} Synchronize Core
+                                     <button type="submit" disabled={loading} className="btn btn-primary px-14 py-5 rounded-3xl font-black uppercase tracking-[0.2em] text-[11px] flex items-center gap-3 shadow-2xl shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all">
+                                        {loading ? <Activity size={18} className="animate-spin" /> : <Save size={18} />} Save Changes
                                     </button>
                                 </div>
                             </div>

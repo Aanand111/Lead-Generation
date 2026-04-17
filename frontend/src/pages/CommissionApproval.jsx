@@ -32,7 +32,7 @@ const CommissionApproval = () => {
                 }
             }
         } catch (err) {
-            toast.error('System grid failure: Protocol "FETCH_COMMISSION" rejected.');
+            toast.error('Failed to fetch commissions.');
         } finally {
             setLoading(false);
         }
@@ -44,8 +44,8 @@ const CommissionApproval = () => {
 
     const handleApprove = async (id) => {
         const confirmed = await confirm(
-            'Execute core settlement protocol for this commission node? Vendor wallet will be enriched immediately.',
-            'Authorize Settlement'
+            'Are you sure you want to approve this payout? The amount will be added to the vendor\'s balance immediately.',
+            'Approve Payout'
         );
         if (!confirmed) return;
         
@@ -53,11 +53,11 @@ const CommissionApproval = () => {
         try {
             const { data } = await api.put(`/admin/commissions/${id}/approve`);
             if (data.success) {
-                toast.success('Settlement synchronized. Vendor wallet enriched.');
+                toast.success('Payout approved. Vendor balance updated.');
                 setCommissions(prev => prev.filter(c => c.id !== id));
             }
         } catch (err) {
-            toast.error('Authorization failure: Settlement node rejected.');
+            toast.error('Failed to approve payout.');
         } finally {
             setProcessingId(null);
         }
@@ -68,10 +68,10 @@ const CommissionApproval = () => {
             <div className="pageHeader">
                 <div className="pageHeaderTitle">
                     <h2 className="text-2xl font-black text-[var(--text-dark)] tracking-tight uppercase flex items-center gap-3">
-                        <IndianRupee className="text-indigo-500" /> Revenue Settlement Hub
+                        <IndianRupee className="text-indigo-500" /> Commission Payouts
                     </h2>
                     <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mt-1 italic">
-                        Audit and authorize peripheral revenue streams for partner nodes
+                        Review and approve commission payout requests from vendors.
                     </p>
                 </div>
             </div>
@@ -109,11 +109,11 @@ const CommissionApproval = () => {
                     <table className="table table-hover align-middle mb-0">
                         <thead className="bg-[var(--bg-color)]/50">
                             <tr>
-                                <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest p-5">Origin Node</th>
-                                <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest p-5">Quantum (Amt)</th>
+                                <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest p-5">Vendor</th>
+                                <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest p-5">Amount</th>
                                 <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest p-5">Context</th>
                                 <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest p-5">Timestamp</th>
-                                <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest text-right p-5">Protocol</th>
+                                <th className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest text-right p-5">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -121,7 +121,7 @@ const CommissionApproval = () => {
                                 <tr>
                                     <td colSpan="5" className="text-center py-24">
                                         <RefreshCcw className="animate-spin inline-block text-indigo-500 mb-4" size={32} />
-                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">Syncing Settlement Matrix...</p>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">Loading Payout Requests...</p>
                                     </td>
                                 </tr>
                             ) : commissions.length === 0 ? (
@@ -129,7 +129,7 @@ const CommissionApproval = () => {
                                     <td colSpan="5" className="text-center py-24">
                                         <div className="opacity-30 flex flex-col items-center gap-4">
                                             <Clock size={48} />
-                                            <p className="text-[10px] font-black uppercase tracking-widest">No peripheral nodes requiring authorization</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest">No payout requests found</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -149,11 +149,11 @@ const CommissionApproval = () => {
                                         </td>
                                         <td className="p-5">
                                             <div className="text-sm font-black text-emerald-500 tracking-tight">₹{parseFloat(commission.amount).toFixed(2)}</div>
-                                            <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase">Settlement Value</div>
+                                            <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase">Amount</div>
                                         </td>
                                         <td className="p-5">
                                             <div className="text-[10px] font-black text-[var(--text-dark)] uppercase tracking-tight">{commission.remarks}</div>
-                                            <div className="text-[9px] font-bold text-[var(--text-muted)] italic">REF_CODE: {commission.type}</div>
+                                            <div className="text-[9px] font-bold text-[var(--text-muted)] italic">TYPE: {commission.type}</div>
                                         </td>
                                         <td className="p-5">
                                             <div className="flex items-center gap-2 text-[10px] font-black text-[var(--text-dark)]">
@@ -162,18 +162,18 @@ const CommissionApproval = () => {
                                             </div>
                                         </td>
                                         <td className="p-5 text-right">
-                                            {commission.status === 'PENDING' ? (
+                                            {['PENDING', 'REQUESTED'].includes(commission.status) ? (
                                                 <button 
                                                     disabled={processingId === commission.id}
                                                     onClick={() => handleApprove(commission.id)}
                                                     className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 disabled:opacity-50 shadow-lg shadow-indigo-100"
                                                 >
                                                     {processingId === commission.id ? <RefreshCcw size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                                                    {filterStatus === 'REQUESTED' ? 'Authorize Request' : 'Authorize Settlement'}
+                                                    {filterStatus === 'REQUESTED' ? 'Approve Request' : 'Approve Payout'}
                                                 </button>
                                             ) : (
                                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 text-[9px] font-black uppercase tracking-widest border border-emerald-500/20">
-                                                    <CheckCircle size={10} /> Synchronized
+                                                    <CheckCircle size={10} /> Paid
                                                 </span>
                                             )}
                                         </td>

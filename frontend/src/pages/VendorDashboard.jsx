@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-    Users, UserCheck, TrendingUp, Wallet, ArrowRight,
+    Users, UserCheck,Clock,TrendingUp, Wallet, ArrowRight,
     Sparkles, ShieldCheck, Activity, Bell, Zap, Layers, Plus, Briefcase
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -88,13 +88,13 @@ Protocol Token: ${stats.referral_code || 'JOIN'}${suffix}`;
                     <div className="space-y-4 relative z-10 text-center lg:text-left flex-1">
                         <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isVendor ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20'}`}>
                             {isVendor ? <ShieldCheck size={12} /> : <Sparkles size={12} />} 
-                            {isVendor ? 'PARTNER ACQUISITION PROTOCOL' : 'USER EXPANSION PROTOCOL'}
+                            {isVendor ? 'Grow Your Team' : 'Invite New Customers'}
                         </div>
                         <h2 className="text-3xl font-black text-[var(--text-dark)] uppercase tracking-tight leading-tight">
-                            Refer a <span className={isVendor ? 'text-amber-500' : 'text-indigo-600'}>{isVendor ? 'Secondary Partner' : 'New Customer'}</span>
+                            Refer a <span className={isVendor ? 'text-amber-500' : 'text-indigo-600'}>{isVendor ? 'Sub-Vendor' : 'New Client'}</span>
                         </h2>
                         <p className="text-xs font-bold text-[var(--text-muted)] italic max-w-md leading-relaxed opacity-70">
-                            {isVendor ? 'Scale your organizational footprint by onboarding a new node into your business cluster.' : 'Increase your direct linkage network and unlock higher commission bandwidth.'}
+                            {isVendor ? 'Build your own team of vendors and earn commissions from their performance.' : 'Invite customers to the platform and earn rewards on every subscription they purchase.'}
                         </p>
                     </div>
 
@@ -102,7 +102,7 @@ Protocol Token: ${stats.referral_code || 'JOIN'}${suffix}`;
                         <div className="flex flex-col gap-3 w-full sm:w-auto">
                            <div className="bg-black/10 dark:bg-white/5 border border-[var(--border-color)] rounded-2xl p-5 flex items-center justify-between gap-8 group/voucher shadow-inner min-w-[320px]">
                                <div>
-                                   <p className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1.5 opacity-60">PRO ACCESS TOKEN</p>
+                                   <p className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1.5 opacity-60">YOUR REFERRAL CODE</p>
                                    <div className="text-2xl font-black text-[var(--text-dark)] tracking-[0.05em] tabular-nums">
                                        {currentCode}
                                    </div>
@@ -110,7 +110,7 @@ Protocol Token: ${stats.referral_code || 'JOIN'}${suffix}`;
                                <button 
                                    onClick={() => handleCopyCode(target)} 
                                    className={`p-3.5 rounded-xl text-white shadow-xl transition-all active:scale-90 hover:scale-110 ${isVendor ? 'bg-gradient-to-br from-amber-500 to-orange-600' : 'bg-gradient-to-br from-indigo-500 to-indigo-700'}`}
-                                   title="Copy Pro Code"
+                                   title="Copy Referral Code"
                                >
                                    <Layers size={18} />
                                </button>
@@ -119,7 +119,7 @@ Protocol Token: ${stats.referral_code || 'JOIN'}${suffix}`;
                                 onClick={() => handleCopyLink(target)}
                                 className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-indigo-500 transition-colors text-center block w-full opacity-60 hover:opacity-100"
                            >
-                               Or copy full onboarding URL
+                               Or copy invitation link
                            </button>
                         </div>
 
@@ -136,10 +136,11 @@ Protocol Token: ${stats.referral_code || 'JOIN'}${suffix}`;
     };
 
     const statCards = [
-        { title: 'Customer Network', value: stats.total_users || 0, icon: Users, color: 'indigo', trend: '+12.5%' },
-        { title: 'Sub-Vendors', value: stats.referred_vendors || 0, icon: UserCheck, color: 'indigo', trend: '+8.2%' },
+        { title: 'My Customers', value: stats.total_users || 0, icon: Users, color: 'indigo', trend: '+12.5%' },
+        { title: 'Team Size', value: stats.referred_vendors || 0, icon: UserCheck, color: 'indigo', trend: '+8.2%' },
         { title: 'Gross Earnings', value: `₹${(Number(stats.total_earnings) || 0).toLocaleString()}`, icon: TrendingUp, color: 'indigo', trend: '+12.5%' },
-        { title: 'Pending Settlement', value: `₹${(Number(stats.pending_earnings) || 0).toLocaleString()}`, icon: Wallet, color: 'indigo', trend: '+15.9%' },
+        { title: 'Available Balance', value: `₹${(Number(stats.wallet_balance) || 0).toLocaleString()}`, icon: Wallet, color: 'indigo', trend: '+15.9%' },
+        { title: 'Pending Payout', value: `₹${(Number(stats.pending_earnings) || 0).toLocaleString()}`, icon: Clock, color: 'indigo', trend: '+0.0%' },
     ];
 
     return (
@@ -152,13 +153,13 @@ Protocol Token: ${stats.referral_code || 'JOIN'}${suffix}`;
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
                     <div className="w-full">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/30 text-indigo-100 text-[10px] font-black uppercase tracking-[0.2em] mb-4 backdrop-blur-md border border-white/10">
-                            <Sparkles size={12} /> Partner Command Center
+                            <Sparkles size={12} /> Vendor Overview
                         </div>
                         <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight leading-tight">
-                            {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-100 to-white/70">{user.full_name || user.name || 'Partner'}</span>
+                            {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-100 to-white/70">{user.full_name || user.name || 'User'}</span>
                         </h1>
                         <p className="text-indigo-100/70 font-medium text-lg leading-relaxed w-full">
-                            Track your network expansion and commission flow in real-time. Optimize your growth protocols.
+                            Welcome back! Track your business growth, manage your team, and monitor your earnings in real-time.
                         </p>
                     </div>
 
@@ -180,7 +181,7 @@ Protocol Token: ${stats.referral_code || 'JOIN'}${suffix}`;
                 {statCards.map((stat, i) => (
                     <div key={i} className="card group hover:translate-y-[-4px] transition-all duration-300 border border-[var(--border-color)] shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 bg-[var(--surface-elevated)] p-6 rounded-[2rem]">
                         <div className="flex items-center justify-between mb-4">
-                            <div className={`p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-colors group-hover:bg-indigo-600 group-hover:text-white`}>
+                            <div className="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-colors group-hover:bg-indigo-600 group-hover:text-white">
                                 <stat.icon size={24} />
                             </div>
                             <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black italic">
@@ -201,30 +202,30 @@ Protocol Token: ${stats.referral_code || 'JOIN'}${suffix}`;
             <InvitationCard target="user" />
             {isPrimaryVendor && <InvitationCard target="vendor" />}
 
-            {/* Growth & Actions Grid */}
+            {/* Growth Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
                     <div className="flex items-center justify-between px-2">
                         <div>
-                            <h2 className="text-xl font-black text-[var(--text-dark)] tracking-tight">Growth Operations</h2>
-                            <p className="text-xs font-medium text-[var(--text-muted)]">Scale your micro-ecosystem</p>
+                            <h2 className="text-xl font-black text-[var(--text-dark)] tracking-tight">Quick Actions</h2>
+                            <p className="text-xs font-medium text-[var(--text-muted)]">Scale and manage your network effectively</p>
                         </div>
                         <Activity size={18} className="text-[var(--text-muted)]" />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
-                            { title: 'Refer New User', desc: 'Onboard a customer to your network', path: '/vendor/refer-user', icon: Plus, color: 'indigo' },
-                            { title: 'Refer Partner Vendor', desc: 'Add sub-vendors to expand reach', path: '/vendor/refer-vendor', icon: Briefcase, color: 'indigo' },
-                            { title: 'Network Ledger', desc: 'Audit your referral trees', path: '/vendor/referrals', icon: Users, color: 'indigo' },
-                            { title: 'Settlement Matrix', desc: 'Track payouts and commissions', path: '/vendor/earnings', icon: Wallet, color: 'indigo' }
+                            { title: 'Refer New User', desc: 'Invite a customer to join your network', path: '/vendor/refer-user', icon: Plus },
+                            { title: 'Refer Sub-Vendor', desc: 'Onboard a partner to expand your reach', path: '/vendor/refer-vendor', icon: Briefcase },
+                            { title: 'My Referrals', desc: 'Track and manage your referral list', path: '/vendor/referrals', icon: Users },
+                            { title: 'Earnings & Payouts', desc: 'Monitor your rewards and commissions', path: '/vendor/earnings', icon: Wallet }
                         ].map((action, i) => (
                             <Link
                                 key={i}
                                 to={action.path}
                                 className="group p-5 rounded-3xl bg-[var(--surface-elevated)] border border-[var(--border-color)] flex items-center gap-4 transition-all hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-500/10"
                             >
-                                <div className={`w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 flex items-center justify-center transition-all group-hover:scale-110 shadow-sm`}>
+                                <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 flex items-center justify-center transition-all group-hover:scale-110 shadow-sm">
                                     {React.createElement(action.icon, { size: 20 })}
                                 </div>
                                 <div className="flex-1">
@@ -240,20 +241,20 @@ Protocol Token: ${stats.referral_code || 'JOIN'}${suffix}`;
                 <div className="space-y-6">
                     <div className="flex items-center justify-between px-2">
                         <div>
-                            <h2 className="text-xl font-black text-[var(--text-dark)] tracking-tight">System Pulse</h2>
-                            <p className="text-xs font-medium text-[var(--text-muted)]">Live network feeds</p>
+                            <h2 className="text-xl font-black text-[var(--text-dark)] tracking-tight">Network Activity</h2>
+                            <p className="text-xs font-medium text-[var(--text-muted)]">Real-time business highlights</p>
                         </div>
                         <Bell size={18} className="text-[var(--text-muted)]" />
                     </div>
 
                     <div className="card space-y-4 p-8 bg-[var(--surface-elevated)] border border-[var(--border-color)] rounded-[2.5rem]">
                         {[
-                            { title: 'Direct Sync', desc: 'Commission engine optimized', icon: Zap, color: 'indigo' },
-                            { title: 'Secure Trace', desc: 'Referral tracking verified', icon: ShieldCheck, color: 'emerald' },
-                            { title: 'Live Growth', desc: 'Network scaling active', icon: Sparkles, color: 'indigo' }
+                            { title: 'Commission Tracking', desc: 'Automatic commission tracking is active', icon: Zap },
+                            { title: 'Verified Tracking', desc: 'Your referrals are being tracked accurately', icon: ShieldCheck },
+                            { title: 'Active Growth', desc: 'Your network is expanding with new users', icon: Sparkles }
                         ].map((item, i) => (
                             <div key={i} className="flex gap-4 group">
-                                <div className={`w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 flex-shrink-0 flex items-center justify-center transition-all group-hover:rotate-12`}>
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 flex-shrink-0 flex items-center justify-center transition-all group-hover:rotate-12">
                                     <item.icon size={18} />
                                 </div>
                                 <div>
@@ -268,8 +269,8 @@ Protocol Token: ${stats.referral_code || 'JOIN'}${suffix}`;
                         <div className="absolute top-0 right-0 p-4 text-indigo-200 dark:text-indigo-800/50 group-hover:scale-150 transition-transform duration-700">
                             <Activity size={48} />
                         </div>
-                        <h4 className="font-black text-indigo-900 dark:text-indigo-100 text-sm uppercase tracking-widest mb-1 relative z-10">Production Node</h4>
-                        <p className="text-[10px] font-bold text-indigo-600/70 dark:text-indigo-400/70 italic relative z-10">Your vendor account is authorized for live operations.</p>
+                        <h4 className="font-black text-indigo-900 dark:text-indigo-100 text-sm uppercase tracking-widest mb-1 relative z-10">Account Status</h4>
+                        <p className="text-[10px] font-bold text-indigo-600/70 dark:text-indigo-400/70 italic relative z-10">Your account is active and verified.</p>
                     </div>
                 </div>
             </div>

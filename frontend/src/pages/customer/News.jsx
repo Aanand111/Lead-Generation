@@ -68,7 +68,7 @@ const UserNews = () => {
                     onClick={() => setSelectedArticle(null)}
                     className="flex items-center gap-2 text-indigo-500 font-bold uppercase tracking-widest text-[10px] mb-8 hover:translate-x-[-4px] transition-all"
                 >
-                    <ArrowLeft size={16} /> Back to Intelligence Feed
+                    <ArrowLeft size={16} /> Back to Updates
                 </button>
 
                 <div className="max-w-4xl mx-auto">
@@ -112,7 +112,7 @@ const UserNews = () => {
                         News & Offers
                         <Newspaper size={24} className="text-indigo-500" />
                     </h2>
-                    <p>Real-time synchronization of industry intelligence and exclusive network offers</p>
+                    <p>Stay updated with the latest news, announcements, and exclusive promotional offers.</p>
                 </div>
                 <div className="pageHeaderActions flex items-center gap-4">
                     <button className="w-12 h-12 rounded-2xl bg-[var(--surface-color)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:text-indigo-500 transition-all shadow-sm">
@@ -137,7 +137,7 @@ const UserNews = () => {
                                      <Star size={14} fill="currentColor" /> Exclusive Network Offer
                                 </div>
                                 <h1 className="text-5xl font-black italic tracking-tighter uppercase text-white mb-6 leading-tight">
-                                    {banners[0].title || 'Decryption Surge: +50% Yield Available Now'}
+                                    {banners[0].title || 'Limited Offer: Get +50% Extra Credits Today'}
                                 </h1>
                                 <a 
                                     href={banners[0].link} 
@@ -154,8 +154,8 @@ const UserNews = () => {
                 ) : (
                     <div className="w-full h-full bg-indigo-600 flex items-center justify-center p-14">
                         <div className="max-w-xl text-center">
-                            <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-6">Synchronization in Progress</h2>
-                            <p className="text-white/50 text-xs font-black uppercase tracking-[0.4em]">Optimizing promotion spectrum...</p>
+                            <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-6">Loading Offers</h2>
+                            <p className="text-white/50 text-xs font-black uppercase tracking-[0.4em]">Getting the best deals for you...</p>
                         </div>
                     </div>
                 )}
@@ -164,13 +164,13 @@ const UserNews = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 <div className="lg:col-span-8 space-y-10">
                     <h3 className="text-2xl font-black italic tracking-tighter uppercase text-[var(--text-dark)] flex items-center gap-4">
-                        <Newspaper size={28} className="text-indigo-500" /> Intelligence Feed
+                        <Newspaper size={28} className="text-indigo-500" /> Latest Updates
                     </h3>
 
                     {loading ? (
                         <div className="py-40 text-center">
                             <div className="w-14 h-14 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto mb-6"></div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">Syncing Feed...</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">Loading Feed...</span>
                         </div>
                     ) : news.length > 0 ? (
                         news.map((item) => (
@@ -213,10 +213,10 @@ const UserNews = () => {
                                             <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 shadow-sm border border-indigo-500/10">
                                                 <User size={14} />
                                             </div>
-                                            <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text-dark)] italic">Admin Dispatch</div>
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text-dark)] italic">Admin Update</div>
                                         </div>
                                         <button className="text-indigo-500 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 group italic">
-                                            Read Dispatch <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                            Read Full Article <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                                         </button>
                                     </div>
                                 </div>
@@ -226,7 +226,7 @@ const UserNews = () => {
                         <div className="py-40 text-center opacity-30 border-2 border-dashed border-[var(--border-color)] rounded-[3rem]">
                             <div className="flex flex-col items-center gap-6">
                                 <Activity size={84} strokeWidth={1} />
-                                <p className="font-black uppercase tracking-[0.4em] text-xs italic">News feed is currently synchronized</p>
+                                <p className="font-black uppercase tracking-[0.4em] text-xs italic">Feed is currently up to date</p>
                             </div>
                         </div>
                     )}
@@ -251,7 +251,7 @@ const UserNews = () => {
                                     {n.title}
                                 </h4>
                                 <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic opacity-50 flex items-center gap-2">
-                                    <MessageSquare size={12} /> {n.category_name || 'Protocol'}
+                                    <MessageSquare size={12} /> {n.category_name || 'News'}
                                 </div>
                             </div>
                         ))}
@@ -261,12 +261,12 @@ const UserNews = () => {
                         <div className="absolute -right-6 -bottom-6 opacity-10 group-hover:scale-110 transition-transform duration-700">
                             <Gift size={120} strokeWidth={1} />
                         </div>
-                        <h4 className="text-lg font-black italic tracking-tighter uppercase text-[var(--text-dark)] mb-2 italic">Referral Bounty</h4>
+                        <h4 className="text-lg font-black italic tracking-tighter uppercase text-[var(--text-dark)] mb-2 italic">Referral Rewards</h4>
                         <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase leading-relaxed tracking-wider mb-6 opacity-70 italic max-w-xs">
-                           Unlock the 'Grand Vizier' status by activating 50 nodes this month.
+                           Become an 'Elite Partner' by referring 50 active users this month.
                         </p>
-                        <button className="bg-[var(--surface-color)] text-black px-6 py-3.5 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl border border-[var(--border-color)] hover:border-indigo-500 transition-all flex items-center gap-3 relative z-10 italic">
-                            Track Status <ArrowRight size={16} />
+                        <button className="bg-[var(--surface-color)] text-black border border-[var(--border-color)] px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl hover:border-indigo-500 transition-all flex items-center gap-3 relative z-10 italic">
+                            Track Rewards <ArrowRight size={16} />
                         </button>
                     </div>
                 </div>

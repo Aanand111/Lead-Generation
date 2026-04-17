@@ -132,10 +132,85 @@ const getLeadLifecycleAnalytics = async () => {
     };
 };
 
+/**
+ * Report: Detailed Lead Inventory
+ * Tracks: Each lead, its lifecycle, who bought it, and when.
+ */
+const getDetailedLeadReports = async (filters = {}) => {
+    const { startDate, endDate, category, status } = filters;
+    let query = `
+        SELECT 
+            l.lead_id,
+            l.customer_name,
+            l.city,
+            l.state,
+            l.category,
+            l.lead_value,
+            u_creator.full_name as created_by_vendor,
+            l.status as current_status,
+            l.created_at as upload_date,
+            lp.purchase_date,
+            u_buyer.full_name as buyer_name,
+            lp.credits_used
+        FROM leads l
+        LEFT JOIN users u_creator ON l.created_by = u_creator.id
+        LEFT JOIN lead_purchases lp ON l.id = lp.lead_id
+        LEFT JOIN users u_buyer ON lp.user_id = u_buyer.id
+        WHERE 1=1
+    `;
+    const params = [];
+
+    if (startDate) {
+        params.push(startDate);
+        query += ` AND l.created_at >= $${params.length}`;
+    }
+    if (endDate) {
+        params.push(endDate);
+        query += ` AND l.created_at <= $${params.length}`;
+    }
+    if (category) {
+        params.push(category);
+        query += ` AND l.category = $${params.length}`;
+    }
+    if (status) {
+        params.push(status);
+        query += ` AND l.status = $${params.length}`;
+    }
+
+    query += ` ORDER BY l.created_at DESC`;
+    const result = await pool.query(query, params);
+    return result.rows;
+};
+
+/**
+ * Report: Vendor Performance Trends (6 Months)
+ * Tracks: Monthly productivity of top vendors.
+ */
+const getVendorPerformanceTrends = async () => {
+    const query = `
+        SELECT 
+            u.full_name as vendor_name,
+            TO_CHAR(date_trunc('month', l.created_at), 'Mon YYYY') as month,
+            COUNT(l.id) as leads_uploaded,
+            COUNT(lp.id) as leads_sold
+        FROM users u
+        JOIN leads l ON l.created_by = u.id
+        LEFT JOIN lead_purchases lp ON lp.lead_id = l.id
+        WHERE u.role = 'vendor' 
+        AND l.created_at >= CURRENT_DATE - INTERVAL '6 months'
+        GROUP BY u.id, u.full_name, date_trunc('month', l.created_at)
+        ORDER BY date_trunc('month', l.created_at) ASC, leads_uploaded DESC
+    `;
+    const result = await pool.query(query);
+    return result.rows;
+};
+
 module.exports = {
     getVendorProductivity,
     getFeedbackTrends,
     getBannerPerformance,
     getSubscriptionAnalytics,
-    getLeadLifecycleAnalytics
+    getLeadLifecycleAnalytics,
+    getDetailedLeadReports,
+    getVendorPerformanceTrends
 };

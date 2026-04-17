@@ -3,7 +3,7 @@ const db = require('../config/db');
 const getStats = async (req, res, next) => {
     try {
         const statsQuery = `
-            SELECT 'customers' as type, COUNT(*) as count FROM users WHERE role = 'customer'
+            SELECT 'customers' as type, (SELECT COUNT(*) FROM users WHERE role = 'user') + (SELECT COUNT(*) FROM customers) as count
             UNION ALL
             SELECT 'vendors' as type, COUNT(*) as count FROM users WHERE role = 'vendor'
             UNION ALL
@@ -60,6 +60,8 @@ const getStats = async (req, res, next) => {
         res.status(200).json({
             success: true,
             data: {
+                ...stats, // Spread the raw stats so data.leads and data.total_remaining_leads are at root
+                rawStats: stats, // Also keep rawStats explicitly if needed
                 summary: [
                     { label: 'Customers', value: stats.customers || 0, icon: 'Users', trend: '+12%' },
                     { label: 'Vendors', value: stats.vendors || 0, icon: 'Briefcase', trend: '+5%' },

@@ -2,16 +2,24 @@ import React, { useState, useEffect } from 'react';
 import {  
     Search, MapPin, Smartphone, Mail, Download,History as HistoryIcon, 
     MoreVertical, Info, Activity, MessageSquare, Clipboard, 
-    Zap, Gem, Target, TrendingUp, CheckCircle, ExternalLink,
-    Filter, RefreshCcw
+    Zap, Gem, Target, TrendingUp, CheckCircle, ExternalLink, X,
+    Filter, RefreshCcw, Share2, ClipboardCheck, PhoneCall,
+
+    FileDown, CalendarCheck
  } from 'lucide-react';
+
+
 import api from '../../utils/api';
+import { toast } from 'react-hot-toast';
+
 
 const UserMyLeads = () => {
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedLead, setSelectedLead] = useState(null);
+    const [openMenuId, setOpenMenuId] = useState(null);
+
+
 
     const fetchMyLeads = async () => {
         setLoading(true);
@@ -34,7 +42,8 @@ const UserMyLeads = () => {
     const filteredLeads = leads.filter(l => 
         (l.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
         (l.phone || '').includes(searchTerm) ||
-        (l.city?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+        (l.city?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (l.pincode || '').includes(searchTerm)
     );
 
     const handleCopy = (text) => {
@@ -45,7 +54,7 @@ const UserMyLeads = () => {
     const exportToCSV = () => {
         if (leads.length === 0) return;
         
-        const headers = ["ID", "Customer Name", "Phone", "Email", "City", "State", "Acquisition Status", "Purchase Date"];
+        const headers = ["ID", "Customer Name", "Phone", "Email", "City", "State", "Pincode", "Status", "Purchase Date"];
         const rows = leads.map(l => [
             l.id,
             l.name,
@@ -53,7 +62,8 @@ const UserMyLeads = () => {
             l.email || 'N/A',
             l.city,
             l.state,
-            l.status || 'ACQUIRED',
+            l.pincode || 'N/A',
+            l.status || 'PURCHASED',
             new Date(l.purchase_date || Date.now()).toLocaleDateString()
         ]);
 
@@ -73,6 +83,19 @@ const UserMyLeads = () => {
     const printReport = () => {
         window.print();
     };
+
+    const handleWhatsApp = (phone, name) => {
+        const message = `Hello ${name}, I am interested in connecting with you regarding the lead details.`;
+        const url = `https://wa.me/91${phone}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+    };
+
+    const handleShare = (lead) => {
+        const shareText = `Lead Details:\nName: ${lead.name}\nPhone: ${lead.phone}\nCity: ${lead.city}\nCategory: ${lead.category || 'General'}`;
+        handleCopy(shareText);
+        toast.success("Lead details copied to clipboard!");
+    };
+
 
     return (
         <div className="page-content animate-fade-in text-[var(--text-dark)]">
@@ -127,17 +150,19 @@ const UserMyLeads = () => {
                 />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+
                 {loading ? (
                     <div className="col-span-full py-40 text-center">
                         <div className="flex flex-col items-center gap-6">
                             <div className="w-14 h-14 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] animate-pulse">Loading acquired leads...</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] animate-pulse">Loading leads...</span>
                         </div>
                     </div>
                 ) : filteredLeads.length > 0 ? (
                     filteredLeads.map((lead) => (
-                        <div key={lead.id} className="card shadow-md border border-[var(--border-color)] bg-[var(--surface-color)] hover:-translate-y-2 transition-all p-8 group flex flex-col h-full relative">
+                        <div key={lead.id} className="card shadow-md border border-[var(--border-color)] bg-[var(--surface-color)] hover:-translate-y-2 transition-all p-10 group flex flex-col h-full relative">
+
                             <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-10 transition-opacity">
                                 <CheckCircle size={100} strokeWidth={1} className="text-emerald-500" />
                             </div>
@@ -149,12 +174,35 @@ const UserMyLeads = () => {
                                     </div>
                                     <div>
                                         <h3 className="text-lg font-black text-[var(--text-dark)] leading-none uppercase tracking-tight">{lead.name}</h3>
-                                        <div className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-1 italic">Lead Verified</div>
+                                        <div className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-1 italic">Contact Unlocked</div>
                                     </div>
                                 </div>
-                                <button className="p-2.5 rounded-xl hover:bg-indigo-500/5 text-[var(--text-muted)] hover:text-indigo-500 transition-all bg-transparent border-none cursor-pointer">
-                                    <MoreVertical size={20} />
-                                </button>
+                                 <div className="relative">
+                                    <button 
+                                        onClick={() => setOpenMenuId(openMenuId === lead.id ? null : lead.id)}
+                                        className="p-2.5 rounded-xl hover:bg-indigo-500/5 text-[var(--text-muted)] hover:text-indigo-500 transition-all bg-transparent border-none cursor-pointer"
+                                    >
+                                        <MoreVertical size={20} />
+                                    </button>
+                                    
+                                    {openMenuId === lead.id && (
+                                        <>
+                                            <div className="fixed inset-0 z-[100]" onClick={() => setOpenMenuId(null)} />
+                                            <div className="absolute right-0 top-full mt-2 bg-[var(--surface-color)] shadow-2xl rounded-2xl border border-[var(--border-color)] z-[110] min-w-[180px] py-3 overflow-hidden animate-zoom-in origin-top-right">
+                                                <button onClick={() => { handleShare(lead); setOpenMenuId(null); }} className="w-full text-left px-5 py-2.5 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-indigo-500/10 hover:text-indigo-500 transition-all flex items-center gap-3 border-none bg-transparent cursor-pointer">
+                                                    <Share2 size={14} className="text-indigo-500" /> Share Lead
+                                                </button>
+                                                <button onClick={() => { printReport(); setOpenMenuId(null); }} className="w-full text-left px-5 py-2.5 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-indigo-500/10 hover:text-indigo-500 transition-all flex items-center gap-3 border-none bg-transparent cursor-pointer">
+                                                    <FileDown size={14} className="text-emerald-500" /> Download PDF
+                                                </button>
+                                                <div className="h-px bg-[var(--border-color)] my-2 mx-3" />
+                                                <button onClick={() => setOpenMenuId(null)} className="w-full text-left px-5 py-2.5 text-[11px] font-black uppercase text-indigo-600 hover:bg-indigo-500/10 transition-all flex items-center gap-3 border-none bg-transparent cursor-pointer">
+                                                    <ClipboardCheck size={14} /> Mark Contacted
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="space-y-4 mb-8 flex-1">
@@ -170,9 +218,11 @@ const UserMyLeads = () => {
                                 <div onClick={() => handleCopy(lead.email)} className="flex items-center gap-4 bg-[var(--bg-color)] p-4 rounded-2xl border border-[var(--border-color)] hover:border-indigo-400/30 transition-all cursor-pointer group/row">
                                     <Mail size={18} className="text-rose-400" />
                                     <div className="flex-1">
-                                        <div className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1 italic">Customer Contact Acquired</div>
-                                        <h4 className="text-2xl font-black text-slate-800 tracking-tighter leading-none mb-1">{lead.name}</h4>
-                                        <div className="text-xs font-black text-[var(--text-dark)] uppercase italic tracking-wider truncate max-w-[150px]">{lead.email?.toLowerCase() || 'N/A'}</div>
+                                        <div className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1 italic">Customer Details</div>
+                                        <h4 className="text-2xl font-black text-[var(--text-dark)] tracking-tighter leading-none mb-2">{lead.name}</h4>
+                                        <div className="text-[13px] font-medium text-[var(--text-dark)] lowercase opacity-80 break-all">{lead.email?.toLowerCase() || 'N/A'}</div>
+
+
                                     </div>
                                     <Clipboard size={14} className="opacity-0 group-hover/row:opacity-20 transition-opacity" />
                                 </div>
@@ -181,7 +231,14 @@ const UserMyLeads = () => {
                                     <MapPin size={18} className="text-amber-400" />
                                     <div className="flex-1">
                                         <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Location</div>
-                                        <div className="text-xs font-black text-[var(--text-dark)] uppercase italic tracking-wider">{lead.city}, {lead.state}</div>
+                                        <div className="text-xs font-black text-[var(--text-dark)] uppercase italic tracking-wider">
+                                            {lead.city}, {lead.state}
+                                            {lead.pincode && (
+                                                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-lg bg-amber-500/10 text-amber-500 text-[10px] font-black not-italic tracking-widest border border-amber-500/15">
+                                                    PIN: {lead.pincode}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -191,14 +248,16 @@ const UserMyLeads = () => {
                                     <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none">Purchased On</div>
                                     <div className="text-[10px] font-bold text-[var(--text-muted)] italic tabular-nums">Mar 27, 2026</div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button className="w-10 h-10 rounded-xl bg-indigo-500/5 text-indigo-500 flex items-center justify-center hover:bg-indigo-500 hover:text-white transition-all border border-indigo-500/10">
+                                 <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => handleWhatsApp(lead.phone, lead.name)}
+                                        className="w-10 h-10 rounded-xl bg-emerald-500/5 text-emerald-500 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/10"
+                                        title="WhatsApp Message"
+                                    >
                                         <MessageSquare size={16} />
                                     </button>
-                                    <button className="w-10 h-10 rounded-xl bg-indigo-500/5 text-indigo-500 flex items-center justify-center hover:bg-indigo-500 hover:text-white transition-all border border-indigo-500/10">
-                                        <Info size={16} />
-                                    </button>
                                 </div>
+
                             </div>
                         </div>
                     ))
@@ -215,5 +274,7 @@ const UserMyLeads = () => {
         </div>
     );
 };
+
+
 
 export default UserMyLeads;

@@ -66,7 +66,53 @@ const expirePurchasedLeads = async () => {
     }
 };
 
+/**
+ * Job: Remind users about package renewal
+ * logic: Notify users whose subscription expires in 2 days
+ */
+const checkPackageRenewals = async () => {
+    try {
+        console.log('[JOBS] Starting Package Renewal Reminders...');
+        
+        const expiringRes = await pool.query(
+            `SELECT s.id, s.user_id, s.end_date, u.phone, sp.name as plan_name
+             FROM subscriptions s
+             JOIN users u ON s.user_id = u.id
+             JOIN subscription_plans sp ON s.plan_id = sp.id
+             WHERE s.end_date > NOW() 
+             AND s.end_date <= (NOW() + INTERVAL '2 days')
+             AND s.status = 'Active'`
+        );
+
+        if (expiringRes.rows.length > 0) {
+            for (const sub of expiringRes.rows) {
+                await NotificationService.sendPushToUser(
+                    sub.phone,
+                    'Package Expiring Soon! ⏳',
+                    `Your "${sub.plan_name}" plan will expire on ${new Date(sub.end_date).toLocaleDateString()}. Renew now to continue enjoying leads!`
+                );
+            }
+        }
+        console.log(`[JOBS] Sent renewal reminders to ${expiringRes.rowCount} users.`);
+    } catch (error) {
+        console.error('[JOBS ERROR] Package Renewal Check failed:', error);
+    }
+};
+
+/**
+ * Manual Trigger for all maintenance tasks
+ */
+const runAllMaintenanceTasks = async () => {
+    console.log('[JOBS] Initiating Manual Maintenance Sequence...');
+    await archiveExpiredPosters();
+    await expirePurchasedLeads();
+    await checkPackageRenewals();
+    console.log('[JOBS] Manual Maintenance Sequence Completed.');
+};
+
 module.exports = {
     archiveExpiredPosters,
-    expirePurchasedLeads
+    expirePurchasedLeads,
+    checkPackageRenewals,
+    runAllMaintenanceTasks
 };

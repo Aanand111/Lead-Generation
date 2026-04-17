@@ -78,8 +78,8 @@ const AdminVendorCommission = () => {
                     >
                         <ArrowLeft size={14} /> Back to Global Settings
                     </button>
-                    <h1 className="text-4xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-none mb-2">Vendor Commission Matrix</h1>
-                    <p className="text-xs font-bold text-[var(--text-muted)] italic">Override global protocols with individual settlement nodes.</p>
+                    <h1 className="text-4xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-none mb-2">Vendor Commissions</h1>
+                    <p className="text-xs font-bold text-[var(--text-muted)] italic">Set custom commission rates for specific vendors.</p>
                 </div>
                 <div className="bg-indigo-600/10 border border-indigo-600/20 p-4 rounded-2xl flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg">
@@ -129,17 +129,17 @@ const AdminVendorCommission = () => {
                     <table className="table hover-highlight mb-0">
                         <thead className="bg-[var(--bg-color)]/50 border-b border-[var(--border-color)]">
                             <tr>
-                                <th className="px-8 py-6 text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Vendor Identity</th>
-                                <th className="py-6 text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Control Mode</th>
+                                <th className="px-8 py-6 text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Vendor Details</th>
+                                <th className="py-6 text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Rate Type</th>
                                 <th className="py-6 text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Custom Commission (%)</th>
                                 <th className="py-6 text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none text-right px-8">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan="4" className="py-32 text-center text-[10px] font-black text-indigo-500/50 uppercase tracking-[0.5em] animate-pulse">Scanning Vendor Nodes...</td></tr>
+                                <tr><td colSpan="4" className="py-32 text-center text-[10px] font-black text-indigo-500/50 uppercase tracking-[0.5em] animate-pulse">Loading Vendors...</td></tr>
                             ) : vendors.length === 0 ? (
-                                <tr><td colSpan="4" className="py-32 text-center text-xs font-bold text-[var(--text-muted)] italic leading-relaxed">No matching vendor nodes detected in this sector.</td></tr>
+                                <tr><td colSpan="4" className="py-32 text-center text-xs font-bold text-[var(--text-muted)] italic leading-relaxed">No vendors found matching your search.</td></tr>
                             ) : (
                                 vendors.map(vendor => (
                                     <tr key={vendor.id} className="group border-b border-[var(--border-color)]/30 last:border-0 hover:bg-white/[0.01]">
@@ -157,11 +157,11 @@ const AdminVendorCommission = () => {
                                         <td>
                                             {vendor.custom_commission_rate !== null ? (
                                                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[8px] font-black uppercase tracking-widest">
-                                                    <Zap size={10} className="animate-pulse" /> Manual Override
+                                                    <Zap size={10} className="animate-pulse" /> Custom Rate
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[8px] font-black uppercase tracking-widest">
-                                                    Global Protocol
+                                                    Global Rate
                                                 </span>
                                             )}
                                         </td>
@@ -173,19 +173,19 @@ const AdminVendorCommission = () => {
                                                     value={vendor.custom_commission_rate ?? ''}
                                                     onChange={(e) => handleRateChange(vendor.id, e.target.value)}
                                                     placeholder={globalRate}
-                                                    className="w-full bg-[var(--bg-color)]/50 border border-[var(--border-color)] rounded-xl py-2 px-4 pr-8 text-xs font-black outline-none focus:border-indigo-500 transition-all text-[var(--text-dark)]"
+                                                    className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-xl py-2 px-4 pr-9 text-xs font-black outline-none focus:border-indigo-500 transition-all text-[var(--text-dark)]"
                                                 />
                                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-indigo-500">%</span>
                                             </div>
                                         </td>
-                                        <td className="text-right px-8">
+                                        <td className="px-8">
                                             <button 
                                                 onClick={() => handleUpdateRate(vendor.id, vendor.custom_commission_rate)}
                                                 disabled={saving === vendor.id}
-                                                className="h-10 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black uppercase text-[9px] tracking-widest transition-all shadow-lg shadow-indigo-600/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 ml-auto"
+                                                className="h-10 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black uppercase text-[9px] tracking-widest transition-all shadow-lg shadow-indigo-600/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                                             >
                                                 {saving === vendor.id ? <RefreshCcw size={12} className="animate-spin" /> : <Save size={12} />}
-                                                Commit Node
+                                                Save Changes
                                             </button>
                                         </td>
                                     </tr>

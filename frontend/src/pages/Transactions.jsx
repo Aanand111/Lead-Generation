@@ -119,7 +119,7 @@ const Transactions = () => {
                             <input 
                                 type="text" 
                                 className="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium shadow-sm focus:border-indigo-500 outline-none transition-all placeholder:text-[var(--text-muted)]/50 text-[var(--text-dark)]" 
-                                placeholder="Trace transaction identity..." 
+                                placeholder="Search by name or ID..." 
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
@@ -132,7 +132,7 @@ const Transactions = () => {
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
                             options={[
-                                { value: 'All', label: 'ALL OPERATIONS' },
+                                { value: 'All', label: 'ALL TRANSACTIONS' },
                                 { value: 'COMPLETED', label: 'COMPLETED' },
                                 { value: 'PENDING', label: 'PENDING' },
                                 { value: 'FAILED', label: 'FAILED' }
@@ -147,11 +147,11 @@ const Transactions = () => {
                         <thead className="bg-[var(--bg-color)]/50">
                             <tr>
                                 <th className="w-16 text-center text-[10px] uppercase font-bold text-[var(--text-muted)]">Order #</th>
-                                <th className="text-[var(--text-muted)]">Subject Entity</th>
-                                <th className="text-[var(--text-muted)]">Tier</th>
-                                <th className="text-[var(--text-muted)]">Gateway ID</th>
-                                <th className="text-[var(--text-muted)]">Magnitude</th>
-                                <th className="text-[var(--text-muted)]">Timestamp</th>
+                                <th className="text-[var(--text-muted)]">Customer Name</th>
+                                <th className="text-[var(--text-muted)]">Plan</th>
+                                <th className="text-[var(--text-muted)]">Transaction ID</th>
+                                <th className="text-[var(--text-muted)]">Amount</th>
+                                <th className="text-[var(--text-muted)]">Date</th>
                                 <th className="text-[var(--text-muted)]">Status</th>
                             </tr>
                         </thead>
@@ -161,7 +161,7 @@ const Transactions = () => {
                                     <td colSpan="7" className="text-center py-32">
                                         <div className="flex flex-col items-center gap-4">
                                             <div className="spinner"></div>
-                                            <span className="text-[10px] uppercase font-black tracking-widest text-[var(--text-muted)] animate-pulse">Synchronizing financial stream...</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] animate-pulse">Loading transaction history...</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -170,7 +170,7 @@ const Transactions = () => {
                                     <td colSpan="7" className="text-center py-32">
                                         <div className="flex flex-col items-center gap-4 opacity-30 italic">
                                             <CreditCard size={64} strokeWidth={1} />
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">No financial records detected</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">No transactions found</p>
                                         </div>
                                     </td>
                                 </tr>

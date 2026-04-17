@@ -44,6 +44,7 @@ import SubscriptionCreate from './pages/SubscriptionCreate';
 import SubscriptionEdit from './pages/SubscriptionEdit';
 import Transactions from './pages/Transactions';
 import Analytics from './pages/Analytics';
+import AdminNotifications from './pages/AdminNotifications';
 import CommissionApproval from './pages/CommissionApproval';
 import LeadApproval from './pages/LeadApproval';
 import VendorLayout from './layouts/VendorLayout';
@@ -63,23 +64,35 @@ import UserNews from './pages/customer/News';
 import UserProfile from './pages/customer/Profile';
 
 // Mock Protected Route - ensures token exists, else redirects to login
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const token = localStorage.getItem('token');
+  const storedUser = localStorage.getItem('user');
+  const user = storedUser ? JSON.parse(storedUser) : null;
+
   if (!token) {
     return <Navigate to="/" replace />;
   }
+
+  if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
+    // Redirect to their respective dashboard if they try to access unauthorized area
+    const redirectPath = user.role === 'vendor' ? '/vendor/dashboard' : (user.role === 'admin' ? '/dashboard' : '/user/dashboard');
+    return <Navigate to={redirectPath} replace />;
+  }
+
   return children;
 };
 
 import { ThemeProvider } from './utils/ThemeContext';
 import { ConfirmProvider } from './context/ConfirmContext';
 import { Toaster } from 'react-hot-toast';
+import NotificationHandler from './components/NotificationHandler';
 
 const App = () => {
     return (
         <ThemeProvider>
             <ConfirmProvider>
                 <Toaster position="top-right" reverseOrder={false} />
+                <NotificationHandler />
                 <BrowserRouter>
                     <Routes>
                         <Route path="/" element={<Login />} />
@@ -87,7 +100,7 @@ const App = () => {
                         <Route path="/forgot-password" element={<ForgotPassword />} />
 
                         {/* Protected Dashboard Routes nested inside Admin Layout */}
-                        <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+                        <Route element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
                             <Route path="/dashboard" element={<Dashboard />} />
                             <Route path="/profile" element={<AdminProfile />} />
                             <Route path="/customers" element={<Customers />} />
@@ -130,10 +143,11 @@ const App = () => {
                             <Route path="/settings/commissions" element={<AdminVendorCommission />} />
                             <Route path="/commissions/approval" element={<CommissionApproval />} />
                             <Route path="/analytics" element={<Analytics />} />
+                            <Route path="/notifications/send" element={<AdminNotifications />} />
                         </Route>
 
                         {/* Vendor Dashboard Routes nested inside Vendor Layout */}
-                        <Route element={<ProtectedRoute><VendorLayout /></ProtectedRoute>}>
+                        <Route element={<ProtectedRoute allowedRoles={['vendor']}><VendorLayout /></ProtectedRoute>}>
                             <Route path="/vendor/dashboard" element={<VendorDashboard />} />
                             <Route path="/vendor/referrals" element={<VendorReferrals />} />
                             <Route path="/vendor/refer-user" element={<VendorReferMember mode="user" />} />
@@ -143,7 +157,7 @@ const App = () => {
                         </Route>
 
                         {/* User Panel Routes nested inside Customer Layout */}
-                        <Route element={<ProtectedRoute><CustomerLayout /></ProtectedRoute>}>
+                        <Route element={<ProtectedRoute allowedRoles={['user', 'customer']}><CustomerLayout /></ProtectedRoute>}>
                             <Route path="/user/dashboard" element={<UserDashboard />} />
                             <Route path="/user/leads/available" element={<UserAvailableLeads />} />
                             <Route path="/user/leads/my" element={<UserMyLeads />} />

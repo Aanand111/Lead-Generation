@@ -19,6 +19,7 @@ Object.assign(poolConfig, {
     min: 10,                       // Maintain more warm connections ready
     idleTimeoutMillis: 30000,      // Close idle connections after 30 seconds
     connectionTimeoutMillis: 5000, // Slightly longer timeout for peak loads
+    statement_timeout: 10000,      // ABORT any query taking more than 10s (protects DB from hanging on 10M hits)
     maxUses: 7500,                 // Periodically rotate connections to prevent memory leaks
     allowExitOnIdle: false,
 });

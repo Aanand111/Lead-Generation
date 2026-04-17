@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Users, 
-  Search, 
-  RefreshCw, 
-  CreditCard, 
-  Trash2, 
-  ShieldAlert, 
-  Edit3, 
-  LogOut,
-  UserPlus,
-  MoreVertical,
-  Plus,
-  X,
-  User,
-  Phone,
-  Mail,
-  MapPin,
-  Share2,
-  Layers,
-  Activity
+import {
+    Users,
+    Search,
+    RefreshCw,
+    CreditCard,
+    Trash2,
+    ShieldAlert,
+    Edit3,
+    LogOut,
+    UserPlus,
+    MoreVertical,
+    Plus,
+    X,
+    User,
+    Phone,
+    Mail,
+    MapPin,
+    Share2,
+    Layers,
+    Activity
 } from 'lucide-react';
 import api from '../utils/api';
 import CustomSelect from '../components/CustomSelect';
@@ -460,8 +460,8 @@ const Customers = () => {
 
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                         <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest italic opacity-70">Internal Index ID</div>
-                                         <div className="text-[11px] font-black text-[var(--text-dark)] uppercase tracking-tighter italic">#{currentEditCustomer.id.split('-')[0]}</div>
+                                        <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest italic opacity-70">Internal Index ID</div>
+                                        <div className="text-[11px] font-black text-[var(--text-dark)] uppercase tracking-tighter italic">#{currentEditCustomer.id.split('-')[0]}</div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Referral Source</label>
@@ -505,21 +505,21 @@ const Customers = () => {
                             <div className="space-y-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Amount <span>*</span></label>
-                                    <input 
-                                        type="number" 
-                                        value={rechargeData.amount} 
-                                        onChange={(e) => setRechargeData({ ...rechargeData, amount: e.target.value })} 
-                                        required 
-                                        className="form-control !py-4 font-black tracking-tight text-xl uppercase bg-[var(--bg-color)] border-[var(--border-color)] text-[var(--text-dark)] focus:border-indigo-500 outline-none text-center" 
+                                    <input
+                                        type="number"
+                                        value={rechargeData.amount}
+                                        onChange={(e) => setRechargeData({ ...rechargeData, amount: e.target.value })}
+                                        required
+                                        className="form-control !py-4 font-black tracking-tight text-xl uppercase bg-[var(--bg-color)] border-[var(--border-color)] text-[var(--text-dark)] focus:border-indigo-500 outline-none text-center"
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Transaction Remarks</label>
-                                    <input 
-                                        type="text" 
-                                        value={rechargeData.remarks} 
-                                        onChange={(e) => setRechargeData({ ...rechargeData, remarks: e.target.value })} 
-                                        className="form-control !py-4 font-black text-sm bg-[var(--bg-color)] border-[var(--border-color)] text-[var(--text-dark)] focus:border-indigo-500 outline-none" 
+                                    <input
+                                        type="text"
+                                        value={rechargeData.remarks}
+                                        onChange={(e) => setRechargeData({ ...rechargeData, remarks: e.target.value })}
+                                        className="form-control !py-4 font-black text-sm bg-[var(--bg-color)] border-[var(--border-color)] text-[var(--text-dark)] focus:border-indigo-500 outline-none"
                                     />
                                 </div>
                             </div>

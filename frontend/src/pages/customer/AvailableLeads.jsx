@@ -32,7 +32,7 @@ const UserAvailableLeads = () => {
             }
         } catch (err) {
             console.error("Failed to fetch leads", err);
-            setError("Unable to sync with the lead database.");
+            setError("Unable to connect to the lead service. Please try again.");
         } finally {
             if (!isQuiet) setLoading(false);
         }
@@ -42,7 +42,7 @@ const UserAvailableLeads = () => {
         fetchLeads();
     }, [filters]);
 
-    // Polling Logic for Real-time Refresh
+    // Polling Logic & Real-time Refresh
     useEffect(() => {
         let interval;
         if (autoRefresh) {
@@ -50,12 +50,27 @@ const UserAvailableLeads = () => {
                 fetchLeads(true); // Quiet fetch in background
             }, 30000); // 30 second cycle
         }
-        return () => clearInterval(interval);
+
+        const handleWalletUpdate = (e) => {
+            console.log('[LEADS] Refreshing credits due to real-time update');
+            if (e.detail?.wallet_balance !== undefined) {
+                setUserCredits(e.detail.wallet_balance);
+            } else {
+                fetchLeads(true);
+            }
+        };
+
+        window.addEventListener('wallet_updated', handleWalletUpdate);
+        
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('wallet_updated', handleWalletUpdate);
+        };
     }, [autoRefresh, filters]);
 
     const handlePurchase = async (leadId, cost = 10) => {
         if (userCredits < cost) {
-            setMessage({ type: 'error', text: 'Insufficient credits. Purchase rejected.' });
+            setMessage({ type: 'error', text: 'Oops! Not enough credits. Please recharge your wallet.' });
             setTimeout(() => setMessage({ type: '', text: '' }), 5000);
             return;
         }
@@ -77,7 +92,7 @@ const UserAvailableLeads = () => {
                 setMessage({ type: 'success', text: 'Lead purchased successfully. Details are now available.' });
                 fetchLeads(true); // Refresh credits and list quietly
             } else {
-                setMessage({ type: 'error', text: data.message || "Purchase rejected." });
+                setMessage({ type: 'error', text: data.message || "Unable to complete purchase." });
             }
         } catch (err) {
             const errorMsg = err.response?.data?.message || 'Transaction failed. Please try again.';
@@ -110,17 +125,15 @@ const UserAvailableLeads = () => {
             <div className="relative z-10">
                 <div className="pageHeader mb-12">
                     <div className="pageHeaderTitle">
-                        <div className="flex items-center gap-3 mb-4">
                             <div className="px-3 py-1 bg-black text-white text-[9px] font-black uppercase tracking-widest rounded-full animate-pulse shadow-lg shadow-indigo-500/20">
-                                Live Database
+                                Live Updates
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className={`w-1.5 h-1.5 rounded-full ${autoRefresh ? 'bg-emerald-500 animate-ping' : 'bg-slate-300'}`}></div>
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none italic">
-                                    Last Sync: {lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                    Last Updated: {lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                                 </span>
                             </div>
-                        </div>
                         <h2 className="text-5xl font-black tracking-tighter uppercase text-slate-900 leading-tight">
                             Available <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-500">Leads</span>
                         </h2>
@@ -132,9 +145,9 @@ const UserAvailableLeads = () => {
                     <div className="pageHeaderActions flex items-center gap-6">
                          <div className="flex items-center gap-3 bg-[var(--surface-color)]/30 backdrop-blur-md p-2 pl-5 rounded-3xl border border-[var(--border-color)]">
                              <div className="flex flex-col">
-                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Live Feed</span>
+                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Auto Refresh</span>
                                 <span className={`text-[10px] font-black uppercase tracking-widest ${autoRefresh ? 'text-emerald-500' : 'text-slate-400'}`}>
-                                    {autoRefresh ? 'ACTIVE STREAM' : 'STATIC FEED'}
+                                    {autoRefresh ? 'ENABLED' : 'PAUSED'}
                                 </span>
                              </div>
                              <button 
@@ -172,7 +185,7 @@ const UserAvailableLeads = () => {
                     </div>
                 )}
 
-                {/* Tactical Search Bar */}
+                {/* Lead Search Bar */}
                 <div className="mb-16 p-2 rounded-[2.5rem] bg-[var(--surface-color)] border border-[var(--surface-color)] shadow-2xl shadow-slate-200/50 flex flex-col md:flex-row items-center gap-2 transition-all focus-within:border-indigo-500/30">
                     <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-2">
                         <div className="relative group">
@@ -211,7 +224,7 @@ const UserAvailableLeads = () => {
                     </button>
                 </div>
 
-                {/* Grid Feed */}
+                {/* Latest Leads Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
                     {loading ? (
                         [1,2,3,4,5,6].map(i => (
@@ -295,7 +308,7 @@ const UserAvailableLeads = () => {
                                             onClick={() => handlePurchase(lead.id, lead.credit_cost)}
                                             className="flex-1 py-4 bg-slate-900 group-hover:bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-lg shadow-slate-900/10 transition-all duration-500 flex items-center justify-center gap-2 group-hover:translate-x-1"
                                         >
-                                            Acquire <ArrowUpRight size={14} />
+                                            Unlock Lead <ArrowUpRight size={14} />
                                         </button>
                                     </div>
                                 </div>

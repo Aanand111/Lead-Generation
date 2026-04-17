@@ -105,13 +105,13 @@ const UserSubscriptions = () => {
                         });
 
                         if (verifyData.success) {
-                            setMessage({ type: 'success', text: `Access Granted: ${verifyData.message}` });
+                            setMessage({ type: 'success', text: `Success: ${verifyData.message}` });
                             setShowForm(false);
                             // Refresh plans or user status
                             fetchPlans();
                         }
                     } catch (err) {
-                        setMessage({ type: 'error', text: 'Verification Sequence Critical Failure.' });
+                        setMessage({ type: 'error', text: 'Payment verification failed. Please contact support.' });
                     }
                 },
                 prefill: {
@@ -130,7 +130,7 @@ const UserSubscriptions = () => {
 
         } catch (err) {
             console.error(err);
-            setMessage({ type: 'error', text: 'Initialization failure. Check Uplink.' });
+            setMessage({ type: 'error', text: 'Failed to initialize payment. Please try again later.' });
         } finally {
             setPurchasing(null);
         }
@@ -140,15 +140,15 @@ const UserSubscriptions = () => {
         <div className="page-content animate-fade-in text-[var(--text-dark)] pb-20">
             <div className="pageHeader">
                 <div className="pageHeaderTitle">
-                    <h2>Subscription Tier Matrix</h2>
-                    <p>Select a credit-driven plan to scale your acquisition capacity within the lead network</p>
+                    <h2>Subscription Plans</h2>
+                    <p>Select a plan that fits your business needs and start acquiring high-quality leads.</p>
                 </div>
                 <div className="pageHeaderActions flex items-center gap-4">
                     <div className="bg-amber-500/5 border border-amber-500/10 px-6 py-3 rounded-2xl flex items-center gap-4 group hover:bg-amber-500/10 transition-all cursor-default">
-                        <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">Yield Booster</div>
+                        <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">Status</div>
                         <div className="flex items-center gap-2">
                              <Crown size={16} fill="currentColor" className="text-amber-500" />
-                            <span className="text-xl font-black text-amber-500 tabular-nums">VIP Status</span>
+                            <span className="text-xl font-black text-amber-500 tabular-nums">Prime Member</span>
                         </div>
                     </div>
                 </div>
@@ -174,7 +174,7 @@ const UserSubscriptions = () => {
                             : 'bg-[var(--surface-color)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-indigo-500 hover:text-indigo-500 shadow-sm'
                         }`}
                     >
-                        {cat} SPECTRUM
+                        {cat}
                     </button>
                 ))}
             </div>
@@ -183,13 +183,13 @@ const UserSubscriptions = () => {
                 {loading ? (
                     <div className="col-span-full py-40 text-center">
                         <div className="spinner mb-4 mx-auto"></div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">Syncing Financial Core...</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">Loading Plans...</span>
                     </div>
                 ) : filteredPlans.length > 0 ? (
                     filteredPlans.map((plan, idx) => (
                         <div key={plan.id} className={`card shadow-2xl border border-[var(--border-color)] overflow-hidden bg-[var(--surface-color)] group hover:-translate-y-4 transition-all duration-500 flex flex-col rounded-[3rem] relative ${idx === 1 ? 'ring-2 ring-indigo-500/30' : ''}`}>
                             {idx === 1 && (
-                                <div className="absolute top-0 right-10 -translate-y-1/2 px-5 py-2.5 rounded-full bg-indigo-500 text-white text-[9px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/30 z-10 italic">OPTIMAL YIELD</div>
+                                <div className="absolute top-0 right-10 -translate-y-1/2 px-5 py-2.5 rounded-full bg-indigo-500 text-white text-[9px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/30 z-10 italic">BEST VALUE</div>
                             )}
                             
                             <div className="p-10 border-b border-[var(--border-color)] bg-[var(--bg-color)]/20 relative group-hover:bg-indigo-500/5 transition-colors">
@@ -201,7 +201,7 @@ const UserSubscriptions = () => {
                                 <h3 className="text-2xl font-black italic tracking-tighter uppercase text-[var(--text-dark)] mb-2">{plan.name || `${selectedCategory} ${idx + 1}`}</h3>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-4xl font-black text-[var(--text-dark)] tracking-tighter tabular-nums">₹{plan.price}</span>
-                                    <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">/ activation</span>
+                                    <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">/ one time</span>
                                 </div>
                             </div>
 
@@ -212,8 +212,8 @@ const UserSubscriptions = () => {
                                             <Layers size={18} />
                                         </div>
                                         <div>
-                                            <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Lead Capture Capacity</div>
-                                            <div className="text-lg font-black text-[var(--text-dark)] uppercase leading-none">{plan.lead_limit || 0} Nodes</div>
+                                            <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Lead Limit</div>
+                                            <div className="text-lg font-black text-[var(--text-dark)] uppercase leading-none">{plan.lead_limit || 0} Leads</div>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4 bg-[var(--bg-color)]/50 p-5 rounded-2xl border border-[var(--border-color)] group-hover:border-indigo-500/20 transition-all">
@@ -222,7 +222,7 @@ const UserSubscriptions = () => {
                                         </div>
                                         <div>
                                             <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Wallet Credits</div>
-                                            <div className="text-lg font-black text-[var(--text-dark)] uppercase leading-none">{plan.credits || 0} Digital Tokens</div>
+                                            <div className="text-lg font-black text-[var(--text-dark)] uppercase leading-none">{plan.credits || 0} Credits</div>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4 bg-[var(--bg-color)]/50 p-5 rounded-2xl border border-[var(--border-color)] group-hover:border-indigo-500/20 transition-all">
@@ -231,7 +231,7 @@ const UserSubscriptions = () => {
                                         </div>
                                         <div>
                                             <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Poster Generation</div>
-                                            <div className="text-lg font-black text-[var(--text-dark)] uppercase leading-none">{plan.poster_limit || 0} Sessions</div>
+                                            <div className="text-lg font-black text-[var(--text-dark)] uppercase leading-none">{plan.poster_limit || 0} Posters</div>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4 bg-[var(--bg-color)]/50 p-5 rounded-2xl border border-[var(--border-color)] group-hover:border-indigo-500/20 transition-all">
@@ -239,16 +239,16 @@ const UserSubscriptions = () => {
                                             <Clock size={18} />
                                         </div>
                                         <div>
-                                            <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Validity Period</div>
-                                            <div className="text-lg font-black text-[var(--text-dark)] uppercase leading-none">{plan.validity_days || 30} Earth Days</div>
+                                            <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Validity</div>
+                                            <div className="text-lg font-black text-[var(--text-dark)] uppercase leading-none">{plan.validity_days || 30} Days</div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="space-y-4">
-                                    <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] mb-2 px-1">Infrastructure Perks</div>
+                                    <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] mb-2 px-1">Plan Features</div>
                                     <div className="space-y-3">
-                                        {['High-Priority Scans', 'Studio Creator Access', 'Global Referral Protocol', 'Lead Expiry Protection'].map(perk => (
+                                        {['High-Priority Access', 'Social Poster Creator', 'Referral Rewards', 'Lead Protection'].map(perk => (
                                             <div key={perk} className="flex items-center gap-3">
                                                 <div className="w-5 h-5 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
                                                     <Check size={12} strokeWidth={4} />
@@ -268,7 +268,7 @@ const UserSubscriptions = () => {
                                         ? 'bg-indigo-500 text-white shadow-indigo-500/20 hover:scale-105' 
                                         : 'bg-[var(--bg-color)] text-[var(--text-dark)] border border-[var(--border-color)] hover:bg-[var(--primary)] hover:text-white'
                                     } ${purchasing === plan.id ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}>
-                                        {purchasing === plan.id ? <RefreshCcw className="animate-spin mx-auto" size={18} /> : 'Activate Protocol'}
+                                        {purchasing === plan.id ? <RefreshCcw className="animate-spin mx-auto" size={18} /> : 'Buy Now'}
                                     </button>
                                 </div>
                             </div>
@@ -278,7 +278,7 @@ const UserSubscriptions = () => {
                     <div className="col-span-full py-40 text-center opacity-30 border-2 border-dashed border-[var(--border-color)] rounded-[3rem]">
                         <div className="flex flex-col items-center gap-6">
                             <CreditCard size={84} strokeWidth={1} />
-                            <p className="font-black uppercase tracking-[0.4em] text-xs italic">Plan registry is currently being synchronized</p>
+                            <p className="font-black uppercase tracking-[0.4em] text-xs italic">No plans available at the moment</p>
                         </div>
                     </div>
                 )}
@@ -289,9 +289,9 @@ const UserSubscriptions = () => {
                     <HistoryIcon size={160} />
                 </div>
                 <div className="relative z-10 max-w-xl">
-                    <h3 className="text-3xl font-black italic tracking-tighter uppercase text-[var(--text-dark)] mb-4">Need Custom Capacity?</h3>
+                    <h3 className="text-3xl font-black italic tracking-tighter uppercase text-[var(--text-dark)] mb-4">Request Custom Plan</h3>
                     <p className="text-sm font-medium text-[var(--text-muted)] leading-relaxed mb-8 opacity-80">
-                        Our enterprise extraction servers can be custom configured for high-volume lead capture. Contact the neural network admin for a personalized extraction protocol.
+                        Need a custom package for high-volume lead requirements? Contact our support team for a personalized solution tailored to your business goals.
                     </p>
                     <div className="flex flex-wrap gap-4">
                         <div className="px-6 py-3 rounded-2xl bg-[var(--surface-color)] border border-[var(--border-color)] flex items-center gap-3">
@@ -305,7 +305,7 @@ const UserSubscriptions = () => {
                     </div>
                 </div>
                 <button className="bg-[var(--surface-color)] text-[var(--text-dark)] px-10 py-5 rounded-3xl font-black uppercase tracking-widest text-[11px] shadow-xl border border-[var(--border-color)] hover:border-indigo-500 transition-all flex items-center gap-3 hover:scale-105 active:scale-95 cursor-pointer relative z-10">
-                    Contact Architecture Desk <ExternalLink size={18} />
+                    Contact Support <ExternalLink size={18} />
                 </button>
             </div>
 
@@ -324,7 +324,7 @@ const UserSubscriptions = () => {
                         <form onSubmit={handleFormSubmit} className="p-10 space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic">Activation Target Name</label>
+                                    <label className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic">Full Name</label>
                                     <input 
                                         type="text" required
                                         value={userDetails.name}
@@ -333,7 +333,7 @@ const UserSubscriptions = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic">Communication Node (Email)</label>
+                                    <label className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic">Email Address</label>
                                     <input 
                                         type="email" required
                                         value={userDetails.email}
@@ -342,7 +342,7 @@ const UserSubscriptions = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic">Contact Uplink (Phone)</label>
+                                    <label className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic">Phone Number</label>
                                     <input 
                                         type="tel" required
                                         value={userDetails.phone}
@@ -351,7 +351,7 @@ const UserSubscriptions = () => {
                                     />
                                 </div>
                                 <div className="space-y-2 col-span-full">
-                                    <label className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic">Neural Identifier (PAN - Optional)</label>
+                                    <label className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 italic">PAN Number (Optional)</label>
                                     <input 
                                         type="text"
                                         value={userDetails.panNumber}
@@ -368,14 +368,14 @@ const UserSubscriptions = () => {
                                     onClick={() => setShowForm(false)}
                                     className="flex-1 py-5 rounded-[2rem] bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/20 transition-all"
                                 >
-                                    Abort
+                                    Cancel
                                 </button>
                                 <button 
                                     type="submit" 
                                     disabled={purchasing}
                                     className="flex-[2] py-5 rounded-[2rem] bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
                                 >
-                                    {purchasing ? <RefreshCcw className="animate-spin" size={16} /> : <>Initialize Gateway <ArrowRight size={16} /></>}
+                                    {purchasing ? <RefreshCcw className="animate-spin" size={16} /> : <>Proceed to Payment <ArrowRight size={16} /></>}
                                 </button>
                             </div>
                         </form>

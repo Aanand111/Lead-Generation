@@ -1,3 +1,4 @@
+// Server Protocol Hub - [FORCE RESTART: 2026-04-13]
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -53,9 +54,32 @@ app.use(helmet({
 }));
 app.use(compression());
 
+// --- EXTREME OVERLOAD PROTECTION (Event Loop Lag Monitor) ---
+// If the Node event loop is lagging by more than 70ms, it means the server is overwhelmed 
+// (e.g. 1 million concurrent hits). We fast-fail new requests to protect the server from crashing.
+let isOverloaded = false;
+setInterval(() => {
+    const start = Date.now();
+    setImmediate(() => {
+        const lag = Date.now() - start;
+        isOverloaded = lag > 70; // 70ms is extremely high for Node.js
+    });
+}, 500).unref();
+
+app.use((req, res, next) => {
+    if (isOverloaded && req.path !== '/api/health') {
+        res.set('Connection', 'close');
+        return res.status(503).json({ 
+            success: false, 
+            message: 'Server Overloaded (Traffic Peak). Please try again in a few seconds.' 
+        });
+    }
+    next();
+});
+
 // Body Parsers
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({ limit: '5kb' })); // Reduced payload limit from 10kb to 5kb for security
+app.use(express.urlencoded({ extended: true, limit: '5kb' }));
 app.use(hpp());
 
 // Rate Limiters
@@ -79,6 +103,10 @@ const authLimiter = rateLimit({
     max: 15,
     standardHeaders: true,
     legacyHeaders: false,
+    store: new RedisStore({
+        sendCommand: (...args) => redisConnection.call(...args),
+        prefix: 'rl:auth:',
+    }),
     message: { success: false, message: 'Too many login attempts. Please wait 15 minutes.' },
 });
 
@@ -87,6 +115,10 @@ const contactLimiter = rateLimit({
     max: 10,
     standardHeaders: true,
     legacyHeaders: false,
+    store: new RedisStore({
+        sendCommand: (...args) => redisConnection.call(...args),
+        prefix: 'rl:contact:',
+    }),
     message: { success: false, message: 'Contact limit exceeded. Please try again after an hour.' },
 });
 
@@ -134,12 +166,18 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
+// Initialize Background Workers & Schedulers
+require('./workers/notificationWorker');
 const { scheduleJobs } = require('./queues/cronQueue');
 const http = require('http');
 const server = http.createServer(app);
 
 // Initialize Socket.io
 require('./utils/socket').init(server);
+
+// Configure Keep-Alive Timers for High Load / Load Balancers
+server.keepAliveTimeout = 65000; // 65 seconds
+server.headersTimeout = 66000; // Keep slightly higher than keepAliveTimeout
 
 server.listen(PORT, () => {
     console.log(`[SERVER] Port ${PORT} | Mode: ${process.env.NODE_ENV || 'development'}`);

@@ -8,9 +8,11 @@ const getTransactions = async (req, res, next) => {
         let query = `
             SELECT 
                 t.*,
-                COALESCE(u.full_name, c.name, u.phone, c.phone, c.email, 'User') AS display_name,
+                COALESCE(u.full_name, v.name, c.name, u.phone, v.phone, c.phone, c.email, 'User') AS display_name,
                 u.full_name AS user_name,
                 u.phone     AS user_phone,
+                v.name      AS vendor_name,
+                v.phone     AS vendor_phone,
                 c.name      AS customer_name,
                 c.phone     AS customer_phone,
                 c.email     AS customer_email,
@@ -18,6 +20,7 @@ const getTransactions = async (req, res, next) => {
                 p.name      AS package_name
             FROM transactions t
             LEFT JOIN users u ON u.id::text = t.user_id::text
+            LEFT JOIN vendors v ON v.id::text = t.user_id::text
             LEFT JOIN customers c ON c.id::text = t.user_id::text
             LEFT JOIN subscription_plans sp ON sp.id::text = t.reference_id
             LEFT JOIN packages p ON p.id::text = t.reference_id

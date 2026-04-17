@@ -9,6 +9,7 @@ const {
 } = require('../controllers/userController');
 const { createSubscriptionOrder, verifySubscriptionPayment } = require('../controllers/DRozeerpayController');
 const { authenticateToken, authorizeRole } = require('../middlewares/authMiddleware');
+const { recordBannerInteraction } = require('../controllers/adminAnalyticsController');
 
 
 
@@ -40,7 +41,6 @@ router.post('/generate-poster', fileUpload.fields([
 ]), generatePoster);
 
 router.post('/lead-feedback', submitLeadFeedback);
-const { recordBannerInteraction } = require('../controllers/adminAnalyticsController');
 router.post('/banners/:id/interaction', recordBannerInteraction);
 router.get('/news', getNews);
 router.get('/banners', getBanners);

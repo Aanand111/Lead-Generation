@@ -1,71 +1,103 @@
-const admin = require('firebase-admin');
-const { pool } = require('../config/db');
-
-// Initialize Firebase Admin (Ensure .env exists with path to firebase-service-account.json)
-if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
-    admin.initializeApp({
-        credential: admin.credential.cert(require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH))
-    });
-}
+const { getIO, sendToUser, broadcast } = require('../utils/socket');
 
 class NotificationService {
     /**
-     * sendPushToUser: Sends an individual FCM notification
-     * Uses batching and retries under the hood.
+     * sendPushToUser: Sends an individual notification by phone
+     * Note: For WebSockets, we prefer using userId for better accuracy.
+     * This method is kept for backward compatibility but will try to find userId if possible.
      */
     static async sendPushToUser(userPhone, title, body, data = {}) {
+        // Since we can't easily map phone to socket without a DB lookup, 
+        // we'll use the pool to find the userId first.
+        const { pool } = require('../config/db');
         try {
-            const query = 'SELECT fcm_token FROM users WHERE phone = $1';
-            const { rows } = await pool.query(query, [userPhone]);
-            
-            if (rows.length === 0 || !rows[0].fcm_token) {
-                return { success: false, message: 'FCM token not found' };
+            const { rows } = await pool.query('SELECT id FROM users WHERE phone = $1', [userPhone]);
+            if (rows.length > 0) {
+                return this.sendPushToUserId(rows[0].id, title, body, data);
             }
-
-            const message = {
-                notification: { title, body },
-                data: { ...data, timestamp: new Date().toISOString() },
-                token: rows[0].fcm_token
-            };
-
-            const response = await admin.messaging().send(message);
-            return { success: true, messageId: response };
+            return { success: false, message: 'User not found' };
         } catch (error) {
-            console.error('[PUSH ERROR]', error.message);
+            console.error('[SOCKET NOTIFY ERROR]', error.message);
             return { success: false, error: error.message };
         }
     }
 
     /**
-     * sendBulkPush: Sends a message to a list of tokens (max 500 per FCM request)
+     * sendPushToUserId: Sends an individual notification by userId via Socket.io
      */
-    static async sendBulkPush(tokens, title, body, data = {}) {
-        if (!tokens || tokens.length === 0) return 0;
-
+    /**
+     * sendGlobalNotification: Hits every SINGLE connected user in < 1 second. (True Realtime)
+     * Use this for breaking news or global alerts.
+     */
+    static async sendGlobalNotification(title, body, metadata = {}) {
         try {
-            const message = {
-                notification: { title, body },
-                data: { ...data, timestamp: new Date().toISOString() },
-                tokens: tokens
-            };
-
-            const response = await admin.messaging().sendEachForMulticast(message);
-            
-            // Clean up invalid/expired tokens (Scaling Best Practice)
-            if (response.failureCount > 0) {
-                const invalidTokens = [];
-                response.responses.forEach((resp, idx) => {
-                    if (!resp.success) {
-                        invalidTokens.push(tokens[idx]);
-                    }
+            const io = require('../utils/socket').getIO();
+            if (io) {
+                // This single line reaches 1M connected sockets efficiently!
+                io.emit('global_notification', {
+                    title,
+                    body,
+                    timestamp: new Date(),
+                    ...metadata
                 });
-                // Optional: mark invalidTokens as NULL in DB (later)
+                console.log(`[REALTIME] Global broadcast emitted for: ${title}`);
+                return { success: true };
             }
-
-            return response.successCount;
+            return { success: false, message: 'Socket.io not initialized' };
         } catch (error) {
-            console.error('[BULK PUSH ERROR]', error.message);
-            return 0;
+            console.error('[BROADCAST ERROR]', error.message);
+            return { success: false, error: error.message };
+        }
+    }
+
+    static async sendPushToUserId(userId, title, body, data = {}) {
+        try {
+            sendToUser(userId, 'notification', {
+                title,
+                body,
+                ...data,
+                timestamp: new Date().toISOString()
+            });
+            return { success: true };
+        } catch (error) {
+            console.error('[SOCKET ERROR]', error.message);
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * sendBulkPush: Sends a message to a list of user IDs
+     */
+    static async sendBulkPush(userIds, title, body, data = {}) {
+        if (!userIds || userIds.length === 0) return 0;
+        let successCount = 0;
+        userIds.forEach(userId => {
+            sendToUser(userId, 'notification', {
+                title,
+                body,
+                ...data,
+                timestamp: new Date().toISOString()
+            });
+            successCount++;
+        });
+        return successCount;
+    }
+
+    /**
+     * sendPushToAllUsers: Broadcast to everyone online
+     */
+    static async sendPushToAllUsers(title, body, data = {}) {
+        try {
+            broadcast('notification', {
+                title,
+                body,
+                ...data,
+                timestamp: new Date().toISOString()
+            });
+            return { success: true };
+        } catch (error) {
+            console.error('[ALL SOCKET ERROR]', error.message);
+            return { success: false };
         }
     }
 }

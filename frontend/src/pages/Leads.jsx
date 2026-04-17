@@ -245,7 +245,6 @@ const Leads = () => {
                                     </td>
                                     <td>
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-0.5">{lead.lead_id || 'ID-TEMP'}</span>
                                             <span className="font-black text-[var(--text-dark)] uppercase tracking-tight text-[11px] group-hover:text-indigo-600 transition-colors uppercase">{lead.customer_name || 'Anonymous'}</span>
                                         </div>
                                     </td>

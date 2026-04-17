@@ -121,14 +121,14 @@ const PosterCreate = () => {
             <div className="pageHeader">
                 <div className="pageHeaderTitle">
                     <h2 className="flex items-center gap-3">
-                        Mint New Creative
+                        Create New Poster
                         <Sparkles className="text-amber-500 animate-pulse" size={24} />
                     </h2>
-                    <p>Integrate a new visual communication asset into the ecosystem</p>
+                    <p>Add a new marketing poster to the system</p>
                 </div>
                 <div className="pageHeaderActions">
                     <button onClick={() => navigate('/posters')} className="btn bg-[var(--surface-color)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-indigo-500 hover:bg-indigo-500/10 flex items-center gap-2 font-black uppercase text-[10px] tracking-widest px-6 py-3 rounded-2xl transition-all shadow-sm">
-                        <ArrowLeft size={16} /> Abort Operation
+                        <ArrowLeft size={16} /> Cancel Operation
                     </button>
                 </div>
             </div>
@@ -147,7 +147,7 @@ const PosterCreate = () => {
                             <div className="card shadow-2xl rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--surface-color)] overflow-hidden">
                                 <div className="p-6 border-b border-[var(--border-color)] bg-[var(--bg-color)]/30">
                                     <h3 className="text-sm font-black uppercase tracking-tight flex items-center gap-3 text-indigo-500">
-                                        <Camera size={18} /> Template Mapping
+                                        <Camera size={18} /> Poster Template Layout
                                     </h3>
                                 </div>
                                 <div className="p-6">
@@ -191,13 +191,13 @@ const PosterCreate = () => {
                                                 <div className="p-4 rounded-full bg-indigo-500/10 text-indigo-500 group-hover:scale-110 transition-transform">
                                                     <Upload size={32} />
                                                 </div>
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-center px-6 leading-relaxed">Upload Background To Start Mapping</p>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-center px-6 leading-relaxed">Upload Background To Start Layering</p>
                                             </div>
                                         )}
                                         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                                     </div>
                                     <div className="mt-4 p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                                        <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 block">Configure Nodes (%)</label>
+                                        <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 block">Position Elements (%)</label>
                                         <div className="space-y-4">
                                             {formData.layout_config.fields.map((field, index) => (
                                                 <div key={field.id} className="grid grid-cols-2 gap-2">
@@ -240,12 +240,12 @@ const PosterCreate = () => {
                             <div className="card shadow-2xl rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--surface-color)] overflow-hidden h-full">
                                 <div className="p-8 border-b border-[var(--border-color)] bg-[var(--bg-color)]/30">
                                     <h3 className="text-sm font-black uppercase tracking-tight flex items-center gap-3 text-indigo-500">
-                                        <Layers size={20} /> Matrix Configuration
+                                        <Layers size={20} /> Poster Configuration
                                     </h3>
                                 </div>
                                 <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="space-y-2 md:col-span-2">
-                                        <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Asset Identity (Title)</label>
+                                        <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Poster Title</label>
                                         <input 
                                             type="text" name="title" value={formData.title} onChange={handleChange}
                                             placeholder="Enter descriptive title..."
@@ -255,7 +255,7 @@ const PosterCreate = () => {
                                     </div>
 
                                     <CustomSelect
-                                        label="Classification Tier"
+                                        label="Category"
                                         name="category_id"
                                         value={formData.category_id}
                                         onChange={handleChange}
@@ -264,7 +264,7 @@ const PosterCreate = () => {
                                     />
 
                                     <CustomSelect
-                                        label="Linguistic Node"
+                                        label="Language"
                                         name="language"
                                         value={formData.language}
                                         onChange={handleChange}
@@ -273,7 +273,7 @@ const PosterCreate = () => {
                                     />
 
                                     <CustomSelect
-                                        label="Access Protocol"
+                                        label="Access Type"
                                         name="is_premium"
                                         value={formData.is_premium}
                                         onChange={handleChange}
@@ -282,7 +282,7 @@ const PosterCreate = () => {
                                     />
 
                                     <CustomSelect
-                                        label="Broadcast Status"
+                                        label="Publishing Status"
                                         name="status"
                                         value={formData.status}
                                         onChange={handleChange}
@@ -320,7 +320,7 @@ const PosterCreate = () => {
                             ) : (
                                 <>
                                     <Save size={18} />
-                                    Push To Ecosystem
+                                    Create Poster
                                 </>
                             )}
                         </button>
@@ -329,7 +329,7 @@ const PosterCreate = () => {
                             onClick={() => navigate('/posters')}
                             className="px-10 py-5 bg-[var(--bg-color)] text-[var(--text-muted)] font-black uppercase text-xs tracking-[0.2em] rounded-[2rem] hover:bg-red-500/10 hover:text-red-500 transition-all border border-transparent hover:border-red-500/20"
                         >
-                            Abort
+                            Cancel
                         </button>
                     </div>
                 </form>

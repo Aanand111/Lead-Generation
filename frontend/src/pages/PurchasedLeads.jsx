@@ -37,11 +37,12 @@ const PurchasedLeads = () => {
                     id: index + 1,
                     customerName: lead.customer_name || 'N/A',
                     leadId: lead.lead_id ? `L-${index + 1000}` : 'N/A',
-                    packageName: lead.package_name || 'No Package',
+                    packageName: lead.package_name || 'INDIVIDUAL',
                     leadName: lead.lead_name || 'N/A',
-                    totalLeads: lead.total_leads != null ? lead.total_leads : '0',
-                    remainingLeads: lead.remaining_leads != null ? lead.remaining_leads : '0',
+                    totalLeads: lead.total_leads != null ? lead.total_leads : '1',
+                    remainingLeads: lead.remaining_leads != null ? lead.remaining_leads : '1',
                     price: lead.price ? parseFloat(lead.price).toFixed(2) : '0.00',
+                    purchaseStatus: lead.purchase_status || 'ACQUIRED',
                     statingDate: lead.starting_date ? new Date(lead.starting_date).toLocaleDateString('en-GB') : 'N/A',
                     endDate: lead.end_date ? new Date(lead.end_date).toLocaleDateString('en-GB') : 'N/A'
                 }));

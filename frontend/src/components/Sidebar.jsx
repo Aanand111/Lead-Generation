@@ -58,6 +58,7 @@ const Sidebar = ({ isOpen }) => {
         { path: '/commissions/approval', label: 'Commission Approval', icon: <UserCheck size={20} /> },
         { path: '/analytics', label: 'Reporting & Analytics', icon: <BarChart3 size={20} /> },
         { path: '/sub-vendors', label: 'SubVendors', icon: <UserPlus size={20} /> },
+        { path: '/notifications/send', label: 'Push Notifications', icon: <Bell size={20} /> },
         {
             label: 'Leads',
             icon: <Layers size={20} />,

@@ -78,8 +78,8 @@ const LeadApproval = () => {
                     <div className="flex items-center gap-2 text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-2 italic">
                         Verification Required <Layers size={10} /> Pending Approvals
                     </div>
-                    <h1 className="text-4xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-none mb-2">Lead Approval Dashboard</h1>
-                    <p className="text-xs font-bold text-[var(--text-muted)] italic leading-none">Review and approve incoming leads before they are listed on the platform.</p>
+                    <h1 className="text-4xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-none mb-2">Review Pending Leads</h1>
+                    <p className="text-xs font-bold text-[var(--text-muted)] italic leading-none">Review and approve leads submitted by vendors before they go live.</p>
                 </div>
                 <div className="flex gap-4">
                     <button onClick={fetchPendingLeads} className="p-4 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-2xl text-[var(--text-muted)] hover:text-indigo-500 transition-all shadow-sm active:scale-95">
@@ -89,7 +89,7 @@ const LeadApproval = () => {
                         <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-500 transition-colors" />
                         <input
                             type="text"
-                            placeholder="Scan by ID or Identity..."
+                            placeholder="Search leads..."
                             className="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-2xl pl-12 pr-4 py-4 text-[10px] font-black uppercase tracking-widest outline-none shadow-sm focus:border-indigo-500 transition-all"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -113,7 +113,7 @@ const LeadApproval = () => {
                     {filteredLeads.map((lead) => (
                         <div key={lead.id} className="card group bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[2.5rem] overflow-hidden hover:shadow-2xl hover:shadow-indigo-500/5 transition-all duration-500">
                             <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-[var(--border-color)]">
-                                {/* Lead Information */}
+                                {/* Name */}
                                 <div className="p-8 lg:w-1/3 flex items-start gap-5">
                                     <div className="w-16 h-16 rounded-[1.5rem] bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0 animate-pulse border border-amber-500/20">
                                         <Activity size={32} />
@@ -129,17 +129,18 @@ const LeadApproval = () => {
                                         </div>
                                         <h3 className="text-xl font-black text-[var(--text-dark)] uppercase tracking-tight truncate leading-none mb-2">{lead.customer_name}</h3>
                                         <div className="flex flex-col gap-3 mt-4">
-                                            <div className="flex items-center gap-2 text-xs font-black text-indigo-500 uppercase tracking-widest bg-indigo-500/5 px-3 py-1.5 rounded-xl border border-indigo-500/10 w-fit">
+                                            <div className="flex items-center gap-2 text-xs font-black text-indigo-500 tracking-tight bg-indigo-500/5 px-3 py-1.5 rounded-xl border border-indigo-500/10 w-fit lowercase">
                                                 <Phone size={14} /> {lead.customer_phone}
                                             </div>
-                                            <div className="flex items-center gap-2 text-xs font-black text-rose-500 uppercase tracking-widest bg-rose-500/5 px-3 py-1.5 rounded-xl border border-rose-500/10 w-fit">
+                                            <div className="flex items-center gap-2 text-xs font-black text-rose-500 tracking-tight bg-rose-500/5 px-3 py-1.5 rounded-xl border border-rose-500/10 w-fit lowercase">
                                                 <Mail size={14} /> {lead.customer_email?.toLowerCase() || 'N/A'}
                                             </div>
+
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Geographic & Sector Metadata */}
+                                {/* Lead Location & Category */}
                                 <div className="p-8 lg:w-1/3 space-y-6">
                                     <div className="flex items-start gap-4">
                                         <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/10">
@@ -163,7 +164,7 @@ const LeadApproval = () => {
                                     </div>
                                 </div>
 
-                                {/* Payout & Execution */}
+                                {/* Price and Approval */}
                                 <div className="p-8 lg:w-1/3 flex flex-col justify-between bg-gradient-to-br from-transparent to-indigo-500/[0.02]">
                                      <div className="mb-6 lg:mb-0">
                                         <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-3">Set Price</p>
@@ -202,7 +203,7 @@ const LeadApproval = () => {
                                 </div>
                             </div>
 
-                            {/* Temporal Footprint */}
+                            {/* Submission Details */}
                              <div className="px-8 py-4 bg-[var(--bg-color)]/30 border-t border-[var(--border-color)] flex flex-col md:flex-row md:items-center justify-between text-[10px] font-black text-[var(--text-dark)] uppercase tracking-[0.2em] gap-4">
                                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                                     <span>Created On: {new Date(lead.created_at).toLocaleString()}</span>

@@ -146,11 +146,11 @@ const Subscriptions = () => {
                                     </td>
                                 </tr>
                             ) : filtered.length > 0 ? (
-                                filtered.map((sub) => {
-                                    const user = users.find(u => u.id === sub.user_id);
-                                    return (
-                                        <tr key={sub.id} className="transition-all hover:bg-indigo-500/[0.01] group border-b border-[var(--border-color)] last:border-0">
-                                            <td className="ps-8 py-6 text-[10px] font-black text-[var(--text-muted)] opacity-30">#{sub.id}</td>
+                                    filtered.map((sub, index) => {
+                                        const user = users.find(u => u.id === sub.user_id);
+                                        return (
+                                            <tr key={sub.id} className="transition-all hover:bg-indigo-500/[0.01] group border-b border-[var(--border-color)] last:border-0">
+                                                <td className="ps-8 py-6 text-[10px] font-black text-[var(--text-muted)] opacity-30">#{index + 1}</td>
                                             <td className="py-6">
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-11 h-11 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-black text-sm border border-indigo-500/10 shadow-sm group-hover:scale-110 transition-transform">
@@ -183,7 +183,7 @@ const Subscriptions = () => {
                                                     </div>
                                                     <div className="flex items-center gap-2 text-[10px] font-bold text-[var(--text-muted)]">
                                                         <Calendar size={12} className="text-red-500" />
-                                                        <span className="uppercase tracking-widest text-red-500/70">Expire:</span> {new Date(sub.expire_date).toLocaleDateString()}
+                                                        <span className="uppercase tracking-widest text-red-500/70">Expire:</span> {new Date(sub.end_date).toLocaleDateString()}
                                                     </div>
                                                 </div>
                                             </td>
@@ -250,3 +250,4 @@ const Subscriptions = () => {
 };
 
 export default Subscriptions;
+ 

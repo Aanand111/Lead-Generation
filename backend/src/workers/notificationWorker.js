@@ -1,105 +1,105 @@
-// const { Worker } = require('bullmq');
-// const { redisOptions } = require('../config/redis');
-// const { pool } = require('../config/db');
-// const NotificationService = require('../services/notificationService');
-
-// console.log('[WORKER] Notification worker process started...');
-
-// /**
-//  * notificationWorker: Distributes workload across CPU cores.
-//  * Concurrency: 50 (Processes 50 notifications simultaneously per worker process).
-//  * If 8 CPU cores run PM2, 8 x 50 = 400 parallel notifications!
-//  */
-// const worker = new Worker('notification-broadcast', async job => {
-//   const { userId, userPhone, title, body, campaignId } = job.data;
-  
-//   try {
-//     // 1. Send actual message (FCM/SMS/Email)
-//     const result = await NotificationService.sendPushToUser(userPhone, title, body);
-
-//     // 2. Log success to DB for tracking (optimized update)
-//     if (result.success) {
-//       await pool.query(
-//         'UPDATE broadcast_campaigns SET success_count = success_count + 1, processed_users = processed_users + 1 WHERE id = $1',
-//         [campaignId]
-//       );
-//     } else {
-//       await pool.query(
-//         'UPDATE broadcast_campaigns SET failure_count = failure_count + 1, processed_users = processed_users + 1 WHERE id = $1',
-//         [campaignId]
-//       );
-//     }
-//   } catch (error) {
-//     console.error(`[WORKER ERROR] Job ${job.id}:`, error.message);
-//     throw error; // Let BullMQ retry
-//   }
-// }, {
-//   connection: redisOptions,
-//   concurrency: 50,  // Scale up concurrency for higher throughput
-//   limiter: {
-//     max: 1000,      // Max jobs per 1 second to stay within FCM/Provider limits
-//     duration: 1000,
-//   }
-// });
-
-// worker.on('failed', (job, err) => {
-//   console.error(`[WORKER FAILED] Job ID ${job.id}: ${err.message}`);
-// });
-
-// worker.on('completed', (job) => {
-//   // Silence on production
-//   // console.log(`[WORKER DONE] Job ID ${job.id}`);
-// });
-
-// module.exports = worker;
-
-
-
-
 const { Queue, Worker } = require('bullmq');
-const { redisOptions } = require('../config/redis');
-const { archiveExpiredPosters, expirePurchasedLeads } = require('../jobs/maintenanceJobs');
+const { pool } = require('../config/db');
+const Redis = require('ioredis');
+const NotificationService = require('../services/notificationService');
+const { archiveExpiredPosters, expirePurchasedLeads, checkPackageRenewals } = require('../jobs/maintenanceJobs');
 
-// 1. Create Maintenance Queue
-const maintenanceQueue = new Queue('MaintenanceQueue', {
-    connection: redisOptions
+// Correct Redis connection for BullMQ
+const connection = process.env.REDIS_URL
+  ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null }) // Railway
+  : new Redis({
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT) || 6379,
+        password: process.env.REDIS_PASSWORD || undefined,
+        maxRetriesPerRequest: null,
+    });
+
+console.log('[WORKER] Multi-role Worker Process Initiated...');
+
+/**
+ * 1. Broadcast Worker (High-Velocity High-Scale Messaging)
+ * Implementation: Memory Batching to avoid DB Row Locking
+ */
+const statsBuffer = new Map(); // Store counts temporarily: { campaignId: { success: 0, fail: 0, total: 0 } }
+
+const syncStatsToDB = async () => {
+  for (const [campaignId, stats] of statsBuffer.entries()) {
+    if (stats.total > 0) {
+      try {
+        await pool.query(
+          `UPDATE broadcast_campaigns 
+           SET success_count = success_count + $1, 
+               failure_count = failure_count + $2, 
+               processed_users = processed_users + $3 
+           WHERE id = $4`,
+          [stats.success, stats.fail, stats.total, campaignId]
+        );
+        // Clear counts after sync
+        stats.success = 0; stats.fail = 0; stats.total = 0;
+      } catch (err) {
+        console.error('[SYNC ERROR] Failed to sync campaign stats:', err.message);
+      }
+    }
+  }
+};
+
+// Sync with DB every 2 seconds
+setInterval(syncStatsToDB, 2000);
+
+const broadcastWorker = new Worker('notification-broadcast', async job => {
+  const { userId, title, body, campaignId } = job.data;
+  
+  try {
+    const result = await NotificationService.sendPushToUserId(userId, title, body);
+
+    // Initialize buffer for this campaign if not exists
+    if (!statsBuffer.has(campaignId)) {
+        statsBuffer.set(campaignId, { success: 0, fail: 0, total: 0 });
+    }
+    
+    const stats = statsBuffer.get(campaignId);
+    if (result.success) {
+      stats.success++;
+    } else {
+      stats.fail++;
+    }
+    stats.total++;
+
+  } catch (error) {
+    console.error(`[BROADCAST ERROR] Job ${job.id}:`, error.message);
+    throw error; 
+  }
+}, {
+  connection,
+  concurrency: 200,  // Process 200 messages in parallel
+  limiter: {
+    max: 2000,       // Higher throughput
+    duration: 1000,
+  }
 });
 
-// 2. Define Worker Logic
-const worker = new Worker('MaintenanceQueue', async (job) => {
-    console.log(`[WORKER] Running maintenance job: ${job.name}`);
+/**
+ * 2. Maintenance Worker (Cron Jobs)
+ * Queue: 'MaintenanceQueue'
+ */
+const maintenanceWorker = new Worker('MaintenanceQueue', async (job) => {
+    console.log(`[WORKER] Running maintenance task: ${job.name}`);
     
     if (job.name === 'DailyArchiving') {
         await archiveExpiredPosters();
     } else if (job.name === 'DailyLeadCleanup') {
         await expirePurchasedLeads();
+    } else if (job.name === 'DailyRenewalCheck') {
+        await checkPackageRenewals();
     }
-}, { connection: redisOptions });
+}, { connection });
 
-// 3. Schedule Repeatable Jobs (Repeat Daily)
-const scheduleJobs = async () => {
-    // Clear existing jobs to avoid duplicates (optional but safe)
-    await maintenanceQueue.drain();
-    
-    // Day cron at 01:00 AM
-    await maintenanceQueue.add('DailyArchiving', {}, {
-        repeat: { pattern: '0 1 * * *' }
-    });
-    
-    // Day cron at 02:00 AM
-    await maintenanceQueue.add('DailyLeadCleanup', {}, {
-        repeat: { pattern: '0 2 * * *' }
-    });
 
-    console.log('[CRON] Maintenance jobs successfully scheduled in Redis.');
-};
-
-// Error handling for worker
-worker.on('failed', (job, err) => {
-    console.error(`[WORKER ERROR] Job ${job.id} failed: ${err.message}`);
-});
+// Error Logging
+broadcastWorker.on('failed', (job, err) => console.error(`[BROADCAST FAILED] Job ${job.id}: ${err.message}`));
+maintenanceWorker.on('failed', (job, err) => console.error(`[MAINTENANCE FAILED] Job ${job.id}: ${err.message}`));
 
 module.exports = {
-    maintenanceQueue,
-    scheduleJobs
+    broadcastWorker,
+    maintenanceWorker
 };

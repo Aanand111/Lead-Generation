@@ -127,7 +127,7 @@ const LeadCreate = () => {
             <div className="pageHeader">
                 <div className="pageHeaderTitle">
                     <h2 className="flex items-center gap-3">
-                        Create New Lead
+                        Add New Lead
                         <div className="p-2.5 rounded-2xl bg-indigo-500 shadow-lg shadow-indigo-500/30 flex items-center justify-center">
                             <TrendingUp className="text-white" size={24} />
                         </div>
@@ -159,7 +159,7 @@ const LeadCreate = () => {
                                             <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-500 shadow-inner">
                                                 <Type size={24} />
                                             </div>
-                                            Lead Details
+                                            Lead Information
                                         </h3>
                                         <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic mt-2 ml-14">Basic information about the lead and category</p>
                                     </div>
@@ -187,7 +187,7 @@ const LeadCreate = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 font-bold">Lead Requirements</label>
+                                        <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 font-bold">Requirements / Description</label>
                                         <textarea
                                             name="description"
                                             className="w-full p-6 rounded-[2rem] min-h-[120px] font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none text-[var(--text-dark)]"
@@ -198,7 +198,7 @@ const LeadCreate = () => {
                                 </div>
                             </div>
 
-                            {/* Customer Node Information */}
+                            {/* Customer Information */}
                             <div className="card shadow-2xl rounded-[3rem] border border-[var(--border-color)] bg-[var(--surface-color)] overflow-hidden">
                                 <div className="p-10 border-b border-[var(--border-color)] bg-[var(--bg-color)]/30 flex justify-between items-center">
                                     <div>
@@ -255,7 +255,7 @@ const LeadCreate = () => {
 
                         {/* Value & Locality (Side Panel) */}
                         <div className="space-y-10">
-                            {/* Proximity Matrix */}
+                            {/* Location */}
                             <div className="card shadow-2xl rounded-[3rem] border border-[var(--border-color)] bg-[var(--surface-color)] overflow-hidden">
                                 <div className="p-8 border-b border-[var(--border-color)] bg-[var(--bg-color)]/30">
                                     <h3 className="text-md font-black uppercase tracking-tight flex items-center gap-3 italic">
@@ -301,7 +301,7 @@ const LeadCreate = () => {
                                 </div>
                             </div>
 
-                            {/* Monetary Parameters */}
+                            {/* Lead Value */}
                             <div className="card shadow-2xl rounded-[3rem] border border-[var(--border-color)] bg-indigo-600 overflow-hidden text-[var(--text-dark)] relative">
                                 <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 text-white">
                                     <IndianRupee size={120} />
@@ -340,7 +340,7 @@ const LeadCreate = () => {
                                 </div>
                             </div>
 
-                            {/* Execution Hub */}
+                            {/* Actions */}
                             <div className="pt-4 flex flex-col gap-4">
                                 <button
                                     type="submit"
