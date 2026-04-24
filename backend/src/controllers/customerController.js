@@ -1,5 +1,23 @@
 const customerDb = require('../models/customerModel');
 
+const getCustomer = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const customer = await customerDb.getCustomerById(id);
+
+        if (!customer) {
+            return res.status(404).json({ success: false, message: 'Customer not found' });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: customer
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 const getCustomers = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -107,6 +125,7 @@ const removeCustomer = async (req, res, next) => {
 
 module.exports = {
     getCustomers,
+    getCustomer,
     addCustomer,
     updateCustomer,
     updateCustomerStatus,

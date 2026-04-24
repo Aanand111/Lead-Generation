@@ -46,6 +46,12 @@ const VendorEarnings = () => {
 
     const filteredTransactions = transactions.filter(t => {
         if (activeTab === 'all') return true;
+        if (activeTab === 'pending') {
+            return t.status.toLowerCase() === 'pending' || t.status.toLowerCase() === 'requested';
+        }
+        if (activeTab === 'rejected') {
+            return t.status.toLowerCase() === 'failed';
+        }
         return t.status.toLowerCase() === activeTab.toLowerCase();
     });
 
@@ -146,7 +152,7 @@ const VendorEarnings = () => {
                     <div className="flex items-center gap-6">
                         <h2 className="text-xl font-black text-[var(--text-dark)] uppercase tracking-tight">Earnings History</h2>
                         <div className="flex bg-[var(--bg-color)]/50 p-1 rounded-xl border border-[var(--border-color)]">
-                            {['all', 'completed', 'pending', 'failed'].map(tab => (
+                            {['all', 'completed', 'pending', 'rejected'].map(tab => (
                                 <button 
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -219,7 +225,7 @@ const VendorEarnings = () => {
                                                     'bg-red-500/10 text-red-500 border-red-500/20'
                                                 }`}>
                                                     <div className={`w-1 h-1 rounded-full ${item.status.toLowerCase() === 'completed' ? 'bg-emerald-500' : (item.status.toLowerCase() === 'pending' || item.status.toLowerCase() === 'requested') ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`}></div>
-                                                    {item.status}
+                                                    {item.status.toLowerCase() === 'failed' ? 'REJECTED' : item.status}
                                                 </span>
                                             </td>
                                         </tr>

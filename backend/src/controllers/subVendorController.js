@@ -3,9 +3,19 @@ const bcrypt = require('bcryptjs');
 
 const getSubVendors = async (req, res, next) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const search = req.query.search || '';
+        const { id, page: pageQuery, limit: limitQuery, search = '' } = req.query;
+
+        // If ID is provided, return a single sub-vendor
+        if (id) {
+            const subVendor = await subVendorDb.getSubVendorById(id);
+            if (!subVendor) {
+                return res.status(404).json({ success: false, message: 'Sub-vendor not found.' });
+            }
+            return res.status(200).json({ success: true, data: subVendor });
+        }
+
+        const page = parseInt(pageQuery) || 1;
+        const limit = parseInt(limitQuery) || 10;
 
         const data = await subVendorDb.getAllSubVendors(page, limit, search);
 

@@ -112,7 +112,7 @@ const verifySubscriptionPayment = async (req, res, next) => {
 
         // Check if already processed
         const existingTx = await client.query('SELECT status FROM transactions WHERE transaction_id = $1', [razorpay_payment_id]);
-        if (existingTx.rows.length > 0 && existingTx.rows[0].status === 'SUCCESS') {
+        if (existingTx.rows.length > 0 && (existingTx.rows[0].status === 'SUCCESS' || existingTx.rows[0].status === 'COMPLETED')) {
             await client.query('COMMIT');
             return res.json({ success: true, message: 'Already processed' });
         }
@@ -149,7 +149,7 @@ const verifySubscriptionPayment = async (req, res, next) => {
         // Finalize Transaction
         await client.query(
             'UPDATE transactions SET status = $1, transaction_id = $2, payment_gateway = $3, remarks = $4 WHERE id = $5',
-            ['SUCCESS', razorpay_payment_id, 'RAZORPAY', `Activated: ${plan.name} (PAN: ${panNumber || 'N/A'})`, trans.id]
+            ['COMPLETED', razorpay_payment_id, 'RAZORPAY', `Activated: ${plan.name} (PAN: ${panNumber || 'N/A'})`, trans.id]
         );
 
         await client.query('COMMIT');

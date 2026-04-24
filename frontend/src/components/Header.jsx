@@ -19,6 +19,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const [notifications, setNotifications] = useState([]);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [isSubVendor, setIsSubVendor] = useState(false);
 
 
 
@@ -30,9 +31,21 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
             if (storedUser) {
                 try {
                     const parsedUser = JSON.parse(storedUser);
+                    const subVendorStatus = parsedUser.role === 'vendor' && !!parsedUser.referred_by;
+                    setIsSubVendor(subVendorStatus);
+
+                    let displayRole = parsedUser.designation || parsedUser.role || 'Admin';
+                    if (subVendorStatus) displayRole = 'SUB-VENDOR';
+                    else if (displayRole.toLowerCase() === 'vendor') displayRole = 'VENDOR';
+                    else if (displayRole.toLowerCase() === 'admin') displayRole = 'ADMIN';
+
+                    let fallbackName = 'User';
+                    if (displayRole === 'ADMIN') fallbackName = 'Admin';
+                    if (displayRole === 'VENDOR' || displayRole === 'SUB-VENDOR') fallbackName = 'Vendor';
+
                     setUser({
-                        name: parsedUser.name || parsedUser.full_name || 'Admin',
-                        designation: parsedUser.designation || parsedUser.role || 'Admin',
+                        name: parsedUser.name || parsedUser.full_name || fallbackName,
+                        designation: displayRole,
                         profilePic: parsedUser.profilePic || parsedUser.profile_pic || parsedUser.avatar || parsedUser.image || ''
                     });
                 } catch (error) {
@@ -174,7 +187,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                             <span className="text-[13px] font-black text-[var(--text-dark)] uppercase tracking-tight">
                                 {user.name}
                             </span>
-                            <div className="inline-flex items-center justify-end gap-1 text-indigo-500 text-[9px] font-black uppercase tracking-widest">
+                            <div className={`inline-flex items-center justify-end gap-1 ${isSubVendor ? 'text-amber-500' : 'text-indigo-500'} text-[9px] font-black uppercase tracking-widest`}>
                                 <Shield size={10} /> {user.designation}
                             </div>
                         </div>
@@ -198,7 +211,11 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                 </div>
                                 <button
                                     onClick={() => { 
-                                        const path = user.designation.toLowerCase() === 'user' ? '/user/profile' : '/profile';
+                                        let path = '/profile';
+                                        if (isSubVendor) path = '/sub-vendor/settings';
+                                        else if (user.designation.toLowerCase() === 'vendor') path = '/vendor/settings';
+                                        else if (user.designation.toLowerCase() === 'user' || user.designation.toLowerCase() === 'customer') path = '/user/profile';
+                                        
                                         navigate(path); 
                                         setIsDropdownOpen(false); 
                                     }}
@@ -207,7 +224,15 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                     <User size={16} /> Profile
                                 </button>
                                 <button
-                                    onClick={() => { navigate('/settings'); setIsDropdownOpen(false); }}
+                                    onClick={() => { 
+                                        let path = '/settings';
+                                        if (isSubVendor) path = '/sub-vendor/settings';
+                                        else if (user.designation.toLowerCase() === 'vendor') path = '/vendor/settings';
+                                        else if (user.designation.toLowerCase() === 'user' || user.designation.toLowerCase() === 'customer') path = '/user/profile';
+                                        
+                                        navigate(path); 
+                                        setIsDropdownOpen(false); 
+                                    }}
                                     className="flex items-center gap-2 px-5 py-2 w-full border-none bg-transparent cursor-pointer text-[var(--text-dark)] text-sm text-left transition-colors hover:bg-[var(--bg-color)]"
                                 >
                                     <Settings size={16} /> Settings

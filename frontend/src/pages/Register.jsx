@@ -91,7 +91,7 @@ const Register = () => {
                     )}
                     {success && (
                         <div className="auth-alert-success mb-20 flex items-center gap-2">
-                           <ShieldCheck size={16} /> {error}
+                           <ShieldCheck size={16} /> {success}
                         </div>
                     )}
 

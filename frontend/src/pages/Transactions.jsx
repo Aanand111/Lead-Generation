@@ -20,7 +20,7 @@ const Transactions = () => {
                 const s = (data.data || []).reduce((acc, t) => {
                     const amt = Number(t.amount) || 0;
                     acc.total += amt;
-                    if (t.status === 'COMPLETED') acc.completed += amt;
+                    if (t.status === 'COMPLETED' || t.status === 'SUCCESS') acc.completed += amt;
                     if (t.status === 'PENDING') acc.pending += amt;
                     return acc;
                 }, { total: 0, completed: 0, pending: 0, count: (data.data || []).length });
@@ -58,11 +58,13 @@ const Transactions = () => {
     const StatusBadge = ({ status }) => {
         const styles = {
             COMPLETED: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+            SUCCESS: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
             PENDING: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
             FAILED: 'bg-red-500/10 text-red-500 border-red-500/20'
         };
         const icons = {
             COMPLETED: <CheckCircle size={10} />,
+            SUCCESS: <CheckCircle size={10} />,
             PENDING: <Clock size={10} />,
             FAILED: <XCircle size={10} />
         };
@@ -70,7 +72,7 @@ const Transactions = () => {
         return (
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase border transition-all ${styles[status] || 'bg-gray-500/10 text-gray-500 border-gray-500/20'}`}>
                 {icons[status] || <Activity size={10} />}
-                {status || 'Unknown'}
+                {status === 'SUCCESS' ? 'COMPLETED' : (status || 'Unknown')}
             </span>
         );
     };
@@ -96,7 +98,7 @@ const Transactions = () => {
                     { label: 'Total Transactions', value: stats.count, icon: FileText, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
                     { label: 'Total Revenue', value: `₹${stats.completed.toLocaleString('en-IN')}`, icon: IndianRupee, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
                     { label: 'Pending Payments', value: `₹${stats.pending.toLocaleString('en-IN')}`, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-                    { label: 'Success Rate', value: `${stats.count > 0 ? Math.round((transactions.filter(t => t.status === 'COMPLETED').length / stats.count) * 100) : 0}%`, icon: Activity, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+                    { label: 'Success Rate', value: `${stats.count > 0 ? Math.round((transactions.filter(t => t.status === 'COMPLETED' || t.status === 'SUCCESS').length / stats.count) * 100) : 0}%`, icon: Activity, color: 'text-blue-500', bg: 'bg-blue-500/10' },
                 ].map((stat, i) => (
                     <div key={i} className="card !p-6 flex items-center gap-5 group hover:border-indigo-500 transition-all cursor-default bg-[var(--surface-color)] border-[var(--border-color)]">
                         <div className={`w-14 h-14 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center transition-all shadow-inner border border-[var(--border-color)]/50`}>

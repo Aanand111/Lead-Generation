@@ -31,7 +31,7 @@ router.use(adminOnly);
 
 // User Management Routes
 const { fileUpload } = require('../config/cloudinary');
-const { getUsers, blockUser, updateWallet, getReferralTree, uploadProfilePhoto, updateProfile, updateVendorCommission, fetchCommissions, handleCommissionApproval } = require('../controllers/adminUserController');
+const { getUsers, blockUser, updateWallet, getReferralTree, uploadProfilePhoto, updateProfile, updateVendorCommission, fetchCommissions, handleCommissionApproval, handleCommissionRejection } = require('../controllers/adminUserController');
 
 // Diagnostic Heartbeat
 router.get('/ping-check', (req, res) => res.status(200).json({ success: true, message: 'Admin protocol active' }));
@@ -39,6 +39,7 @@ router.get('/ping-check', (req, res) => res.status(200).json({ success: true, me
 // Commission Audit & Verification
 router.get('/commissions', fetchCommissions);
 router.put('/commissions/:id/approve', handleCommissionApproval);
+router.put('/commissions/:id/reject', handleCommissionRejection);
 
 router.put('/vendor-commission/:id', updateVendorCommission);
 
@@ -115,9 +116,10 @@ router.delete('/banners/:id', removeBanner);
 router.post('/banners/:id/click', recordBannerClick); // Can be moved to user routes later but keeping it here for admin verification too.
 
 // Customer Management Routes (Isolated from Users)
-const { getCustomers, addCustomer, updateCustomer, updateCustomerStatus, removeCustomer } = require('../controllers/customerController');
+const { getCustomers, getCustomer, addCustomer, updateCustomer, updateCustomerStatus, removeCustomer } = require('../controllers/customerController');
 router.post('/customers', validate(customerSchema), addCustomer);
 router.get('/customers', getCustomers);
+router.get('/customers/:id', getCustomer);
 router.put('/customers/:id', validate(customerSchema), updateCustomer);
 router.put('/customers/:id/status', updateCustomerStatus);
 router.delete('/customers/:id', removeCustomer);

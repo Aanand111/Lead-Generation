@@ -16,8 +16,10 @@ const generateToken = (id, role) => {
 
 const registerUser = async (req, res, next) => {
     try {
-        const { phone, password, role, referral_code, name } = req.body;
+        const { password, role, referral_code } = req.body;
+        const name = req.body.name || req.body.full_name || 'New Member';
         const email = req.body.email?.trim().toLowerCase();
+        const phone = req.body.phone?.trim() || null;
 
         // validation
         if (!email || !password || !role) {
@@ -33,6 +35,14 @@ const registerUser = async (req, res, next) => {
         const userExists = await findUserByEmail(email);
         if (userExists) {
             return res.status(400).json({ success: false, message: 'User with this email already exists.' });
+        }
+
+        // Check existing phone
+        if (phone) {
+            const phoneExists = await findUserByPhone(phone);
+            if (phoneExists) {
+                return res.status(400).json({ success: false, message: 'User with this phone number already exists.' });
+            }
         }
 
         // Handle referral link
@@ -66,11 +76,24 @@ const registerUser = async (req, res, next) => {
         const salt = await bcrypt.genSalt(8);
         const password_hash = await bcrypt.hash(password, salt);
 
-        // Create user with status check
-        let generatedReferralCode = null;
-        if (role === 'vendor') {
-            const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
-            generatedReferralCode = `VND-${randomStr}`;
+        // --- Generate Unique Unguessable Referral Code ---
+        const generateSafeCode = () => {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No O, 0, I, 1 to avoid confusion
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            const prefix = role === 'vendor' ? 'VND' : 'USR';
+            return `${prefix}-${code}${Date.now().toString(36).slice(-2).toUpperCase()}`;
+        };
+
+        let generatedReferralCode = generateSafeCode();
+        
+        // Safety check for collisions (though extremely unlikely with timestamp suffix)
+        let isCollision = await findUserByReferralCode(generatedReferralCode);
+        while (isCollision) {
+            generatedReferralCode = generateSafeCode();
+            isCollision = await findUserByReferralCode(generatedReferralCode);
         }
 
         const user = await createUser({
@@ -81,8 +104,21 @@ const registerUser = async (req, res, next) => {
             full_name: name,
             referral_code: generatedReferralCode,
             referred_by: referredById,
-            status: role === 'vendor' ? 'PENDING' : 'ACTIVE' // Vendors need approval
+            status: referredById ? 'PENDING' : 'ACTIVE' // Everyone referred needs approval, organic signups are ACTIVE
         });
+
+        // --- SYNCHRONIZATION: Add to vendors table for Admin visibility ---
+        if (role === 'vendor') {
+            try {
+                const { pool } = require('../config/db');
+                await pool.query(
+                    'INSERT INTO vendors (name, phone, email, referral_code, referred_by_vendor_id, status) VALUES ($1, $2, $3, $4, $5, $6)',
+                    [name, phone, email, generatedReferralCode, referredById, 'Active']
+                );
+            } catch (vErr) {
+                console.error('[VENDOR SYNC ERROR] Failed to create vendor metadata:', vErr.message);
+            }
+        }
 
         // Send Welcome Email (non-blocking)
         mailService.sendWelcomeEmail(email, name || 'User').catch(err => {
@@ -96,6 +132,31 @@ const registerUser = async (req, res, next) => {
         }).catch(err => {
             console.error('[BELL NOTIFICATION ERROR]', err.message);
         });
+
+        // Notify parent vendor if this is a referral
+        if (referredById) {
+            const subject = role === 'vendor' ? 'New Sub-Vendor Request' : 'New User Referral Request';
+            const messageText = `${name || 'Someone'} has registered using your referral code and is waiting for your approval.`;
+            
+            NotificationService.sendPushToUserId(referredById, subject, messageText, {
+                type: role === 'vendor' ? 'SUB_VENDOR_REQUEST' : 'USER_REFERRAL_REQUEST',
+                target: '/referrals'
+            }).catch(err => {
+                console.error('[PARENT NOTIFICATION ERROR]', err.message);
+            });
+        }
+
+        // Record standard referral for "Refer & Earn" tracking
+        if (referredById && role === 'user') {
+            try {
+                await pool.query(
+                    'INSERT INTO referrals (referrer_id, referred_user_id, commission_earned, created_at) VALUES ($1, $2, $3, NOW())',
+                    [referredById, user.id, 0]
+                );
+            } catch (refErr) {
+                console.error('[REFERRAL RECORD ERROR] Failed to log referral link:', refErr.message);
+            }
+        }
 
         res.status(201).json({
 
@@ -150,7 +211,8 @@ const loginUser = async (req, res, next) => {
                         role: user.role,
                         name: user.full_name,
                         profile_pic: user.profile_pic,
-                        status: user.status
+                        status: user.status,
+                        referred_by: user.referred_by
                     },
                 });
             } else {

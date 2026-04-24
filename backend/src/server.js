@@ -148,11 +148,23 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+app.get('/api/diagnostic/vendors', async (req, res) => {
+    try {
+        const { pool } = require('./config/db');
+        const u = await pool.query("SELECT id, full_name, email, phone, role, status, referred_by FROM users WHERE full_name ILIKE '%Nirmal%' OR full_name ILIKE '%Viking%'");
+        const v = await pool.query("SELECT id, name, email, phone, status, referred_by_vendor_id FROM vendors WHERE name ILIKE '%Nirmal%' OR name ILIKE '%Viking%'");
+        res.json({ users: u.rows, vendors: v.rows });
+    } catch(err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Routes
 app.use('/api/', generalLimiter);
 app.use('/api/auth', authLimiter, require('./routes/authRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/vendor', require('./routes/vendorRoutes'));
+app.use('/api/sub-vendor', require('./routes/subVendorRoutes'));
 app.use('/api/user', require('./routes/userRoutes'));
 
 // Public contact form
@@ -182,6 +194,10 @@ server.headersTimeout = 66000; // Keep slightly higher than keepAliveTimeout
 server.listen(PORT, () => {
     console.log(`[SERVER] Port ${PORT} | Mode: ${process.env.NODE_ENV || 'development'}`);
     scheduleJobs();
+    
+    // One-time deep sync for existing vendors to fix missing records
+    const { syncAllVendorsRegistry } = require('./jobs/maintenanceJobs');
+    syncAllVendorsRegistry().catch(err => console.error('[SYNC_ERROR]', err.message));
 });
 
 // Graceful Shutdown

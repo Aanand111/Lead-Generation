@@ -43,10 +43,15 @@ const getTransactions = async (req, res, next) => {
         }
 
         if (conditions.length > 0) {
-            query += ` WHERE ` + conditions.join(' AND ');
+            query += ` WHERE (` + conditions.join(' AND ') + `) AND (t.amount > 0 OR t.type = 'PLAN_PURCHASE')`;
+        } else {
+            query += ` WHERE (t.amount > 0 OR t.type = 'PLAN_PURCHASE')`;
         }
 
         query += ` ORDER BY t.created_at DESC`;
+
+        // Auto-migration: Update legacy SUCCESS status to COMPLETED (Case-insensitive catch-all)
+        await db.query("UPDATE transactions SET status = 'COMPLETED' WHERE UPPER(status) = 'SUCCESS'");
 
         const result = await db.query(query, params);
         res.status(200).json({ success: true, data: result.rows });

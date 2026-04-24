@@ -118,7 +118,7 @@ const updateProfilePhoto = async (userId, photoUrl) => {
 const updateProfile = async (userId, data) => {
     const { name, email } = data;
     const result = await pool.query(
-        'UPDATE users SET full_name = COALESCE($1, full_name), email = COALESCE($3, email) WHERE id = $2 RETURNING id, full_name, email',
+        'UPDATE users SET full_name = COALESCE(NULLIF($1, \'\'), full_name), email = COALESCE(NULLIF($3, \'\'), email) WHERE id = $2 RETURNING id, full_name, email',
         [name, userId, email]
     );
     return result.rows[0];
@@ -126,7 +126,7 @@ const updateProfile = async (userId, data) => {
 
 const getCommissions = async (status = null) => {
     let queryStr = `
-        SELECT ct.*, u.full_name as vendor_name, u.phone as vendor_phone
+        SELECT ct.*, u.full_name as vendor_name, u.phone as vendor_phone, u.referred_by
         FROM commission_transactions ct
         JOIN users u ON ct.vendor_id = u.id
     `;
@@ -174,7 +174,7 @@ const approveCommission = async (transactionId) => {
         // 4. Record a global transaction log for history
         await client.query(
             'INSERT INTO transactions (user_id, type, amount, status, remarks) VALUES ($1, $2, $3, $4, $5)',
-            [vendor_id, 'REFERRAL_CREDIT', amount, 'SUCCESS', `Approved: ${remarks}`]
+            [vendor_id, 'REFERRAL_CREDIT', amount, 'COMPLETED', `Approved: ${remarks}`]
         );
 
         await client.query('COMMIT');
@@ -190,6 +190,14 @@ const approveCommission = async (transactionId) => {
     }
 };
 
+const rejectCommission = async (transactionId) => {
+    const result = await pool.query(
+        "UPDATE commission_transactions SET status = 'FAILED' WHERE id = $1 AND status IN ('PENDING', 'REQUESTED') RETURNING *",
+        [transactionId]
+    );
+    return result.rows[0];
+};
+
 module.exports = {
     getAllUsers,
     blockUnblockUser,
@@ -199,5 +207,9 @@ module.exports = {
     updateProfile,
     updateVendorCommission,
     getCommissions,
-    approveCommission
+    updateProfile,
+    updateVendorCommission,
+    getCommissions,
+    approveCommission,
+    rejectCommission
 };

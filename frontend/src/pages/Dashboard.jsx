@@ -170,7 +170,7 @@ const Dashboard = () => {
                                                     className="w-full bg-indigo-50 dark:bg-indigo-900/20 rounded-t-lg group-hover:bg-emerald-500 transition-all cursor-default relative overflow-hidden"
                                                     style={{ height: `${(v.leads_uploaded / (Math.max(...data.topVendors.map(x => x.leads_uploaded)) || 1)) * 100}%`, minHeight: '4px' }}
                                                 ></div>
-                                                <span className="text-[7px] font-black uppercase text-[var(--text-muted)] tracking-tighter truncate w-full text-center">{v.name.split(' ')[0]}</span>
+                                                <span className="text-[7px] font-black uppercase text-[var(--text-muted)] tracking-tighter truncate w-full text-center">{v.name ? v.name.split(' ')[0] : 'N/A'}</span>
                                             </div>
                                         ))}
                                     </div>

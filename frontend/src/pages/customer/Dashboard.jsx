@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {  
     LayoutDashboard, Users, CreditCard, Layers, ArrowUpRight, 
     ArrowDownRight, Star, Clock, Trophy, Share2, Wallet, 
-    Zap, Gem, Target, TrendingUp,History as HistoryIcon, Image as ImageIcon
+    Zap, Gem, Target, TrendingUp, History as HistoryIcon, Image as ImageIcon,
+    ShieldCheck
  } from 'lucide-react';
 import api from '../../utils/api';
 
@@ -90,6 +91,47 @@ const CustomerDashboard = () => {
                         </div>
                     </div>
                 ))}
+            </div>
+
+            {/* Network Identity Bar */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="card p-6 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[2rem] flex items-center justify-between group">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                            <Zap size={20} />
+                        </div>
+                        <div>
+                            <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">My Referral Code</div>
+                            <div className="text-lg font-black text-[var(--text-dark)] tracking-widest uppercase">{stats.referralCode || 'N/A'}</div>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => {
+                            navigator.clipboard.writeText(stats.referralCode);
+                            alert('Code Copied!');
+                        }}
+                        className="p-3 rounded-xl hover:bg-indigo-500 hover:text-white text-indigo-500 transition-all border border-indigo-500/10"
+                    >
+                        <Share2 size={16} />
+                    </button>
+                </div>
+
+                <div className="card p-6 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[2rem] flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                        <ShieldCheck size={20} />
+                    </div>
+                    <div>
+                        <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                            {stats.parentId && !stats.isReferral ? 'Added By (Parent)' : 'Referred By (Parent)'}
+                        </div>
+                        <div className="text-lg font-black text-[var(--text-dark)] uppercase tracking-tight">
+                            {stats.parentName || 'ORGANIC NODE'}
+                        </div>
+                        <div className="text-[9px] font-bold text-[var(--text-muted)] italic uppercase">
+                            {stats.isReferral && stats.parentCode ? `CODE: ${stats.parentCode} • ` : ''}{stats.parentRole || (stats.parentId ? 'NODE' : 'Direct Entry')}
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -12,7 +12,9 @@ const getVendorStats = async (req, res, next) => {
                 (SELECT COALESCE(SUM(amount), 0) FROM commission_transactions WHERE vendor_id = $1 AND status IN ('PENDING', 'REQUESTED')) as pending_earnings,
                 (SELECT COALESCE(SUM(amount), 0) FROM commission_transactions WHERE vendor_id = $1 AND status = 'REQUESTED') as active_request_amount,
                 (SELECT referral_code FROM users WHERE id = $1) as referral_code,
-                (SELECT wallet_balance FROM users WHERE id = $1) as wallet_balance
+                (SELECT wallet_balance FROM users WHERE id = $1) as wallet_balance,
+                (SELECT referred_by FROM users WHERE id = $1) as parentId,
+                (SELECT p.full_name FROM users u JOIN users p ON u.referred_by = p.id WHERE u.id = $1) as parentName
         `;
 
         const result = await pool.query(statsQuery, [vendorId]);
@@ -31,10 +33,21 @@ const getVendorReferrals = async (req, res, next) => {
 
         const queryStr = `
             SELECT 
-                u.id, u.phone, u.full_name, u.role, u.status, u.created_at, u.last_login,
-                (SELECT MAX(created_at) FROM transactions t WHERE t.user_id = u.id AND t.type IN ('PURCHASE', 'PLAN_PURCHASE')) as last_activity,
+                u.id, u.phone, 
+                CASE 
+                    WHEN u.full_name IS NOT NULL AND u.full_name != u.phone THEN u.full_name 
+                    WHEN v.name IS NOT NULL AND v.name != u.phone THEN v.name 
+                    ELSE COALESCE(u.full_name, v.name, 'Sub-Vendor') 
+                END as full_name,
+                u.role, u.status, u.created_at, u.last_login,
+                GREATEST(
+                    u.last_login,
+                    (SELECT MAX(created_at) FROM transactions t WHERE t.user_id = u.id AND t.type IN ('PURCHASE', 'PLAN_PURCHASE')),
+                    (SELECT MAX(created_at) FROM users u_sub WHERE u_sub.referred_by = u.id)
+                ) as last_activity,
                 (SELECT COALESCE(SUM(amount), 0) FROM transactions t WHERE t.user_id = u.id AND (t.type = 'PURCHASE' OR t.type = 'PLAN_PURCHASE')) as total_revenue
             FROM users u 
+            LEFT JOIN vendors v ON u.phone = v.phone
             WHERE u.referred_by = $1 
             ORDER BY u.created_at DESC 
             LIMIT $2 OFFSET $3
@@ -78,20 +91,32 @@ const referUser = async (req, res, next) => {
     // However, if a vendor can add them manually:
     try {
         const vendorId = req.user.id;
-        const { phone, email, password, full_name } = req.body;
+        const { phone, email, password, pincode, city, state } = req.body;
+        const full_name = req.body.full_name || req.body.name || `User_${phone?.slice(-4) || 'Node'}`;
 
         if (!email) return res.status(400).json({ success: false, message: 'Email is required for user registration.' });
 
         const bcrypt = require('bcryptjs');
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
+        const newReferralCode = `USR-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
         const result = await pool.query(
-            'INSERT INTO users (phone, email, password_hash, full_name, role, referred_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [phone, email, hashedPassword, full_name, 'user', vendorId]
+            'INSERT INTO users (phone, email, password_hash, full_name, role, referred_by, referral_code) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+            [phone, email, hashedPassword, full_name, 'user', vendorId, newReferralCode]
         );
 
-        res.status(201).json({ success: true, message: 'User referred & added successfully', data: result.rows[0] });
+        const newUser = result.rows[0];
+
+        // Synchronize with 'user_profiles' for pincode visibility in Admin Panel
+        if (pincode || city || state) {
+            await pool.query(
+                'INSERT INTO user_profiles (user_id, pincode, city, state) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id) DO UPDATE SET pincode = EXCLUDED.pincode, city = EXCLUDED.city, state = EXCLUDED.state',
+                [newUser.id, pincode, city, state]
+            );
+        }
+
+        res.status(201).json({ success: true, message: 'User referred & added successfully', data: newUser });
     } catch (error) {
         next(error);
     }
@@ -100,14 +125,17 @@ const referUser = async (req, res, next) => {
 const referVendor = async (req, res, next) => {
     try {
         const vendorId = req.user.id;
-        const { phone, email, password, full_name } = req.body;
+        const { phone, email, password, pincode, city, state } = req.body;
+        // Handle both full_name and name to ensure compatibility with different frontend versions
+        const full_name = req.body.full_name || req.body.name || `Vendor_${phone?.slice(-4) || 'Node'}`;
 
         if (!email) return res.status(400).json({ success: false, message: 'Email is required for sub-vendor registration.' });
+        if (!phone) return res.status(400).json({ success: false, message: 'Phone number is required.' });
 
         // BRD Section 1.3: Secondary Vendor Restriction
         // Primary Vendors have referred_by = NULL (added by Admin).
         // Secondary/Sub-Vendors have referred_by = [Primary Vendor ID].
-        const checkVendor = await pool.query('SELECT referred_by, status FROM users WHERE id = $1', [vendorId]);
+        const checkVendor = await pool.query('SELECT referred_by, status, full_name, phone FROM users WHERE id = $1', [vendorId]);
         const vendor = checkVendor.rows[0];
 
         if (!vendor || vendor.status !== 'ACTIVE') {
@@ -131,19 +159,33 @@ const referVendor = async (req, res, next) => {
         // Get the current vendor's registry ID (from 'vendors' table) to maintain hierarchy
         let registryVendorId = null;
         try {
-            const userRes = await pool.query('SELECT phone, email FROM users WHERE id = $1', [vendorId]);
+            const userRes = await pool.query('SELECT phone, email, full_name, referral_code, password_hash FROM users WHERE id = $1', [vendorId]);
             if (userRes.rows.length > 0) {
-                const { phone: uPhone, email: uEmail } = userRes.rows[0];
+                const parent = userRes.rows[0];
                 const vendorRes = await pool.query(
                     'SELECT id FROM vendors WHERE phone = $1 OR email = $2 LIMIT 1',
-                    [uPhone, uEmail]
+                    [parent.phone, parent.email]
                 );
+                
                 if (vendorRes.rows.length > 0) {
                     registryVendorId = vendorRes.rows[0].id;
+                } else {
+                    // Sync parent to registry if missing
+                    const vendorDb = require('../models/vendorModel');
+                    const pRegRes = await vendorDb.createVendor({
+                        name: parent.full_name || parent.phone || 'Primary Vendor',
+                        phone: parent.phone,
+                        email: parent.email,
+                        password: parent.password_hash,
+                        referral_code: parent.referral_code,
+                        referred_by_vendor_id: null,
+                        status: 'Active'
+                    });
+                    registryVendorId = pRegRes.id;
                 }
             }
-        } catch (err) {
-            console.error('[SYNC_ERROR] Failed to resolve parent vendor:', err.message);
+        } catch (e) {
+            console.error('Failed to resolve registry ID:', e.message);
         }
 
         // Synchronize with 'vendors' table for Admin visibility
@@ -167,6 +209,16 @@ const referVendor = async (req, res, next) => {
             'INSERT INTO users (phone, email, password_hash, full_name, role, referred_by, referral_code, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
             [phone, email, hashedPassword, full_name, 'vendor', vendorId, newReferralCode, 'ACTIVE']
         );
+
+        const newUser = result.rows[0];
+
+        // Synchronize with 'user_profiles' for pincode visibility
+        if (pincode || city || state) {
+            await pool.query(
+                'INSERT INTO user_profiles (user_id, pincode, city, state) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id) DO UPDATE SET pincode = EXCLUDED.pincode, city = EXCLUDED.city, state = EXCLUDED.state',
+                [newUser.id, pincode, city, state]
+            );
+        }
 
         // Emit real-time notification for Admin
         try {
@@ -265,11 +317,109 @@ const requestSettlement = async (req, res, next) => {
     }
 };
 
+const getPendingSubVendors = async (req, res, next) => {
+    try {
+        const vendorId = req.user.id;
+        const query = `
+            SELECT id, email, phone, full_name, status, created_at 
+            FROM users 
+            WHERE referred_by = $1 AND role = 'vendor' AND status = 'PENDING'
+            ORDER BY created_at DESC
+        `;
+        const result = await pool.query(query, [vendorId]);
+        res.status(200).json({ success: true, data: result.rows });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const approveSubVendor = async (req, res, next) => {
+    try {
+        const vendorId = req.user.id;
+        const { subVendorId } = req.params;
+        const { action } = req.body; // 'APPROVE' or 'REJECT'
+
+        if (!['APPROVE', 'REJECT'].includes(action)) {
+            return res.status(400).json({ success: false, message: 'Invalid action. Use APPROVE or REJECT.' });
+        }
+
+        const newStatus = action === 'APPROVE' ? 'ACTIVE' : 'REJECTED';
+
+        const result = await pool.query(
+            "UPDATE users SET status = $1 WHERE id = $2 AND referred_by = $3 RETURNING *",
+            [newStatus, subVendorId, vendorId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Referral request not found or unauthorized.' });
+        }
+
+        const approvedUser = result.rows[0];
+
+        // If approved and is a vendor, sync with 'vendors' registry table for Admin visibility
+        if (action === 'APPROVE' && approvedUser.role === 'vendor') {
+            try {
+                const vendorDb = require('../models/vendorModel');
+                
+                // Get parent vendor's registry ID
+                let parentRegistryId = null;
+                const parentRes = await pool.query('SELECT phone, email, full_name, referral_code, password_hash FROM users WHERE id = $1', [vendorId]);
+                if (parentRes.rows.length > 0) {
+                    const parent = parentRes.rows[0];
+                    const regRes = await pool.query('SELECT id FROM vendors WHERE phone = $1 OR email = $2', [parent.phone, parent.email]);
+                    if (regRes.rows.length > 0) {
+                        parentRegistryId = regRes.rows[0].id;
+                    } else {
+                        // Parent is missing from registry (likely self-registered & approved but not synced)
+                        // Sync parent first to maintain hierarchical integrity
+                        const pRegRes = await vendorDb.createVendor({
+                            name: parent.full_name,
+                            phone: parent.phone,
+                            email: parent.email,
+                            password: parent.password_hash,
+                            referral_code: parent.referral_code,
+                            referred_by_vendor_id: null, // Parent is top-level if missing
+                            status: 'Active'
+                        });
+                        parentRegistryId = pRegRes.id;
+                    }
+                }
+
+                await vendorDb.createVendor({
+                    name: approvedUser.full_name || approvedUser.phone || 'Sub-Vendor',
+                    phone: approvedUser.phone,
+                    email: approvedUser.email,
+                    password: approvedUser.password_hash,
+                    referral_code: approvedUser.referral_code,
+                    referred_by_vendor_id: parentRegistryId,
+                    status: 'Active'
+                });
+            } catch (syncErr) {
+                console.error('[SYNC_ERROR] Failed to populate vendors registry during approval:', syncErr.message);
+            }
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            message: `${approvedUser.role === 'vendor' ? 'Sub-vendor' : 'User'} ${action === 'APPROVE' ? 'approved' : 'rejected'} successfully.`,
+            data: {
+                id: approvedUser.id,
+                full_name: approvedUser.full_name,
+                status: approvedUser.status
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getVendorStats,
     getVendorReferrals,
     getVendorEarnings,
     referUser,
     referVendor,
-    requestSettlement
+    requestSettlement,
+    getPendingSubVendors,
+    approveSubVendor
 };

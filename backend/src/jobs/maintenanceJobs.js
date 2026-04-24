@@ -100,6 +100,59 @@ const checkPackageRenewals = async () => {
 };
 
 /**
+ * Job: Sync Missing Vendors to Registry
+ * logic: Backfills 'vendors' table from 'users' table specifically for vendors 
+ * registered before the sync middleware was implemented.
+ */
+const syncAllVendorsRegistry = async () => {
+    try {
+        console.log('[JOBS] Starting Robust Vendor Registry Synchronization...');
+        
+        // 1. Fetch ALL vendors (Active or Pending) ignoring exact case
+        const activeVendorsRes = await pool.query(
+            "SELECT id, phone, email, full_name, password_hash, referral_code, status, referred_by FROM users WHERE role = 'vendor'"
+        );
+
+        console.log(`[JOBS] Analyzing ${activeVendorsRes.rowCount} vendors for synchronization.`);
+
+        for (const user of activeVendorsRes.rows) {
+            // Ensure status strings align properly
+            let vendorStatus = 'Active';
+            if (user.status && user.status.toUpperCase() === 'PENDING') vendorStatus = 'Pending';
+            if (user.status && user.status.toUpperCase() === 'BLOCKED') vendorStatus = 'Inactive';
+
+            // Check if already in vendors table
+            const regRes = await pool.query('SELECT id FROM vendors WHERE phone = $1 OR email = $2 LIMIT 1', [user.phone, user.email]);
+            
+            if (regRes.rows.length === 0) {
+                // MISSING: Create new registry entry
+                console.log(`[SYNC] Backfilling registry entry for: ${user.full_name}`);
+                await pool.query(
+                    `INSERT INTO vendors (name, phone, email, password, referral_code, status) 
+                     VALUES ($1, $2, $3, $4, $5, $6)`,
+                    [user.full_name, user.phone, user.email, user.password_hash, user.referral_code, vendorStatus]
+                );
+            }
+        }
+
+        // 2. Establish Hierarchical Links accurately using proper joins
+        console.log('[JOBS] Establishing accurate hierarchical links in registry...');
+        const syncLinksRes = await pool.query(`
+            UPDATE vendors v
+            SET referred_by_vendor_id = parent_vendor.id
+            FROM users child_user
+            JOIN users parent_user ON child_user.referred_by = parent_user.id
+            JOIN vendors parent_vendor ON parent_user.phone = parent_vendor.phone
+            WHERE v.phone = child_user.phone 
+            AND v.referred_by_vendor_id IS NULL
+        `);
+
+        console.log(`[JOBS] Vendor Registry Sync Completed. Links updated: ${syncLinksRes.rowCount}`);
+    } catch (error) {
+        console.error('[JOBS ERROR] Vendor Registry Sync failed:', error);
+    }
+};
+/**
  * Manual Trigger for all maintenance tasks
  */
 const runAllMaintenanceTasks = async () => {
@@ -107,6 +160,7 @@ const runAllMaintenanceTasks = async () => {
     await archiveExpiredPosters();
     await expirePurchasedLeads();
     await checkPackageRenewals();
+    await syncAllVendorsRegistry();
     console.log('[JOBS] Manual Maintenance Sequence Completed.');
 };
 
@@ -114,5 +168,6 @@ module.exports = {
     archiveExpiredPosters,
     expirePurchasedLeads,
     checkPackageRenewals,
+    syncAllVendorsRegistry,
     runAllMaintenanceTasks
 };

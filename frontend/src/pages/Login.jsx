@@ -27,7 +27,11 @@ const Login = () => {
                 }
                 // Role-based routing for a seamless user experience
                 if (data.user && data.user.role === 'vendor') {
-                    navigate('/vendor/dashboard');
+                    if (data.user.referred_by) {
+                        navigate('/sub-vendor/dashboard');
+                    } else {
+                        navigate('/vendor/dashboard');
+                    }
                 } else if (data.user && data.user.role === 'user') {
                     navigate('/user/dashboard');
                 } else {

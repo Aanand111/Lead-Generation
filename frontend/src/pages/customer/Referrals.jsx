@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {  
     Users, UserPlus, Share2, Wallet,History as HistoryIcon, 
     Gift, ArrowUpRight, Copy, CheckCircle, 
-    Star, Target, Zap, Gem, ExternalLink,
+    Star, Target, Zap, Gem, ExternalLink, Activity,
     ChevronRight, Info, TrendingUp
  } from 'lucide-react';
 import api from '../../utils/api';

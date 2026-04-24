@@ -100,18 +100,18 @@ const updateVendor = async (id, data) => {
     const query = `
         UPDATE vendors 
         SET 
-            name = COALESCE($1, name),
-            phone = COALESCE($2, phone),
-            email = COALESCE($3, email),
-            password = COALESCE($4, password),
-            referral_code = COALESCE($5, referral_code),
+            name = COALESCE(NULLIF($1, ''), name),
+            phone = COALESCE(NULLIF($2, ''), phone),
+            email = COALESCE(NULLIF($3, ''), email),
+            password = COALESCE(NULLIF($4, ''), password),
+            referral_code = COALESCE(NULLIF($5, ''), referral_code),
             referred_by_vendor_id = COALESCE($6, referred_by_vendor_id),
-            status = COALESCE($7, status),
+            status = COALESCE(NULLIF($7, ''), status),
             updated_at = NOW()
         WHERE id = $8
         RETURNING *
     `;
-    const values = [name, phone, email, password, referral_code, referred_by_vendor_id, status, id];
+    const values = [name, phone, email, password, referral_code, referred_by_vendor_id || null, status, id];
     const result = await pool.query(query, values);
     return result.rows[0];
 };

@@ -179,6 +179,25 @@ const handleCommissionApproval = async (req, res, next) => {
     }
 };
 
+const handleCommissionRejection = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const transaction = await adminDb.rejectCommission(id);
+
+        if (!transaction) {
+            return res.status(404).json({ success: false, message: 'Commission transaction not found' });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Commission request rejected.',
+            data: transaction
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getUsers,
     blockUser,
@@ -188,5 +207,6 @@ module.exports = {
     updateProfile,
     updateVendorCommission,
     fetchCommissions,
-    handleCommissionApproval
+    handleCommissionApproval,
+    handleCommissionRejection
 };

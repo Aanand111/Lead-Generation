@@ -53,6 +53,12 @@ import VendorReferrals from './pages/VendorReferrals';
 import VendorReferMember from './pages/VendorReferMember';
 import VendorEarnings from './pages/VendorEarnings';
 import VendorLeadUpload from './pages/VendorLeadUpload';
+import SubVendorLayout from './layouts/SubVendorLayout';
+import SubVendorDashboard from './pages/SubVendorDashboard';
+import SubVendorReferrals from './pages/SubVendorReferrals';
+import SubVendorEarnings from './pages/SubVendorEarnings';
+import SubVendorSettings from './pages/SubVendorSettings';
+import VendorSettings from './pages/VendorSettings';
 import CustomerLayout from './layouts/CustomerLayout';
 import UserDashboard from './pages/customer/Dashboard';
 import UserAvailableLeads from './pages/customer/AvailableLeads';
@@ -73,11 +79,21 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/" replace />;
   }
 
-  if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
-    // Redirect to their respective dashboard if they try to access unauthorized area
-    const redirectPath = user.role === 'vendor' ? '/vendor/dashboard' : (user.role === 'admin' ? '/dashboard' : '/user/dashboard');
-    return <Navigate to={redirectPath} replace />;
-  }
+    if (allowedRoles.length > 0 && user) {
+      // Check if user has the allowed role or is a sub-vendor when 'sub-vendor' is allowed
+      const isSubVendor = user.role === 'vendor' && user.referred_by;
+      const effectiveRole = isSubVendor ? 'sub-vendor' : user.role;
+
+      if (!allowedRoles.includes(effectiveRole)) {
+        // Redirect to their respective dashboard if they try to access unauthorized area
+        let redirectPath = '/dashboard';
+        if (effectiveRole === 'vendor') redirectPath = '/vendor/dashboard';
+        else if (effectiveRole === 'sub-vendor') redirectPath = '/sub-vendor/dashboard';
+        else if (effectiveRole === 'user' || effectiveRole === 'customer') redirectPath = '/user/dashboard';
+        
+        return <Navigate to={redirectPath} replace />;
+      }
+    }
 
   return children;
 };
@@ -154,6 +170,17 @@ const App = () => {
                             <Route path="/vendor/refer-vendor" element={<VendorReferMember mode="vendor" />} />
                             <Route path="/vendor/earnings" element={<VendorEarnings />} />
                             <Route path="/vendor/leads/upload" element={<VendorLeadUpload mode="vendor" />} />
+                            <Route path="/vendor/settings" element={<VendorSettings />} />
+                        </Route>
+                        
+                        {/* Sub-Vendor Dashboard Routes nested inside Sub-Vendor Layout */}
+                        <Route element={<ProtectedRoute allowedRoles={['sub-vendor']}><SubVendorLayout /></ProtectedRoute>}>
+                            <Route path="/sub-vendor/dashboard" element={<SubVendorDashboard />} />
+                            <Route path="/sub-vendor/referrals" element={<SubVendorReferrals />} />
+                            <Route path="/sub-vendor/refer-user" element={<VendorReferMember mode="user" />} />
+                            <Route path="/sub-vendor/leads/upload" element={<VendorLeadUpload mode="vendor" />} />
+                            <Route path="/sub-vendor/earnings" element={<SubVendorEarnings />} />
+                            <Route path="/sub-vendor/settings" element={<SubVendorSettings />} />
                         </Route>
 
                         {/* User Panel Routes nested inside Customer Layout */}

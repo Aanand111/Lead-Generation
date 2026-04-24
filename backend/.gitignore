@@ -1,5 +1,32 @@
-node_modules
-# Keep environment variables out of version control
+node_modules/
 .env
+.env.local
+.env.*.local
 
-/src/generated/prisma
+# Service specific
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Diagnostic/Test outputs
+*_out.txt
+coverage/
+.nyc_output/
+
+# IDE/Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Uploads/Temp
+uploads/*
+!uploads/.gitkeep
+scratch/
+prisma/
+.DS_Store

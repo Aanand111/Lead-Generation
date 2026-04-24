@@ -170,7 +170,14 @@ Protocol Token: ${stats.referral_code || 'JOIN'}${suffix}`;
                         </div>
                         <div className="px-5 py-3 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-xl flex items-center gap-3 text-white">
                             <ShieldCheck size={18} className="text-indigo-200" />
-                            <span className="text-xs font-black uppercase tracking-widest">Verified Vendor</span>
+                            <div className="flex flex-col">
+                                <span className="text-xs font-black uppercase tracking-widest leading-none">Verified Vendor</span>
+                                {stats.parentName && (
+                                    <span className="text-[8px] font-bold text-indigo-100/60 uppercase tracking-tighter mt-1 italic">
+                                        Ref by: {stats.parentName}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

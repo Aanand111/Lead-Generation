@@ -1,5 +1,9 @@
 const adminLeadDb = require('../models/leadModel');
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const isUuid = (value) => UUID_REGEX.test(value || '');
+
 // Function to handle lead uploads from admin or vendor
 const uploadLead = async (req, res, next) => {
     try {
@@ -73,8 +77,7 @@ const uploadLead = async (req, res, next) => {
 const editLead = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(id)) {
+        if (!isUuid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid ID format. Must be a UUID.' });
         }
         const { lead_id, customer_name, customer_phone, customer_email, category, city, state, pincode, lead_value, expiry_date } = req.body;
@@ -131,8 +134,7 @@ const getLeads = async (req, res, next) => {
 const removeLead = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(id)) {
+        if (!isUuid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid ID format. Must be a UUID.' });
         }
         const lead = await adminLeadDb.deleteLead(id);
@@ -214,6 +216,10 @@ const approveLead = async (req, res, next) => {
         const { id } = req.params;
         const { status } = req.body; // Status can be ACTIVE or REJECTED
 
+        if (!isUuid(id)) {
+            return res.status(400).json({ success: false, message: 'Invalid ID format. Must be a UUID.' });
+        }
+
         const lead = await adminLeadDb.editLead(id, {
             ...req.body,
             status: status || 'ACTIVE'
@@ -261,6 +267,16 @@ const approveLead = async (req, res, next) => {
 const getLead = async (req, res, next) => {
     try {
         const { id } = req.params;
+
+        // Some older deployments routed `/leads/pending` into this handler.
+        if (id === 'pending') {
+            return getPendingLeads(req, res, next);
+        }
+
+        if (!isUuid(id)) {
+            return res.status(400).json({ success: false, message: 'Invalid ID format. Must be a UUID.' });
+        }
+
         const lead = await adminLeadDb.getLeadById(id);
         if (!lead) {
             return res.status(404).json({ success: false, message: 'Lead not found.' });

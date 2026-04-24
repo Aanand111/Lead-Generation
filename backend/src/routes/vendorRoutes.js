@@ -1,12 +1,14 @@
 const express = require('express');
 const { protect } = require('../middlewares/authMiddleware');
-const { 
-    getVendorStats, 
-    getVendorReferrals, 
-    getVendorEarnings, 
-    referUser, 
+const {
+    getVendorStats,
+    getVendorReferrals,
+    getVendorEarnings,
+    referUser,
     referVendor,
-    requestSettlement
+    requestSettlement,
+    getPendingSubVendors,
+    approveSubVendor
 } = require('../controllers/vendorPanelController');
 const { uploadLead } = require('../controllers/adminLeadController');
 const { leadSchema } = require('../utils/validators');
@@ -30,6 +32,8 @@ router.use(vendorOrAdmin);
 router.get('/stats', getVendorStats);
 router.get('/referrals', getVendorReferrals);
 router.get('/earnings', getVendorEarnings);
+router.get('/sub-vendor-requests', getPendingSubVendors);
+router.post('/approve-sub-vendor/:subVendorId', approveSubVendor);
 router.post('/refer-user', referUser);
 router.post('/refer-vendor', referVendor);
 router.post('/leads', validate(leadSchema), uploadLead);

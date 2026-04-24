@@ -11,9 +11,24 @@ const findUserByEmail = async (email) => {
 };
 
 const findUserByIdentifier = async (identifier) => {
-    const query = 'SELECT * FROM users WHERE email = $1 OR phone = $1';
+    const query = `
+        SELECT u.*, 
+               CASE 
+                   WHEN u.full_name IS NOT NULL AND u.full_name != u.phone THEN u.full_name 
+                   WHEN v.name IS NOT NULL AND v.name != u.phone THEN v.name 
+                   ELSE COALESCE(u.full_name, v.name, u.phone) 
+               END as computed_full_name
+        FROM users u
+        LEFT JOIN vendors v ON u.phone = v.phone
+        WHERE u.email = $1 OR u.phone = $1
+    `;
     const result = await pool.query(query, [identifier]);
-    return result.rows[0];
+    if (result.rows.length > 0) {
+        const user = result.rows[0];
+        user.full_name = user.computed_full_name; // override with the computed name
+        return user;
+    }
+    return null;
 };
 
 const createUser = async (userData) => {

@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
 const VendorReferMember = ({ mode = 'user' }) => {
-    const [formData, setFormData] = useState({ phone: '', email: '', password: '', full_name: '' });
+    const [formData, setFormData] = useState({ phone: '', email: '', password: '', full_name: '', pincode: '', city: '', state: '' });
     const [loading, setLoading] = useState(false);
     const [referrals, setReferrals] = useState([]);
     const [tableLoading, setTableLoading] = useState(true);
@@ -59,12 +59,15 @@ const VendorReferMember = ({ mode = 'user' }) => {
             const res = await fetch(`${API_BASE_URL}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({
+                    ...formData,
+                    name: formData.full_name // Ensure 'name' is also sent for backend compatibility with different models
+                })
             });
             const data = await res.json();
             if (data.success) {
                 toast.success(`${mode.toUpperCase()} Node Authorized Successfully!`);
-                setFormData({ phone: '', email: '', password: '', full_name: '' });
+                setFormData({ phone: '', email: '', password: '', full_name: '', pincode: '', city: '', state: '' });
                 fetchReferrals();
             } else {
                 toast.error(data.message || 'Authorization failed');
@@ -142,13 +145,42 @@ const VendorReferMember = ({ mode = 'user' }) => {
                                </div>
                             </div>
 
-                            <div className="space-y-2">
-                               <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Security Key (Password) *</label>
-                               <div className="relative group/field">
-                                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500/50 group-focus-within/field:text-indigo-500 transition-colors" size={18} />
-                                  <input type="password" className="form-control !pl-12 !py-4 font-black tracking-tight text-sm bg-[var(--bg-color)]/30 border-[var(--border-color)] text-[var(--text-dark)] focus:border-indigo-500 focus:bg-[var(--surface-color)] transition-all outline-none rounded-2xl w-full" placeholder="........" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required />
-                               </div>
-                            </div>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Security Key (Password) *</label>
+                                <div className="relative group/field">
+                                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500/50 group-focus-within/field:text-indigo-500 transition-colors" size={18} />
+                                   <input type="password" className="form-control !pl-12 !py-4 font-black tracking-tight text-sm bg-[var(--bg-color)]/30 border-[var(--border-color)] text-[var(--text-dark)] focus:border-indigo-500 focus:bg-[var(--surface-color)] transition-all outline-none rounded-2xl w-full" placeholder="........" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required />
+                                </div>
+                             </div>
+
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Pincode *</label>
+                                    <input 
+                                        type="text" 
+                                        className="form-control !py-4 font-black tracking-tight text-sm bg-[var(--bg-color)]/30 border-[var(--border-color)] text-[var(--text-dark)] focus:border-indigo-500 transition-all outline-none rounded-2xl w-full" 
+                                        placeholder="6 DIGIT PIN" 
+                                        value={formData.pincode} 
+                                        maxLength={6}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/\D/g, '');
+                                            if (val.length <= 6) setFormData({ ...formData, pincode: val });
+                                        }} 
+                                        required 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">City *</label>
+                                    <input 
+                                        type="text" 
+                                        className="form-control !py-4 font-black tracking-tight text-sm uppercase bg-[var(--bg-color)]/30 border-[var(--border-color)] text-[var(--text-dark)] focus:border-indigo-500 transition-all outline-none rounded-2xl w-full" 
+                                        placeholder="CITY NAME" 
+                                        value={formData.city} 
+                                        onChange={(e) => setFormData({ ...formData, city: e.target.value })} 
+                                        required 
+                                    />
+                                </div>
+                             </div>
 
                             <button type="submit" className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-3 font-black uppercase text-[11px] tracking-widest shadow-xl shadow-indigo-600/20 rounded-2xl group active:scale-95 transition-all" disabled={loading}>
                                 {loading ? <Activity size={18} className="animate-spin" /> : <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />}

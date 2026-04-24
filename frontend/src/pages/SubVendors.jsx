@@ -59,11 +59,11 @@ const SubVendors = () => {
     const handleStatusToggle = async (id, currentStatus) => {
         const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
         const originalData = [...subvendors];
-        
+
         // Optimistic update
         setSubVendors(subvendors.map(s => s.id === id ? { ...s, status: newStatus } : s));
         setOpenActionId(null);
-        
+
         try {
             await api.put(`/admin/subvendors/${id}`, { status: newStatus });
             toast.success(`Agent status updated to ${newStatus}.`);
@@ -102,8 +102,8 @@ const SubVendors = () => {
                     <p>Manage and monitor sub-vendor/agent accounts and their performance</p>
                 </div>
                 <div className="pageHeaderActions">
-                    <button 
-                        className="btn btn-primary flex items-center gap-2 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/10" 
+                    <button
+                        className="btn btn-primary flex items-center gap-2 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/10"
                         onClick={() => navigate('/sub-vendors/create')}
                     >
                         <Plus size={16} /> Add New Agent
@@ -137,9 +137,9 @@ const SubVendors = () => {
 
                     <div className="relative w-full md:w-96 group">
                         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-500 transition-colors" />
-                        <input 
-                            type="text" 
-                            className="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-[var(--text-muted)]/50 text-[var(--text-dark)]" 
+                        <input
+                            type="text"
+                            className="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-[var(--text-muted)]/50 text-[var(--text-dark)]"
                             placeholder="Search agents by name or email..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -172,84 +172,77 @@ const SubVendors = () => {
                                 </tr>
                             ) : subvendors.length > 0 ? (
                                 subvendors.map((sub, index) => (
-                                <tr key={sub.id} className="transition-all hover:bg-[var(--primary)]/[0.02] group border-b border-[var(--border-color)] last:border-0 text-xs text-[var(--text-dark)]">
-                                    <td className="text-center font-black text-[var(--text-muted)]/40 text-[10px]">
-                                        #{((page - 1) * limit + index + 1).toString().padStart(3, '0')}
-                                    </td>
-                                    <td>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 flex items-center justify-center text-indigo-500 shadow-sm transition-all group-hover:-translate-y-0.5 group-hover:shadow-md">
-                                                <User size={18} />
+                                    <tr key={sub.id} className="transition-all hover:bg-[var(--primary)]/[0.02] group border-b border-[var(--border-color)] last:border-0 text-xs text-[var(--text-dark)]">
+                                        <td className="text-center font-black text-[var(--text-muted)]/40 text-[10px]">
+                                            #{((page - 1) * limit + index + 1).toString().padStart(3, '0')}
+                                        </td>
+                                        <td>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 flex items-center justify-center text-indigo-500 shadow-sm transition-all group-hover:-translate-y-0.5 group-hover:shadow-md">
+                                                    <User size={18} />
+                                                </div>
+                                                <div>
+                                                    <div className="font-black text-[var(--text-dark)] tracking-tight text-[11px] group-hover:text-indigo-600 transition-colors uppercase">{sub.name}</div>
+                                                    <div className="text-[10px] text-[var(--text-muted)] font-bold italic tracking-tighter">@{sub.name?.toLowerCase().replace(/\s+/g, '_')}</div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="font-black text-[var(--text-dark)] tracking-tight text-[11px] group-hover:text-indigo-600 transition-colors uppercase">{sub.name}</div>
-                                                <div className="text-[10px] text-[var(--text-muted)] font-bold italic tracking-tighter">@{sub.name?.toLowerCase().replace(/\s+/g, '_')}</div>
+                                        </td>
+                                        <td>
+                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase tracking-tight border border-amber-500/20">
+                                                <Award size={10} /> {sub.vendor_name || 'Individual'}
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase tracking-tight border border-amber-500/20">
-                                            <Award size={10} /> {sub.vendor_name || 'Individual'}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-dark)]/80">
-                                                <Phone size={10} className="text-indigo-400" /> {sub.phone}
+                                        </td>
+                                        <td>
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-dark)]/80">
+                                                    <Phone size={10} className="text-indigo-400" /> {sub.phone}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-muted)] italic">
+                                                    <Mail size={10} className="text-[var(--text-muted)]/50" /> {sub.email}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-muted)] italic">
-                                                <Mail size={10} className="text-[var(--text-muted)]/50" /> {sub.email}
+                                        </td>
+                                        <td>
+                                            <code className="text-[10px] font-black text-indigo-400 bg-indigo-500/5 px-2 py-0.5 rounded border border-indigo-500/10 shadow-sm transition-all hover:bg-indigo-500/10">
+                                                {sub.referral_code || `AGENT-${sub.id.toString().substring(0, 4)}`}
+                                            </code>
+                                        </td>
+                                        <td>
+                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${sub.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20 shadow-sm shadow-red-500/10'
+                                                }`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${sub.status === 'Active' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500 animate-pulse'}`}></div>
+                                                {sub.status === 'Active' ? 'ACTIVE' : 'DEACTIVE'}
+                                            </span>
+                                        </td>
+                                        <td className="text-right">
+                                            <div className="relative inline-block text-left">
+                                                <button className="p-2 rounded-xl text-[var(--text-muted)] hover:text-indigo-500 hover:bg-[var(--surface-elevated)] transition-all cursor-pointer active:scale-90 border-none bg-transparent outline-none" onClick={() => setOpenActionId(openActionId === sub.id ? null : sub.id)}>
+                                                    <MoreVertical size={18} />
+                                                </button>
+                                                {openActionId === sub.id && (
+                                                    <>
+                                                        <div className="fixed inset-0 z-[100]" onClick={() => setOpenActionId(null)} />
+                                                        <div className="absolute right-10 top-0 bg-[var(--surface-color)] shadow-2xl rounded-2xl border border-[var(--border-color)] z-[110] min-w-[150px] py-2 overflow-hidden animate-zoom-in origin-right">
+                                                            <button
+                                                                className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-indigo-500/10 transition-all flex items-center gap-3 border-none bg-transparent cursor-pointer"
+                                                                onClick={() => handleStatusToggle(sub.id, sub.status || 'Active')}
+                                                            >
+                                                                <Power size={14} className={sub.status === 'Active' ? 'text-rose-500' : 'text-emerald-500'} />
+                                                                {sub.status === 'Active' ? 'Suspend Account' : 'Activate Account'}
+                                                            </button>
+                                                            <div className="h-px bg-[var(--border-color)] my-1 mx-2"></div>
+                                                            <button
+                                                                className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase text-red-500 hover:bg-red-500/10 transition-all flex items-center gap-3 border-none bg-transparent cursor-pointer"
+                                                                onClick={() => handleDelete(sub.id)}
+                                                            >
+                                                                <Trash2 size={14} /> Delete Agent
+                                                            </button>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <code className="text-[10px] font-black text-indigo-400 bg-indigo-500/5 px-2 py-0.5 rounded border border-indigo-500/10 shadow-sm transition-all hover:bg-indigo-500/10">
-                                            {sub.referral_code || `AGENT-${sub.id.toString().substring(0,4)}`}
-                                        </code>
-                                    </td>
-                                    <td>
-                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
-                                            sub.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20 italic opacity-60'
-                                        }`}>
-                                            <div className={`w-1.5 h-1.5 rounded-full ${sub.status === 'Active' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500 opacity-40'}`}></div>
-                                            {sub.status || 'ACTIVE'}
-                                        </span>
-                                    </td>
-                                    <td className="text-right">
-                                        <div className="relative inline-block text-left">
-                                            <button className="p-2 rounded-xl text-[var(--text-muted)] hover:text-indigo-500 hover:bg-[var(--surface-elevated)] transition-all cursor-pointer active:scale-90 border-none bg-transparent outline-none" onClick={() => setOpenActionId(openActionId === sub.id ? null : sub.id)}>
-                                                <MoreVertical size={18} />
-                                            </button>
-                                            {openActionId === sub.id && (
-                                                <>
-                                                    <div className="fixed inset-0 z-[100]" onClick={() => setOpenActionId(null)} />
-                                                    <div className="absolute right-10 top-0 bg-[var(--surface-color)] shadow-2xl rounded-2xl border border-[var(--border-color)] z-[110] min-w-[150px] py-2 overflow-hidden animate-zoom-in origin-right">
-                                                        <button 
-                                                            className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-indigo-500/10 hover:text-indigo-500 transition-all flex items-center gap-3 border-none bg-transparent cursor-pointer" 
-                                                            onClick={() => { navigate(`/sub-vendors/edit/${sub.id}`); setOpenActionId(null); }}
-                                                        >
-                                                            <Edit2 size={14} className="text-indigo-500" /> Edit Agent
-                                                        </button>
-                                                        <button 
-                                                            className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-indigo-500/10 transition-all flex items-center gap-3 border-none bg-transparent cursor-pointer" 
-                                                            onClick={() => handleStatusToggle(sub.id, sub.status || 'Active')}
-                                                        >
-                                                            <Power size={14} className={sub.status === 'Active' ? 'text-rose-500' : 'text-emerald-500'} /> 
-                                                            {sub.status === 'Active' ? 'Suspend Account' : 'Activate Account'}
-                                                        </button>
-                                                        <div className="h-px bg-[var(--border-color)] my-1 mx-2"></div>
-                                                        <button 
-                                                            className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase text-red-500 hover:bg-red-500/10 transition-all flex items-center gap-3 border-none bg-transparent cursor-pointer" 
-                                                            onClick={() => handleDelete(sub.id)}
-                                                        >
-                                                            <Trash2 size={14} /> Delete Agent
-                                                        </button>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
+                                        </td>
+                                    </tr>
                                 ))
                             ) : (
                                 <tr>
@@ -270,7 +263,7 @@ const SubVendors = () => {
                         Showing <span className="text-[var(--text-dark)] not-italic font-black">{subvendors.length > 0 ? (page - 1) * limit + 1 : 0} - {Math.min(page * limit, paginationProps.total)}</span> of {paginationProps.total} agents
                     </div>
                     <div className="flex items-center gap-1.5">
-                        <button 
+                        <button
                             className={`px-4 py-2 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${page === 1 ? 'opacity-30 cursor-not-allowed text-[var(--text-muted)]' : 'hover:bg-[var(--bg-color)] active:scale-95 cursor-pointer shadow-sm text-indigo-600'}`}
                             disabled={page === 1}
                             onClick={() => setPage(prev => Math.max(1, prev - 1))}
@@ -280,7 +273,7 @@ const SubVendors = () => {
                         <div className="w-10 h-10 flex items-center justify-center bg-indigo-600 text-white rounded-xl font-black shadow-lg shadow-indigo-100">
                             {page}
                         </div>
-                        <button 
+                        <button
                             className={`px-4 py-2 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${page >= paginationProps.pages ? 'opacity-30 cursor-not-allowed text-[var(--text-muted)]' : 'hover:bg-[var(--bg-color)] active:scale-95 cursor-pointer shadow-sm text-indigo-600'}`}
                             disabled={page >= paginationProps.pages}
                             onClick={() => setPage(prev => Math.min(paginationProps.pages, prev + 1))}

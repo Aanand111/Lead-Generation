@@ -16,7 +16,7 @@ const getStats = async (req, res, next) => {
 
         const topVendorsQuery = `
             SELECT 
-                u.full_name as name, 
+                COALESCE(u.full_name, 'Unknown User') as name, 
                 COUNT(l.id) as leads_uploaded,
                 COALESCE(u.vendor_rating, 0) as rating
             FROM users u

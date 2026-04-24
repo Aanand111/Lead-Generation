@@ -138,28 +138,44 @@ const updateVendor = async (req, res, next) => {
         const { id } = req.params;
         const vendorData = { ...req.body };
 
+        const { pool } = require('../config/db');
+        
+        // 1. Get old vendor details for synchronization (especially phone)
+        const oldVendorRes = await pool.query('SELECT phone FROM vendors WHERE id = $1', [id]);
+        const oldPhone = oldVendorRes.rows[0]?.phone;
+
         if (vendorData.password) {
             const salt = await bcrypt.genSalt(10);
             vendorData.password = await bcrypt.hash(vendorData.password, salt);
         }
 
+        // 2. Update vendor table
         const vendor = await vendorDb.updateVendor(id, vendorData);
 
         if (!vendor) {
             return res.status(404).json({ success: false, message: 'Vendor not found' });
         }
 
-        // Synchronize with users table if phone matches
-        const { pool } = require('../config/db');
-        if (vendor.phone) {
+        // 3. Synchronize with users table using the old phone number if found
+        if (oldPhone) {
             await pool.query(
                 `UPDATE users SET 
-                    full_name = COALESCE($1, full_name), 
-                    referral_code = COALESCE($2, referral_code),
-                    status = COALESCE($3, status),
-                    password_hash = COALESCE($5, password_hash)
-                WHERE phone = $4`,
-                [vendor.name, vendor.referral_code, vendor.status === 'Active' ? 'ACTIVE' : 'BLOCKED', vendor.phone, vendor.password]
+                    full_name = COALESCE(NULLIF($1, ''), full_name), 
+                    referral_code = COALESCE(NULLIF($2, ''), referral_code),
+                    status = COALESCE(NULLIF($3, ''), status),
+                    phone = COALESCE(NULLIF($4, ''), phone),
+                    password_hash = COALESCE(NULLIF($5, ''), password_hash),
+                    email = COALESCE(NULLIF($6, ''), email)
+                WHERE phone = $7`,
+                [
+                    vendor.name, 
+                    vendor.referral_code, 
+                    vendor.status === 'Active' ? 'ACTIVE' : 'BLOCKED', 
+                    vendor.phone, 
+                    vendor.password,
+                    vendor.email,
+                    oldPhone
+                ]
             );
         }
 

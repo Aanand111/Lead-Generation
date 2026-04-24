@@ -76,6 +76,9 @@ const Customers = () => {
                     whatsapp: user.whatsapp || '',
                     referral: user.referral || 'NONE',
                     pincode: user.pincode || '',
+                    city: user.city || '',
+                    state: user.state || '',
+                    type: user.type || 'USER',
                     status: user.status === 'Inactive' ? 'Inactive' : 'Active'
                 }));
                 setCustomers(mappedData);
@@ -121,6 +124,8 @@ const Customers = () => {
             whatsapp: customer.whatsapp || '',
             referral: customer.referral || '',
             pincode: customer.pincode || '',
+            city: customer.city || '',
+            state: customer.state || '',
             status: customer.status || 'Active'
         });
         setIsEditModalOpen(true);
@@ -354,12 +359,14 @@ const Customers = () => {
                                                             >
                                                                 <Edit3 size={14} className="text-indigo-500" /> Edit Profile
                                                             </button>
-                                                            <button
-                                                                className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-emerald-500/10 hover:text-emerald-500 transition-all flex items-center gap-3 border-none cursor-pointer"
-                                                                onClick={() => handleRechargeClick(customer)}
-                                                            >
-                                                                <Plus size={14} className="text-emerald-500" /> Recharge Wallet
-                                                            </button>
+                                                            {customer.type === 'USER' && (
+                                                                <button
+                                                                    className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-emerald-500/10 hover:text-emerald-500 transition-all flex items-center gap-3 border-none cursor-pointer"
+                                                                    onClick={() => handleRechargeClick(customer)}
+                                                                >
+                                                                    <Plus size={14} className="text-emerald-500" /> Recharge Wallet
+                                                                </button>
+                                                            )}
                                                             <button
                                                                 className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase text-[var(--text-dark)] hover:bg-indigo-500/10 transition-all flex items-center gap-3 border-none cursor-pointer"
                                                                 onClick={() => handleStatusToggle(customer.id, customer.status)}

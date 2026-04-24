@@ -6,9 +6,42 @@ const getDashboardStats = async (req, res, next) => {
     try {
         const userId = req.user.id;
 
-        // Get Wallet Balance
-        const userRes = await pool.query('SELECT wallet_balance FROM users WHERE id = $1', [userId]);
-        const walletBalance = userRes.rows[0]?.wallet_balance || 0;
+        // Get User details (Referral Code and Parent ID)
+        let userRes = await pool.query(`
+            SELECT u.wallet_balance, u.referral_code, u.referred_by, 
+                   CASE 
+                       WHEN p.full_name IS NOT NULL AND p.full_name != p.phone THEN p.full_name 
+                       WHEN v.name IS NOT NULL AND v.name != p.phone THEN v.name 
+                       ELSE COALESCE(p.full_name, v.name, p.phone) 
+                   END as parent_name,
+                   CASE 
+                       WHEN p.role = 'vendor' AND p.referred_by IS NOT NULL THEN 'SUB-VENDOR'
+                       WHEN p.role = 'vendor' THEN 'VENDOR'
+                       ELSE p.role
+                   END as parent_role,
+                   p.referral_code as parent_code,
+                   (SELECT COUNT(*) FROM referrals r WHERE r.referred_user_id = u.id) as is_referral
+            FROM users u 
+            LEFT JOIN users p ON u.referred_by = p.id 
+            LEFT JOIN vendors v ON p.phone = v.phone
+            WHERE u.id = $1
+        `, [userId]);
+        let userData = userRes.rows[0];
+        
+        let referralCode = userData?.referral_code;
+        if (!referralCode && userData) {
+            const prefix = userData.role === 'vendor' ? 'VND' : 'USR';
+            referralCode = `${prefix}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+            await pool.query('UPDATE users SET referral_code = $1 WHERE id = $2', [referralCode, userId]);
+        }
+
+        const walletBalance = userData?.wallet_balance || 0;
+        referralCode = referralCode || 'N/A';
+        const parentId = userData?.referred_by || 'ORGANIC';
+        const parentName = userData?.parent_name || (userData?.referred_by ? 'System Node' : 'ORGANIC');
+        const parentRole = userData?.parent_role || '';
+        const parentCode = userData?.parent_code || '';
+        const isReferral = parseInt(userData?.is_referral || 0) > 0;
 
         // Get Total Purchased Leads
         const leadsRes = await pool.query('SELECT COUNT(*) FROM lead_purchases WHERE user_id = $1', [userId]);
@@ -58,6 +91,12 @@ const getDashboardStats = async (req, res, next) => {
                 totalPurchasedLeads,
                 availableLeads: availableLeadsCount,
                 totalReferrals,
+                referralCode,
+                parentId,
+                parentName,
+                parentRole,
+                parentCode,
+                isReferral,
                 todaysPosters: 1 - todaysPosters > 0 ? 1 - todaysPosters : 0, 
                 recentPurchases: recentPurchasesRes.rows,
                 recentTransactions: recentTransactionsRes.rows 
@@ -182,7 +221,7 @@ const purchaseLead = async (req, res, next) => {
         // 5. Create transaction log
         await client.query(
             'INSERT INTO transactions (user_id, type, amount, credits, status, remarks) VALUES ($1, $2, $3, $4, $5, $6)',
-            [userId, 'PURCHASE', 0, cost, 'SUCCESS', `Purchased lead ${leadId}`]
+            [userId, 'PURCHASE', 0, cost, 'COMPLETED', `Purchased lead ${leadId}`]
         );
 
         await client.query('COMMIT');
@@ -243,9 +282,19 @@ const getProfile = async (req, res, next) => {
     try {
         const userId = req.user.id;
         const result = await pool.query(`
-            SELECT u.id, u.phone, u.full_name as name, u.full_name, u.email, up.address, up.city, up.state, up.pincode, up.profile_image as profile_pic
+            SELECT 
+                u.id, u.phone, 
+                CASE 
+                    WHEN u.full_name IS NOT NULL AND u.full_name != u.phone THEN u.full_name 
+                    WHEN v.name IS NOT NULL AND v.name != u.phone THEN v.name 
+                    ELSE COALESCE(u.full_name, v.name) 
+                END as full_name,
+                u.email, up.address, up.city, up.state, up.pincode, up.profile_image as profile_pic,
+                u.status, u.referral_code, u.referred_by, p.full_name as parent_name
             FROM users u
             LEFT JOIN user_profiles up ON u.id = up.user_id
+            LEFT JOIN vendors v ON u.phone = v.phone
+            LEFT JOIN users p ON u.referred_by = p.id
             WHERE u.id = $1
         `, [userId]);
 
@@ -261,10 +310,24 @@ const getProfile = async (req, res, next) => {
 const updateProfile = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        const { name, email, address, city, state, pincode } = req.body;
+        const { name: reqName, full_name, email, address, city, state, pincode } = req.body;
+        const name = full_name || reqName;
 
-        // Update name and email in users table
-        await pool.query('UPDATE users SET full_name = $1, email = $2 WHERE id = $3', [name, email, userId]);
+        // Update name and email in users table safely
+        await pool.query(
+            'UPDATE users SET full_name = COALESCE(NULLIF($1, \'\'), full_name), email = COALESCE(NULLIF($2, \'\'), email) WHERE id = $3',
+            [name, email, userId]
+        );
+
+        // Synchronize with vendors table to keep data universal
+        const userRes = await pool.query('SELECT phone FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length > 0) {
+            const userPhone = userRes.rows[0].phone;
+            await pool.query(
+                'UPDATE vendors SET name = COALESCE(NULLIF($1, \'\'), name), email = COALESCE(NULLIF($2, \'\'), email) WHERE phone = $3',
+                [name, email, userPhone]
+            );
+        }
 
         // Upsert profile in user_profiles
         const profileCheck = await pool.query('SELECT id FROM user_profiles WHERE user_id = $1', [userId]);
@@ -307,7 +370,31 @@ const getSubscriptionPlans = async (req, res, next) => {
 const getReferralStats = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        const userRes = await pool.query('SELECT referral_code FROM users WHERE id = $1', [userId]);
+        const userRes = await pool.query('SELECT referral_code, role FROM users WHERE id = $1', [userId]);
+        let referralCode = userRes.rows[0]?.referral_code;
+
+        if (!referralCode) {
+            const generateSafeCode = () => {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                let code = '';
+                for (let i = 0; i < 6; i++) {
+                    code += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                const prefix = userRes.rows[0]?.role === 'vendor' ? 'VND' : 'USR';
+                return `${prefix}-${code}${Date.now().toString(36).slice(-2).toUpperCase()}`;
+            };
+
+            referralCode = generateSafeCode();
+            
+            // Uniqueness check for existing users update
+            let isCollision = await pool.query('SELECT id FROM users WHERE referral_code = $1', [referralCode]);
+            while (isCollision.rows.length > 0) {
+                referralCode = generateSafeCode();
+                isCollision = await pool.query('SELECT id FROM users WHERE referral_code = $1', [referralCode]);
+            }
+            
+            await pool.query('UPDATE users SET referral_code = $1 WHERE id = $2', [referralCode, userId]);
+        }
         
         const referralsRes = await pool.query(`
             SELECT u.full_name as name, u.phone, u.status, r.commission_earned as reward, r.created_at
@@ -322,7 +409,7 @@ const getReferralStats = async (req, res, next) => {
         res.status(200).json({
             success: true,
             data: {
-                referralCode: userRes.rows[0]?.referral_code || 'N/A',
+                referralCode: referralCode || 'N/A',
                 totalReferrals: referralsRes.rows.length,
                 totalRewards: parseFloat(rewardsRes.rows[0]?.total || 0),
                 referralHistory: referralsRes.rows
@@ -510,7 +597,7 @@ const generatePoster = async (req, res, next) => {
             await pool.query(
                 `INSERT INTO transactions (user_id, type, amount, credits, status, remarks) 
                  VALUES ($1, $2, $3, $4, $5, $6)`,
-                [userId, 'PURCHASE', 0, extraPosterCost, 'SUCCESS', `Premium Poster Render: ${title}`]
+                [userId, 'PURCHASE', 0, extraPosterCost, 'COMPLETED', `Premium Poster Render: ${title}`]
             );
 
             // Real-time Wallet Refresh
@@ -570,7 +657,7 @@ const purchaseSubscriptionPlan = async (req, res, next) => {
         // 4. Log Transaction
         await client.query(
             'INSERT INTO transactions (user_id, type, amount, credits, status, remarks) VALUES ($1, $2, $3, $4, $5, $6)',
-            [userId, 'PLAN_PURCHASE', plan.price, creditsToAward, 'SUCCESS', `Activated Plan: ${plan.name}`]
+            [userId, 'PLAN_PURCHASE', plan.price, creditsToAward, 'COMPLETED', `Activated Plan: ${plan.name}`]
         );
 
         // 5. Handle Referrer Commission (Unified via commissionService)
