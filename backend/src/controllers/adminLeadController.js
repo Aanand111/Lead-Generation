@@ -30,16 +30,15 @@ const uploadLead = async (req, res, next) => {
 
         // Notify appropriate party via Socket.io & FCM Push
         try {
-            const { getIO } = require('../utils/socket');
+            const { broadcast } = require('../utils/socket');
             const NotificationService = require('../services/notificationService');
-            const io = getIO();
 
             if (initialStatus === 'ACTIVE') {
                 // If Admin added it, notify EVERYONE
                 const notificationTitle = 'New Lead Available! 🚀';
                 const notificationBody = `A new ${category || 'General'} lead is available in ${city}. Buy now!`;
 
-                io.emit('new_lead_added', {
+                broadcast('new_lead_added', {
                     message: notificationBody,
                     category: category || 'General',
                     city: city,
@@ -53,7 +52,7 @@ const uploadLead = async (req, res, next) => {
                 });
             } else {
                 // If Vendor added it, notify ONLY ADMINS
-                io.emit('admin_notification', {
+                broadcast('admin_notification', {
                     title: 'New Lead Approval Required 🛡️',
                     body: `Vendor ${user.full_name} submitted a new lead for ${category} in ${city}.`,
                     timestamp: new Date()
@@ -232,8 +231,7 @@ const approveLead = async (req, res, next) => {
         // Notify Vendor about approval if applicable
         if (status === 'ACTIVE') {
             const NotificationService = require('../services/notificationService');
-            const { getIO } = require('../utils/socket');
-            const io = getIO();
+            const { broadcast } = require('../utils/socket');
 
             // 1. Notify the individual vendor who created it
             if (lead.created_by) {
@@ -244,7 +242,7 @@ const approveLead = async (req, res, next) => {
             const broadcastTitle = 'New Approved Lead! 🔥';
             const broadcastBody = `A fresh approved lead is now available in ${lead.city || 'your area'}.`;
             
-            io.emit('new_lead_added', {
+            broadcast('new_lead_added', {
                 message: broadcastBody,
                 category: lead.category,
                 city: lead.city,

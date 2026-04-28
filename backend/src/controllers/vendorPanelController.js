@@ -222,9 +222,8 @@ const referVendor = async (req, res, next) => {
 
         // Emit real-time notification for Admin
         try {
-            const { getIO } = require('../utils/socket');
-            const io = getIO();
-            io.emit('new_vendor_referral', {
+            const { broadcast } = require('../utils/socket');
+            broadcast('new_vendor_referral', {
                 message: `New Sub-Vendor Added: ${full_name}`,
                 phone: phone,
                 referrer: req.user.full_name || 'Primary Node',
@@ -284,8 +283,7 @@ const requestSettlement = async (req, res, next) => {
 
         // Add socket notification exclusively to Admins
         try {
-            const { getIO } = require('../utils/socket');
-            const io = getIO();
+            const { sendToUser } = require('../utils/socket');
             
             // Get all admin users
             const adminsRes = await pool.query("SELECT id FROM users WHERE role = 'admin'");
@@ -293,13 +291,13 @@ const requestSettlement = async (req, res, next) => {
             
             adminIds.forEach(adminId => {
                 // To show Bell Icon Notification Dropdown
-                io.to(adminId).emit('notification', {
+                sendToUser(adminId, 'notification', {
                     title: 'Commission Request',
                     body: `${vendorName} requested ₹${amount.toFixed(2)}.`
                 });
                 
                 // To show Toast Notification
-                io.to(adminId).emit('admin_notification', {
+                sendToUser(adminId, 'admin_notification', {
                     title: 'New Commission Request',
                     body: `${vendorName} has requested a withdrawal of ₹${amount.toFixed(2)}.`
                 });

@@ -1,8 +1,23 @@
-// In-memory OTP store: { phone: { otp, expiresAt } }
-const otpStore = new Map();
-
 const { pool } = require('../config/db');
 const bcrypt = require('bcryptjs');
+const { redisConnection } = require('../config/redis');
+const smsService = require('../services/smsService');
+const logger = require('../utils/logger');
+
+// Redis-backed OTP store with 10-minute TTL
+const OTP_TTL_SECONDS = 10 * 60; // 10 minutes
+
+const storeOTP = async (phone, otp) => {
+    await redisConnection.setex(`otp:${phone}`, OTP_TTL_SECONDS, otp);
+};
+
+const getOTP = async (phone) => {
+    return await redisConnection.get(`otp:${phone}`);
+};
+
+const deleteOTP = async (phone) => {
+    await redisConnection.del(`otp:${phone}`);
+};
 
 // POST /api/auth/forgot-password
 // Body: { phone }
@@ -26,20 +41,20 @@ const sendOTP = async (req, res, next) => {
 
         // Generate 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-        otpStore.set(phone, { otp, expiresAt });
+        // Store in Redis with TTL
+        await storeOTP(phone, otp);
 
-        // Print OTP to backend console (visible in terminal/logs)
-        console.log(`\n========================================`);
-        console.log(`[OTP] Phone: ${phone}`);
-        console.log(`[OTP] Code:  ${otp}`);
-        console.log(`[OTP] Valid for 10 minutes`);
-        console.log(`========================================\n`);
+        // Phase 3: Send OTP via SMS service
+        const smsResult = await smsService.sendOTP(phone, otp);
+        
+        if (!smsResult.success) {
+            logger.error(`Failed to send OTP to ${phone}: ${smsResult.error}`);
+        }
 
         res.status(200).json({
             success: true,
-            message: `OTP generated. Check backend terminal for the code.`
+            message: `OTP sent successfully. It will expire in 10 minutes.`
         });
     } catch (error) {
         next(error);
@@ -56,19 +71,14 @@ const resetPassword = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Phone, OTP, and new password are required.' });
         }
 
-        // Validate OTP
-        const stored = otpStore.get(phone);
+        // Validate OTP from Redis
+        const storedOtp = await getOTP(phone);
 
-        if (!stored) {
-            return res.status(400).json({ success: false, message: 'OTP not found. Please request a new one.' });
+        if (!storedOtp) {
+            return res.status(400).json({ success: false, message: 'OTP not found or expired. Please request a new one.' });
         }
 
-        if (Date.now() > stored.expiresAt) {
-            otpStore.delete(phone);
-            return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
-        }
-
-        if (stored.otp !== otp.toString()) {
+        if (storedOtp !== otp.toString()) {
             return res.status(400).json({ success: false, message: 'Invalid OTP. Please try again.' });
         }
 
@@ -86,9 +96,7 @@ const resetPassword = async (req, res, next) => {
         }
 
         // Clear OTP after successful reset
-        otpStore.delete(phone);
-
-        console.log(`[PASSWORD RESET] Successful for phone: ${phone}`);
+        await deleteOTP(phone);
 
         res.status(200).json({
             success: true,

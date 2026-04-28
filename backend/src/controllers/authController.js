@@ -26,9 +26,9 @@ const registerUser = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Please provide email, password and role.' });
         }
 
-        // Role check
-        if (!['user', 'vendor', 'admin'].includes(role)) {
-            return res.status(400).json({ success: false, message: 'Invalid role.' });
+        // Role check - admin can NEVER be created via public registration
+        if (!['user', 'vendor'].includes(role)) {
+            return res.status(400).json({ success: false, message: 'Invalid role. Only user or vendor registration is allowed.' });
         }
 
         // Check existing

@@ -2,30 +2,28 @@ const logger = require('../utils/logger');
 
 const errorHandler = (err, req, res, next) => {
     let status = err.statusCode || err.status || 500;
-    
-    // Custom error message for production
     let message = err.message || 'Internal Server Error';
 
-    // Unique constraint violation in Postgres
     if (err.code === '23505') {
-        status = 400;
-        message = 'Selected record/name already exists.';
+        status = err.constraint === 'unique_user_lead_purchase' ? 409 : 409;
+        message = err.constraint === 'unique_user_lead_purchase'
+            ? 'You have already purchased this lead.'
+            : 'Selected record already exists.';
     }
 
-    // Log the error using winston
-    logger.error({
+    const requestLogger = req.logger || logger;
+    requestLogger.error('[HTTP] Request failed', {
         method: req.method,
         url: req.originalUrl,
         status,
         message: err.message,
-        stack: err.stack,
+        stack: err.stack
     });
 
-    // Client response
     res.status(status).json({
         success: false,
         message,
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     });
 };
 

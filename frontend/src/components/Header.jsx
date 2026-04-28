@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, Bell, User, LogOut, Settings, ChevronDown, Shield, Moon, Sun, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
 import InsureeLogo from '../assets/insuree.png';
 
 import { useTheme } from '../utils/ThemeContext';
+import { acquireSocket, releaseSocket } from '../utils/socketClient';
 
 const Header = ({ toggleSidebar, isSidebarOpen }) => {
     console.log("Header Reander");
@@ -55,35 +55,36 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
         };
 
         fetchUser();
+        window.addEventListener('userProfileUpdated', fetchUser);
 
-        // Socket.io for Real-time Bell Notifications
         const storedUser = localStorage.getItem('user');
         const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-        
-        if (parsedUser?.id) {
-            const socketUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-            const socket = io(socketUrl, { query: { userId: parsedUser.id } });
+        const token = localStorage.getItem('token');
 
-            socket.on('notification', (payload) => {
-                const newNotification = {
-                    id: Date.now(),
-                    title: payload.title,
-                    body: payload.body,
-                    time: 'Just now',
-                    isRead: false
-                };
-                setNotifications(prev => [newNotification, ...prev]);
-                setUnreadCount(prev => prev + 1);
-            });
-
-            return () => {
-                socket.disconnect();
-                window.removeEventListener('userProfileUpdated', fetchUser);
-            };
+        if (!parsedUser?.id || !token) {
+            return () => window.removeEventListener('userProfileUpdated', fetchUser);
         }
 
-        window.addEventListener('userProfileUpdated', fetchUser);
-        return () => window.removeEventListener('userProfileUpdated', fetchUser);
+        const socket = acquireSocket(token);
+        const onNotification = (payload) => {
+            const newNotification = {
+                id: Date.now(),
+                title: payload.title,
+                body: payload.body,
+                time: 'Just now',
+                isRead: false
+            };
+            setNotifications(prev => [newNotification, ...prev]);
+            setUnreadCount(prev => prev + 1);
+        };
+
+        socket.on('notification', onNotification);
+
+        return () => {
+            socket.off('notification', onNotification);
+            releaseSocket(socket);
+            window.removeEventListener('userProfileUpdated', fetchUser);
+        };
     }, []);
 
 

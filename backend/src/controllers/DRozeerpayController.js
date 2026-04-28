@@ -95,11 +95,19 @@ const verifySubscriptionPayment = async (req, res, next) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
         const userId = req.user.id;
+        const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
+
+        if (!razorpaySecret) {
+            return res.status(500).json({
+                success: false,
+                message: 'Razorpay is not configured correctly on the server.'
+            });
+        }
 
         // 1. Verify Razorpay Signature
         const sign = razorpay_order_id + "|" + razorpay_payment_id;
         const expectedSignature = crypto
-            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || 'your_secret_key')
+            .createHmac("sha256", razorpaySecret)
             .update(sign.toString())
             .digest("hex");
 
@@ -118,7 +126,10 @@ const verifySubscriptionPayment = async (req, res, next) => {
         }
 
         // Find Pending Transaction
-        const transRes = await client.query('SELECT * FROM transactions WHERE reference_id = $1 AND status = $2', [razorpay_order_id, 'PENDING']);
+        const transRes = await client.query(
+            'SELECT * FROM transactions WHERE reference_id = $1 AND status = $2 FOR UPDATE',
+            [razorpay_order_id, 'PENDING']
+        );
         if (!transRes.rows[0]) {
             await client.query('ROLLBACK');
             return res.status(404).json({ success: false, message: "Transaction context lost." });

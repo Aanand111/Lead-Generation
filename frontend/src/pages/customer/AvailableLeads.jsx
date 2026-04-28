@@ -14,20 +14,22 @@ const UserAvailableLeads = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [message, setMessage] = useState({ type: '', text: '' });
-    const [filters, setFilters] = useState({ city: '', state: '', pincode: '', category: '' });
-    const [userCredits, setUserCredits] = useState(0);
-
-    const [autoRefresh, setAutoRefresh] = useState(false);
-    const [lastSync, setLastSync] = useState(new Date());
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
     const fetchLeads = async (isQuiet = false) => {
         if (!isQuiet) setLoading(true);
         setError(null);
         try {
-            const { data } = await api.get('/user/available-leads', { params: filters });
+            const { data } = await api.get('/user/available-leads', { 
+                params: { ...filters, page } 
+            });
             if (data.success) {
-                setLeads(data.data);
-                setUserCredits(data.userCredits || 0);
+                setLeads(data.leads || data.data); // data.leads is the new modular response
+                setUserCredits(data.walletBalance || data.userCredits || 0);
+                if (data.pagination) {
+                    setTotalPages(data.pagination.pages);
+                }
                 setLastSync(new Date());
             }
         } catch (err) {
@@ -39,8 +41,12 @@ const UserAvailableLeads = () => {
     };
 
     useEffect(() => {
-        fetchLeads();
+        setPage(1); // Reset to page 1 when filters change
     }, [filters]);
+
+    useEffect(() => {
+        fetchLeads();
+    }, [filters, page]);
 
     // Polling Logic & Real-time Refresh
     useEffect(() => {
@@ -321,6 +327,41 @@ const UserAvailableLeads = () => {
                         </div>
                     )}
                 </div>
+
+                {/* Pagination (Phase 3) */}
+                {totalPages > 1 && (
+                    <div className="mt-16 flex items-center justify-center gap-4">
+                        <button 
+                            disabled={page === 1}
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            className="px-6 py-3 glass-morphism rounded-2xl font-black uppercase tracking-widest text-[10px] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 transition-all"
+                        >
+                            Previous
+                        </button>
+                        <div className="flex items-center gap-2">
+                            {[...Array(totalPages)].map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setPage(i + 1)}
+                                    className={`w-10 h-10 rounded-xl font-black text-[10px] transition-all ${
+                                        page === i + 1 
+                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-110' 
+                                        : 'bg-[var(--surface-color)] text-slate-400 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                        </div>
+                        <button 
+                            disabled={page === totalPages}
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            className="px-6 py-3 glass-morphism rounded-2xl font-black uppercase tracking-widest text-[10px] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 transition-all"
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
 
                 {/* Footer Top-up Banner */}
                  {userCredits < 20 && (

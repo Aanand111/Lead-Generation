@@ -1,17 +1,11 @@
 const express = require('express');
-const { 
-    getDashboardStats, getAvailableLeads, purchaseLead, 
-    purchaseSubscriptionPlan,
-    getMyLeads, getProfile, updateProfile, 
-    getSubscriptionPlans, getReferralStats, 
-    getNews, getBanners, getPosters, getPosterTemplates, generatePoster,
-    submitLeadFeedback
-} = require('../controllers/userController');
+const userController = require('../modules/user/user.controller');
 const { createSubscriptionOrder, verifySubscriptionPayment } = require('../controllers/DRozeerpayController');
 const { authenticateToken, authorizeRole } = require('../middlewares/authMiddleware');
+const cache = require('../middlewares/cacheMiddleware');
 const { recordBannerInteraction } = require('../controllers/adminAnalyticsController');
-
-
+const leadsController = require('../modules/leads/leads.controller');
+const subscriptionsController = require('../modules/subscriptions/subscriptions.controller');
 
 const router = express.Router();
 
@@ -19,32 +13,40 @@ const router = express.Router();
 router.use(authenticateToken);
 router.use(authorizeRole(['user', 'vendor', 'customer', 'admin']));
 
-router.get('/dashboard-stats', getDashboardStats);
-router.get('/available-leads', getAvailableLeads);
-router.post('/purchase-lead/:id', purchaseLead);
-router.post('/purchase-subscription/:id', purchaseSubscriptionPlan);
+router.get('/dashboard-stats', cache(30), (req, res, next) => userController.getDashboardStats(req, res, next));
+
+// Modular Leads (Phase 2)
+router.use('/leads', require('../modules/leads/leads.routes'));
+// Modular Subscriptions (Phase 2)
+router.use('/subscriptions', require('../modules/subscriptions/subscriptions.routes'));
+
+// Maintain backward compatibility for old paths if needed, 
+// or redirect them to the new service logic:
+router.get('/available-leads', (req, res, next) => leadsController.getAvailableLeads(req, res, next));
+router.post('/purchase-lead/:id', (req, res, next) => leadsController.purchaseLead(req, res, next));
+router.get('/subscription-plans', (req, res, next) => subscriptionsController.getPlans(req, res, next));
+router.post('/purchase-subscription/:id', (req, res, next) => subscriptionsController.purchasePlan(req, res, next));
 
 // Razorpay Subscription Routes
 router.post('/subscription/create-order', createSubscriptionOrder);
 router.post('/subscription/verify-payment', verifySubscriptionPayment);
 
-router.get('/my-leads', getMyLeads);
-router.get('/referral-stats', getReferralStats);
-router.get('/subscription-plans', getSubscriptionPlans);
-router.get('/posters', getPosters);
-router.get('/poster-templates', getPosterTemplates);
+router.get('/my-leads', (req, res, next) => userController.getMyLeads(req, res, next));
+router.get('/referral-stats', (req, res, next) => userController.getReferralStats(req, res, next));
+router.get('/posters', (req, res, next) => userController.getPosters(req, res, next));
+router.get('/poster-templates', (req, res, next) => userController.getPosterTemplates(req, res, next));
 
 const { fileUpload } = require('../config/cloudinary');
 router.post('/generate-poster', fileUpload.fields([
     { name: 'logo', maxCount: 1 },
     { name: 'image', maxCount: 1 }
-]), generatePoster);
+]), (req, res, next) => userController.generatePoster(req, res, next));
 
-router.post('/lead-feedback', submitLeadFeedback);
+router.post('/lead-feedback', (req, res, next) => userController.submitLeadFeedback(req, res, next));
 router.post('/banners/:id/interaction', recordBannerInteraction);
-router.get('/news', getNews);
-router.get('/banners', getBanners);
-router.get('/profile', getProfile);
-router.put('/profile', updateProfile);
+router.get('/news', cache(900), (req, res, next) => userController.getNews(req, res, next));
+router.get('/banners', cache(900), (req, res, next) => userController.getBanners(req, res, next));
+router.get('/profile', (req, res, next) => userController.getProfile(req, res, next));
+router.put('/profile', (req, res, next) => userController.updateProfile(req, res, next));
 
 module.exports = router;

@@ -433,3 +433,282 @@
 {"level":"error","message":"invalid input syntax for type boolean: \"Publish\"","method":"GET","service":"lead-gen-api","stack":"error: invalid input syntax for type boolean: \"Publish\"\n    at D:\\Workspace\\LeadgenrationApp\\backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async getNews (D:\\Workspace\\LeadgenrationApp\\backend\\src\\controllers\\userController.js:426:24)","status":500,"timestamp":"2026-04-24 11:38:39","url":"/api/user/news"}
 {"level":"error","message":"invalid input syntax for type boolean: \"Publish\"","method":"GET","service":"lead-gen-api","stack":"error: invalid input syntax for type boolean: \"Publish\"\n    at D:\\Workspace\\LeadgenrationApp\\backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async getNews (D:\\Workspace\\LeadgenrationApp\\backend\\src\\controllers\\userController.js:426:24)","status":500,"timestamp":"2026-04-24 11:38:40","url":"/api/user/news"}
 {"level":"error","message":"invalid input syntax for type boolean: \"Publish\"","method":"GET","service":"lead-gen-api","stack":"error: invalid input syntax for type boolean: \"Publish\"\n    at D:\\Workspace\\LeadgenrationApp\\backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async getNews (D:\\Workspace\\LeadgenrationApp\\backend\\src\\controllers\\userController.js:426:24)","status":500,"timestamp":"2026-04-24 11:38:40","url":"/api/user/news"}
+{"level":"info","message":"OPTIONS /api/auth/login 204 0 - 0.536 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:36"}
+{"level":"info","message":"POST /api/auth/login 200 447 - 230.818 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:37"}
+{"level":"info","message":"OPTIONS /api/user/dashboard-stats 204 0 - 0.141 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:37"}
+{"level":"info","message":"OPTIONS /api/user/dashboard-stats 204 0 - 0.246 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:37"}
+{"level":"debug","message":"[CACHE] Miss: cache:/api/user/dashboard-stats","service":"lead-gen-api","timestamp":"2026-04-24 18:25:37"}
+{"level":"error","message":"relation \"mv_user_stats\" does not exist","method":"GET","service":"lead-gen-api","stack":"error: relation \"mv_user_stats\" does not exist\n    at D:\\Workspace\\LeadgenrationApp\\backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async getDashboardStats (D:\\Workspace\\LeadgenrationApp\\backend\\src\\controllers\\userController.js:10:23)","status":500,"timestamp":"2026-04-24 18:25:37","url":"/api/user/dashboard-stats"}
+{"level":"info","message":"GET /api/user/dashboard-stats 500 420 - 23.522 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:37"}
+{"level":"debug","message":"[CACHE] Miss: cache:/api/user/dashboard-stats","service":"lead-gen-api","timestamp":"2026-04-24 18:25:37"}
+{"level":"error","message":"relation \"mv_user_stats\" does not exist","method":"GET","service":"lead-gen-api","stack":"error: relation \"mv_user_stats\" does not exist\n    at D:\\Workspace\\LeadgenrationApp\\backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async getDashboardStats (D:\\Workspace\\LeadgenrationApp\\backend\\src\\controllers\\userController.js:10:23)","status":500,"timestamp":"2026-04-24 18:25:37","url":"/api/user/dashboard-stats"}
+{"level":"info","message":"GET /api/user/dashboard-stats 500 420 - 99.761 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:37"}
+{"level":"info","message":"OPTIONS /api/user/dashboard-stats 204 0 - 0.077 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:52"}
+{"level":"info","message":"OPTIONS /api/user/dashboard-stats 204 0 - 0.094 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:52"}
+{"level":"debug","message":"[CACHE] Miss: cache:/api/user/dashboard-stats","service":"lead-gen-api","timestamp":"2026-04-24 18:25:52"}
+{"level":"error","message":"relation \"mv_user_stats\" does not exist","method":"GET","service":"lead-gen-api","stack":"error: relation \"mv_user_stats\" does not exist\n    at D:\\Workspace\\LeadgenrationApp\\backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async getDashboardStats (D:\\Workspace\\LeadgenrationApp\\backend\\src\\controllers\\userController.js:10:23)","status":500,"timestamp":"2026-04-24 18:25:52","url":"/api/user/dashboard-stats"}
+{"level":"info","message":"GET /api/user/dashboard-stats 500 420 - 195.224 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:52"}
+{"level":"debug","message":"[CACHE] Miss: cache:/api/user/dashboard-stats","service":"lead-gen-api","timestamp":"2026-04-24 18:25:52"}
+{"level":"error","message":"relation \"mv_user_stats\" does not exist","method":"GET","service":"lead-gen-api","stack":"error: relation \"mv_user_stats\" does not exist\n    at D:\\Workspace\\LeadgenrationApp\\backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async getDashboardStats (D:\\Workspace\\LeadgenrationApp\\backend\\src\\controllers\\userController.js:10:23)","status":500,"timestamp":"2026-04-24 18:25:53","url":"/api/user/dashboard-stats"}
+{"level":"info","message":"GET /api/user/dashboard-stats 500 420 - 91.733 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:53"}
+{"level":"info","message":"OPTIONS /api/user/referral-stats 204 0 - 0.377 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:55"}
+{"level":"info","message":"OPTIONS /api/user/referral-stats 204 0 - 2.946 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:55"}
+{"level":"info","message":"GET /api/user/referral-stats 304 - - 219.797 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:55"}
+{"level":"info","message":"GET /api/user/referral-stats 304 - - 38.149 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:25:55"}
+{"level":"info","message":"OPTIONS /api/user/news 204 0 - 0.373 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:00"}
+{"level":"info","message":"OPTIONS /api/user/banners 204 0 - 0.407 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:00"}
+{"level":"info","message":"OPTIONS /api/user/news 204 0 - 0.482 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:00"}
+{"level":"info","message":"OPTIONS /api/user/banners 204 0 - 2.292 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:00"}
+{"level":"debug","message":"[CACHE] Miss: cache:/api/user/banners","service":"lead-gen-api","timestamp":"2026-04-24 18:26:00"}
+{"level":"debug","message":"[CACHE] Miss: cache:/api/user/news","service":"lead-gen-api","timestamp":"2026-04-24 18:26:00"}
+{"level":"info","message":"GET /api/user/banners 304 - - 95.025 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:01"}
+{"level":"debug","message":"[CACHE] Hit: cache:/api/user/banners","service":"lead-gen-api","timestamp":"2026-04-24 18:26:01"}
+{"level":"info","message":"GET /api/user/banners 304 - - 179.054 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:01"}
+{"level":"error","message":"invalid input syntax for type boolean: \"Publish\"","method":"GET","service":"lead-gen-api","stack":"error: invalid input syntax for type boolean: \"Publish\"\n    at D:\\Workspace\\LeadgenrationApp\\backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async getNews (D:\\Workspace\\LeadgenrationApp\\backend\\src\\controllers\\userController.js:445:24)","status":500,"timestamp":"2026-04-24 18:26:01","url":"/api/user/news"}
+{"level":"info","message":"GET /api/user/news 500 429 - 354.554 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:01"}
+{"level":"debug","message":"[CACHE] Miss: cache:/api/user/news","service":"lead-gen-api","timestamp":"2026-04-24 18:26:01"}
+{"level":"error","message":"invalid input syntax for type boolean: \"Publish\"","method":"GET","service":"lead-gen-api","stack":"error: invalid input syntax for type boolean: \"Publish\"\n    at D:\\Workspace\\LeadgenrationApp\\backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async getNews (D:\\Workspace\\LeadgenrationApp\\backend\\src\\controllers\\userController.js:445:24)","status":500,"timestamp":"2026-04-24 18:26:01","url":"/api/user/news"}
+{"level":"info","message":"GET /api/user/news 500 429 - 33.669 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:01"}
+{"level":"info","message":"OPTIONS /api/user/referral-stats 204 0 - 0.227 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:04"}
+{"level":"info","message":"OPTIONS /api/user/referral-stats 204 0 - 0.226 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:04"}
+{"level":"info","message":"GET /api/user/referral-stats 304 - - 232.662 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:04"}
+{"level":"info","message":"GET /api/user/referral-stats 304 - - 21.417 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:04"}
+{"level":"info","message":"OPTIONS /api/user/dashboard-stats 204 0 - 0.372 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:04"}
+{"level":"info","message":"OPTIONS /api/user/dashboard-stats 204 0 - 0.287 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:04"}
+{"level":"debug","message":"[CACHE] Miss: cache:/api/user/dashboard-stats","service":"lead-gen-api","timestamp":"2026-04-24 18:26:04"}
+{"level":"error","message":"relation \"mv_user_stats\" does not exist","method":"GET","service":"lead-gen-api","stack":"error: relation \"mv_user_stats\" does not exist\n    at D:\\Workspace\\LeadgenrationApp\\backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async getDashboardStats (D:\\Workspace\\LeadgenrationApp\\backend\\src\\controllers\\userController.js:10:23)","status":500,"timestamp":"2026-04-24 18:26:04","url":"/api/user/dashboard-stats"}
+{"level":"info","message":"GET /api/user/dashboard-stats 500 420 - 31.985 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:04"}
+{"level":"debug","message":"[CACHE] Miss: cache:/api/user/dashboard-stats","service":"lead-gen-api","timestamp":"2026-04-24 18:26:05"}
+{"level":"error","message":"relation \"mv_user_stats\" does not exist","method":"GET","service":"lead-gen-api","stack":"error: relation \"mv_user_stats\" does not exist\n    at D:\\Workspace\\LeadgenrationApp\\backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async getDashboardStats (D:\\Workspace\\LeadgenrationApp\\backend\\src\\controllers\\userController.js:10:23)","status":500,"timestamp":"2026-04-24 18:26:05","url":"/api/user/dashboard-stats"}
+{"level":"info","message":"GET /api/user/dashboard-stats 500 420 - 476.802 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:05"}
+{"level":"info","message":"OPTIONS /api/auth/login 204 0 - 0.072 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:18"}
+{"level":"info","message":"POST /api/auth/login 200 537 - 213.867 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:18"}
+{"level":"info","message":"OPTIONS /api/admin/stats 204 0 - 0.129 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:18"}
+{"level":"info","message":"OPTIONS /api/admin/stats 204 0 - 0.162 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:18"}
+{"level":"info","message":"GET /api/admin/stats 304 - - 164.945 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:19"}
+{"level":"info","message":"GET /api/admin/stats 304 - - 10.888 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:19"}
+{"level":"info","message":"OPTIONS /api/admin/customers?page=1&limit=10&search= 204 0 - 0.115 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:25"}
+{"level":"info","message":"OPTIONS /api/admin/customers?page=1&limit=10&search= 204 0 - 0.141 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:25"}
+{"level":"info","message":"GET /api/admin/customers?page=1&limit=10&search= 304 - - 18.666 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:25"}
+{"level":"info","message":"GET /api/admin/customers?page=1&limit=10&search= 304 - - 14.406 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:25"}
+{"level":"info","message":"GET /api/admin/customers?page=1&limit=10&search= 304 - - 3.824 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:25"}
+{"level":"info","message":"OPTIONS /api/admin/vendors?page=1&limit=10&search= 204 0 - 0.383 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:29"}
+{"level":"info","message":"OPTIONS /api/admin/vendors?page=1&limit=10&search= 204 0 - 0.225 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:29"}
+{"level":"info","message":"GET /api/admin/vendors?page=1&limit=10&search= 304 - - 44.433 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:29"}
+{"level":"info","message":"GET /api/admin/vendors?page=1&limit=10&search= 304 - - 8.276 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:29"}
+{"level":"info","message":"GET /api/admin/vendors?page=1&limit=10&search= 304 - - 5.423 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:29"}
+{"level":"info","message":"OPTIONS /api/admin/commissions?status=REQUESTED 204 0 - 0.114 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:36"}
+{"level":"info","message":"OPTIONS /api/admin/commissions?status=REQUESTED 204 0 - 0.101 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:36"}
+{"level":"info","message":"GET /api/admin/commissions?status=REQUESTED 200 824 - 3.629 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:36"}
+{"level":"info","message":"GET /api/admin/commissions?status=REQUESTED 304 - - 5.477 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:36"}
+{"level":"info","message":"OPTIONS /api/admin/commissions 204 0 - 0.217 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:36"}
+{"level":"info","message":"GET /api/admin/commissions 200 - - 11.846 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:36"}
+{"level":"info","message":"GET /api/admin/commissions 304 - - 5.847 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:36"}
+{"level":"info","message":"OPTIONS /api/admin/analytics/granular 204 0 - 0.093 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:39"}
+{"level":"info","message":"OPTIONS /api/admin/analytics/granular 204 0 - 0.088 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:39"}
+{"level":"info","message":"GET /api/admin/analytics/granular 200 - - 166.748 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:40"}
+{"level":"info","message":"OPTIONS /api/admin/analytics/lead-reports 204 0 - 0.137 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:40"}
+{"level":"info","message":"GET /api/admin/analytics/granular 304 - - 20.232 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:40"}
+{"level":"info","message":"GET /api/admin/analytics/lead-reports 200 - - 11.458 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:40"}
+{"level":"info","message":"GET /api/admin/analytics/lead-reports 304 - - 6.517 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:40"}
+{"level":"info","message":"OPTIONS /api/admin/subvendors?page=1&limit=10&search= 204 0 - 0.165 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:46"}
+{"level":"info","message":"OPTIONS /api/admin/subvendors?page=1&limit=10&search= 204 0 - 0.491 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:46"}
+{"level":"info","message":"GET /api/admin/subvendors?page=1&limit=10&search= 304 - - 18.879 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:46"}
+{"level":"info","message":"GET /api/admin/subvendors?page=1&limit=10&search= 304 - - 12.672 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:46"}
+{"level":"info","message":"GET /api/admin/subvendors?page=1&limit=10&search= 304 - - 3.031 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:47"}
+{"level":"info","message":"OPTIONS /api/admin/users 204 0 - 0.134 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:49"}
+{"level":"info","message":"OPTIONS /api/admin/users 204 0 - 0.067 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:49"}
+{"level":"info","message":"GET /api/admin/users 200 - - 7.708 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:49"}
+{"level":"info","message":"GET /api/admin/users 304 - - 6.524 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:49"}
+{"level":"info","message":"OPTIONS /api/admin/lead-categories 204 0 - 0.165 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:53"}
+{"level":"info","message":"OPTIONS /api/admin/lead-categories 204 0 - 0.126 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:53"}
+{"level":"info","message":"GET /api/admin/lead-categories 304 - - 22.913 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:53"}
+{"level":"info","message":"GET /api/admin/lead-categories 304 - - 2.360 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:53"}
+{"level":"info","message":"OPTIONS /api/admin/leads/pending 204 0 - 0.089 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:54"}
+{"level":"info","message":"OPTIONS /api/admin/leads/pending 204 0 - 0.095 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:54"}
+{"level":"info","message":"GET /api/admin/leads/pending 304 - - 4.537 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:54"}
+{"level":"info","message":"GET /api/admin/leads/pending 304 - - 6.386 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:54"}
+{"level":"info","message":"OPTIONS /api/admin/leads 204 0 - 0.085 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:56"}
+{"level":"info","message":"OPTIONS /api/admin/leads 204 0 - 0.109 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:56"}
+{"level":"info","message":"GET /api/admin/leads 200 - - 7.245 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:56"}
+{"level":"info","message":"GET /api/admin/leads 304 - - 9.104 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:26:56"}
+{"level":"info","message":"OPTIONS /api/admin/stats 204 0 - 0.093 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:06"}
+{"level":"info","message":"OPTIONS /api/admin/leads-purchased 204 0 - 0.124 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:06"}
+{"level":"info","message":"OPTIONS /api/admin/stats 204 0 - 0.237 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:06"}
+{"level":"info","message":"OPTIONS /api/admin/leads-purchased 204 0 - 0.158 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:06"}
+{"level":"info","message":"GET /api/admin/stats 304 - - 13.039 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:06"}
+{"level":"info","message":"GET /api/admin/stats 304 - - 12.067 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:06"}
+{"level":"info","message":"GET /api/admin/leads-purchased 304 - - 114.598 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:07"}
+{"level":"info","message":"GET /api/admin/leads-purchased 304 - - 8.627 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:07"}
+{"level":"info","message":"OPTIONS /api/admin/available-leads 204 0 - 0.082 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:14"}
+{"level":"info","message":"OPTIONS /api/admin/available-leads 204 0 - 0.077 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:14"}
+{"level":"info","message":"GET /api/admin/available-leads 304 - - 22.509 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:14"}
+{"level":"info","message":"GET /api/admin/available-leads 304 - - 4.579 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:14"}
+{"level":"info","message":"OPTIONS /api/admin/banners 204 0 - 0.077 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:28"}
+{"level":"info","message":"OPTIONS /api/admin/banners 204 0 - 0.111 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:28"}
+{"level":"info","message":"GET /api/admin/banners 200 924 - 8.117 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:28"}
+{"level":"info","message":"GET /api/admin/banners 304 - - 5.258 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:28"}
+{"level":"info","message":"OPTIONS /api/admin/news-categories 204 0 - 0.075 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:30"}
+{"level":"info","message":"OPTIONS /api/admin/news-categories 204 0 - 0.244 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:30"}
+{"level":"info","message":"GET /api/admin/news-categories 304 - - 18.294 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:30"}
+{"level":"info","message":"GET /api/admin/news-categories 304 - - 5.198 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:30"}
+{"level":"info","message":"OPTIONS /api/admin/news 204 0 - 0.241 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:33"}
+{"level":"info","message":"OPTIONS /api/admin/news 204 0 - 0.316 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:33"}
+{"level":"info","message":"GET /api/admin/news 304 - - 7.785 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:33"}
+{"level":"info","message":"GET /api/admin/news 304 - - 4.757 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:33"}
+{"level":"info","message":"OPTIONS /api/admin/poster-categories 204 0 - 0.233 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:39"}
+{"level":"info","message":"OPTIONS /api/admin/poster-categories 204 0 - 0.095 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:39"}
+{"level":"info","message":"GET /api/admin/poster-categories 304 - - 12.940 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:39"}
+{"level":"info","message":"GET /api/admin/poster-categories 304 - - 3.671 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:39"}
+{"level":"info","message":"OPTIONS /api/admin/poster-management 204 0 - 0.064 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:41"}
+{"level":"info","message":"OPTIONS /api/admin/poster-management 204 0 - 0.160 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:41"}
+{"level":"info","message":"GET /api/admin/poster-categories 304 - - 7.827 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:41"}
+{"level":"info","message":"GET /api/admin/poster-categories 304 - - 5.785 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:41"}
+{"level":"info","message":"GET /api/admin/poster-management 304 - - 18.421 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:41"}
+{"level":"info","message":"GET /api/admin/poster-management 304 - - 6.323 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:41"}
+{"level":"info","message":"GET /uploads/posters/education.png 304 - - 6.246 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:41"}
+{"level":"info","message":"GET /uploads/posters/finance.png 304 - - 6.707 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:41"}
+{"level":"info","message":"GET /uploads/posters/healthcare.png 304 - - 9.048 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:41"}
+{"level":"info","message":"GET /uploads/posters/real_estate.png 304 - - 3.636 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:41"}
+{"level":"info","message":"OPTIONS /api/admin/poster-categories 204 0 - 0.123 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:45"}
+{"level":"info","message":"OPTIONS /api/admin/poster-categories 204 0 - 0.080 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:45"}
+{"level":"info","message":"GET /api/admin/poster-categories 304 - - 4.397 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:45"}
+{"level":"info","message":"GET /api/admin/poster-categories 304 - - 5.512 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:45"}
+{"level":"info","message":"OPTIONS /api/admin/subscriptions 204 0 - 0.283 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:58"}
+{"level":"info","message":"OPTIONS /api/admin/customers 204 0 - 0.366 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:58"}
+{"level":"info","message":"OPTIONS /api/admin/subscriptions 204 0 - 0.133 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:58"}
+{"level":"info","message":"OPTIONS /api/admin/customers 204 0 - 0.100 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:58"}
+{"level":"info","message":"GET /api/admin/subscriptions 304 - - 19.301 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:58"}
+{"level":"info","message":"GET /api/admin/customers 304 - - 22.035 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:58"}
+{"level":"info","message":"GET /api/admin/subscriptions 304 - - 19.459 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:58"}
+{"level":"info","message":"GET /api/admin/customers 304 - - 17.704 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:27:58"}
+{"level":"info","message":"OPTIONS /api/admin/subscription-plans 204 0 - 0.193 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:03"}
+{"level":"info","message":"OPTIONS /api/admin/subscription-plans 204 0 - 0.084 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:03"}
+{"level":"info","message":"GET /api/admin/subscription-plans 304 - - 4.750 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:03"}
+{"level":"info","message":"GET /api/admin/subscription-plans 304 - - 8.579 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:03"}
+{"level":"info","message":"OPTIONS /api/admin/transactions 204 0 - 0.091 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:10"}
+{"level":"info","message":"OPTIONS /api/admin/transactions 204 0 - 0.074 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:10"}
+{"level":"info","message":"GET /api/admin/transactions 200 - - 23.526 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:10"}
+{"level":"info","message":"GET /api/admin/transactions 304 - - 12.312 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:10"}
+{"level":"info","message":"OPTIONS /api/admin/contact-messages 204 0 - 0.104 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:39"}
+{"level":"info","message":"OPTIONS /api/admin/contact-messages 204 0 - 0.090 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:39"}
+{"level":"info","message":"GET /api/admin/contact-messages 200 701 - 13.935 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:39"}
+{"level":"info","message":"GET /api/admin/contact-messages 304 - - 6.613 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:39"}
+{"level":"info","message":"OPTIONS /api/admin/settings 204 0 - 0.070 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:56"}
+{"level":"info","message":"OPTIONS /api/admin/settings 204 0 - 0.099 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:56"}
+{"level":"info","message":"GET /api/admin/settings 200 - - 8.243 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:56"}
+{"level":"info","message":"GET /api/admin/settings 304 - - 3.460 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:28:56"}
+{"level":"info","message":"OPTIONS /api/admin/stats 204 0 - 0.104 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:29:03"}
+{"level":"info","message":"OPTIONS /api/admin/stats 204 0 - 0.090 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:29:03"}
+{"level":"info","message":"GET /api/admin/stats 304 - - 163.290 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:29:03"}
+{"level":"info","message":"GET /api/admin/stats 304 - - 17.218 ms","service":"lead-gen-api","timestamp":"2026-04-24 18:29:03"}
+{"level":"info","message":"GET /api/health 200 119 - 28.995 ms","service":"lead-gen-api","timestamp":"2026-04-24 19:05:23"}
+{"level":"info","message":"GET /api/health 200 116 - 10.376 ms","service":"lead-gen-api","timestamp":"2026-04-24 19:05:43"}
+{"idle":0,"level":"debug","message":"[DB] Client connected","service":"lead-gen-api","timestamp":"2026-04-27 12:20:31","total":1,"waiting":0}
+{"level":"warn","message":"[RATE LIMIT] Redis not ready during boot, using in-memory store","prefix":"rl:general:","service":"lead-gen-api","timestamp":"2026-04-27 12:20:44"}
+{"level":"warn","message":"[RATE LIMIT] Redis not ready during boot, using in-memory store","prefix":"rl:auth:","service":"lead-gen-api","timestamp":"2026-04-27 12:20:44"}
+{"level":"warn","message":"[RATE LIMIT] Redis not ready during boot, using in-memory store","prefix":"rl:contact:","service":"lead-gen-api","timestamp":"2026-04-27 12:20:44"}
+{"level":"warn","message":"","role":"default","service":"lead-gen-api","timestamp":"2026-04-27 12:20:45"}
+{"level":"warn","message":"","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-27 12:20:45"}
+{"idle":0,"level":"debug","message":"[DB] Client connected","service":"lead-gen-api","timestamp":"2026-04-27 12:20:46","total":1,"waiting":0}
+{"level":"info","message":"[SOCKET] Realtime gateway initialized","service":"lead-gen-api","timestamp":"2026-04-27 12:20:46"}
+{"level":"info","message":"[SERVER] API is live","mode":"development","port":5000,"service":"lead-gen-api","timestamp":"2026-04-27 12:20:46"}
+{"level":"warn","message":"","role":"subscriber","service":"lead-gen-api","timestamp":"2026-04-27 12:20:46"}
+{"level":"warn","message":"","role":"publisher","service":"lead-gen-api","timestamp":"2026-04-27 12:20:46"}
+{"level":"warn","message":"[SERVER] Shutdown requested","service":"lead-gen-api","signal":"SIGINT","timestamp":"2026-04-27 12:21:10"}
+{"level":"info","message":"[WORKER] Background worker process is running","service":"lead-gen-api","timestamp":"2026-04-27 12:21:40"}
+{"level":"warn","message":"","role":"default","service":"lead-gen-api","timestamp":"2026-04-27 12:21:40"}
+{"level":"warn","message":"","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-27 12:21:40"}
+{"level":"warn","message":"[WORKER] Shutdown requested","service":"lead-gen-api","signal":"SIGINT","timestamp":"2026-04-27 12:21:48"}
+{"level":"info","message":"[WORKER] Background worker process is running","service":"lead-gen-api","timestamp":"2026-04-27 12:21:52"}
+{"level":"warn","message":"","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-27 12:21:52"}
+{"level":"warn","message":"","role":"default","service":"lead-gen-api","timestamp":"2026-04-27 12:21:52"}
+{"level":"warn","message":"[WORKER] Shutdown requested","service":"lead-gen-api","signal":"SIGINT","timestamp":"2026-04-27 12:21:54"}
+{"level":"info","message":"[REDIS] Connected","role":"default","service":"lead-gen-api","timestamp":"2026-04-27 13:59:54"}
+{"level":"info","message":"[REDIS] Connected","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-27 13:59:54"}
+{"level":"info","message":"[REDIS] Ready","role":"default","service":"lead-gen-api","timestamp":"2026-04-27 13:59:54"}
+{"level":"info","message":"[REDIS] Ready","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-27 13:59:54"}
+{"idle":0,"level":"debug","message":"[DB] Client connected","service":"lead-gen-api","timestamp":"2026-04-27 13:59:54","total":1,"waiting":0}
+{"level":"info","message":"[SOCKET] Realtime gateway initialized","service":"lead-gen-api","timestamp":"2026-04-27 13:59:54"}
+{"level":"info","message":"[SERVER] API is live","mode":"development","port":5000,"service":"lead-gen-api","timestamp":"2026-04-27 13:59:54"}
+{"level":"info","message":"[REDIS] Connected","role":"publisher","service":"lead-gen-api","timestamp":"2026-04-27 13:59:54"}
+{"level":"info","message":"[REDIS] Connected","role":"subscriber","service":"lead-gen-api","timestamp":"2026-04-27 13:59:54"}
+{"level":"info","message":"[REDIS] Ready","role":"publisher","service":"lead-gen-api","timestamp":"2026-04-27 13:59:54"}
+{"level":"info","message":"[REDIS] Ready","role":"subscriber","service":"lead-gen-api","timestamp":"2026-04-27 13:59:54"}
+{"channel":"leadgen:realtime","level":"info","message":"[SOCKET] Redis pub/sub bridge ready","service":"lead-gen-api","timestamp":"2026-04-27 13:59:54"}
+{"level":"debug","message":"[SOCKET] User connected","service":"lead-gen-api","timestamp":"2026-04-27 14:00:29","userId":"2c8b25a7-fc6f-420a-80da-bce7e5534dec"}
+{"level":"info","message":"ac98fafc-8bd7-4ece-8ec2-ec1ae1e90e3c OPTIONS /api/auth/login 204 0 - 0.518 ms","service":"lead-gen-api","timestamp":"2026-04-27 14:00:32"}
+{"level":"info","message":"4e94d730-660c-4138-b18c-21f5f9e08d1a POST /api/auth/login 200 537 - 160.032 ms","service":"lead-gen-api","timestamp":"2026-04-27 14:00:32"}
+{"level":"debug","message":"[SOCKET] User disconnected","service":"lead-gen-api","timestamp":"2026-04-27 14:00:32","userId":"2c8b25a7-fc6f-420a-80da-bce7e5534dec"}
+{"level":"info","message":"79e5b077-7c73-4453-824f-59ffed65684a OPTIONS /api/admin/stats 204 0 - 0.115 ms","service":"lead-gen-api","timestamp":"2026-04-27 14:00:32"}
+{"level":"info","message":"e44ba1bc-10b7-47a1-8ee5-b38c6cfe1651 OPTIONS /api/admin/stats 204 0 - 0.216 ms","service":"lead-gen-api","timestamp":"2026-04-27 14:00:32"}
+{"level":"debug","message":"[SOCKET] User connected","service":"lead-gen-api","timestamp":"2026-04-27 14:00:32","userId":"2c8b25a7-fc6f-420a-80da-bce7e5534dec"}
+{"idle":1,"level":"debug","message":"[DB] Client connected","service":"lead-gen-api","timestamp":"2026-04-27 14:00:32","total":4,"waiting":0}
+{"idle":1,"level":"debug","message":"[DB] Client connected","service":"lead-gen-api","timestamp":"2026-04-27 14:00:32","total":4,"waiting":0}
+{"idle":1,"level":"debug","message":"[DB] Client connected","service":"lead-gen-api","timestamp":"2026-04-27 14:00:32","total":4,"waiting":0}
+{"level":"info","message":"e383cf26-f9f6-418e-bf38-17323fadee5c GET /api/admin/stats 200 - - 93.801 ms","service":"lead-gen-api","timestamp":"2026-04-27 14:00:32"}
+{"level":"info","message":"6fcb70f3-5fc4-4b1e-86b5-1ba7c098ee13 GET /api/admin/stats 304 - - 12.108 ms","service":"lead-gen-api","timestamp":"2026-04-27 14:00:32"}
+{"level":"warn","message":"[SERVER] Shutdown requested","service":"lead-gen-api","signal":"SIGINT","timestamp":"2026-04-27 14:47:59"}
+{"level":"debug","message":"[SOCKET] User disconnected","service":"lead-gen-api","timestamp":"2026-04-27 15:43:30","userId":"2c8b25a7-fc6f-420a-80da-bce7e5534dec"}
+{"level":"warn","message":"[REDIS] Connection closed","role":"default","service":"lead-gen-api","timestamp":"2026-04-27 15:48:02"}
+{"level":"info","message":"[REDIS] Connected","role":"default","service":"lead-gen-api","timestamp":"2026-04-27 17:43:35"}
+{"level":"info","message":"[REDIS] Connected","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-27 17:43:35"}
+{"level":"info","message":"[REDIS] Ready","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-27 17:43:35"}
+{"level":"info","message":"[REDIS] Ready","role":"default","service":"lead-gen-api","timestamp":"2026-04-27 17:43:35"}
+{"idle":0,"level":"debug","message":"[DB] Client connected","service":"lead-gen-api","timestamp":"2026-04-27 17:43:35","total":1,"waiting":0}
+{"level":"info","message":"[SOCKET] Realtime gateway initialized","service":"lead-gen-api","timestamp":"2026-04-27 17:43:35"}
+{"level":"info","message":"[SERVER] API is live","mode":"development","port":5000,"service":"lead-gen-api","timestamp":"2026-04-27 17:43:35"}
+{"level":"info","message":"[REDIS] Connected","role":"publisher","service":"lead-gen-api","timestamp":"2026-04-27 17:43:35"}
+{"level":"info","message":"[REDIS] Connected","role":"subscriber","service":"lead-gen-api","timestamp":"2026-04-27 17:43:35"}
+{"level":"info","message":"[REDIS] Ready","role":"subscriber","service":"lead-gen-api","timestamp":"2026-04-27 17:43:35"}
+{"channel":"leadgen:realtime","level":"info","message":"[SOCKET] Redis pub/sub bridge ready","service":"lead-gen-api","timestamp":"2026-04-27 17:43:35"}
+{"level":"info","message":"[REDIS] Ready","role":"publisher","service":"lead-gen-api","timestamp":"2026-04-27 17:43:35"}
+{"level":"warn","message":"[SERVER] Shutdown requested","service":"lead-gen-api","signal":"SIGINT","timestamp":"2026-04-27 18:14:53"}
+{"level":"info","message":"[REDIS] Connected","role":"default","service":"lead-gen-api","timestamp":"2026-04-27 18:15:01"}
+{"level":"info","message":"[REDIS] Connected","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-27 18:15:01"}
+{"level":"info","message":"[REDIS] Ready","role":"default","service":"lead-gen-api","timestamp":"2026-04-27 18:15:01"}
+{"level":"info","message":"[REDIS] Ready","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-27 18:15:01"}
+{"idle":0,"level":"debug","message":"[DB] Client connected","service":"lead-gen-api","timestamp":"2026-04-27 18:15:01","total":1,"waiting":0}
+{"level":"info","message":"[REDIS] Connected","role":"publisher","service":"lead-gen-api","timestamp":"2026-04-27 18:15:01"}
+{"level":"info","message":"[REDIS] Connected","role":"subscriber","service":"lead-gen-api","timestamp":"2026-04-27 18:15:01"}
+{"level":"info","message":"[REDIS] Ready","role":"publisher","service":"lead-gen-api","timestamp":"2026-04-27 18:15:01"}
+{"level":"info","message":"[REDIS] Ready","role":"subscriber","service":"lead-gen-api","timestamp":"2026-04-27 18:15:01"}
+{"channel":"leadgen:realtime","level":"info","message":"[SOCKET] Redis pub/sub bridge ready","service":"lead-gen-api","timestamp":"2026-04-27 18:15:01"}
+{"level":"info","message":"[SOCKET] Realtime gateway initialized","service":"lead-gen-api","timestamp":"2026-04-27 18:15:01"}
+{"level":"info","message":"[SERVER] API is live","mode":"development","port":5000,"service":"lead-gen-api","timestamp":"2026-04-27 18:15:01"}
+{"level":"info","message":"[REDIS] Connected","role":"default","service":"lead-gen-api","timestamp":"2026-04-27 19:15:41"}
+{"level":"info","message":"[REDIS] Connected","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-27 19:15:41"}
+{"level":"info","message":"[REDIS] Ready","role":"default","service":"lead-gen-api","timestamp":"2026-04-27 19:15:41"}
+{"level":"info","message":"[REDIS] Ready","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-27 19:15:41"}
+{"idle":0,"level":"debug","message":"[DB] Client connected","service":"lead-gen-api","timestamp":"2026-04-27 19:15:41","total":1,"waiting":0}
+{"level":"info","message":"[REDIS] Connected","role":"subscriber","service":"lead-gen-api","timestamp":"2026-04-27 19:15:41"}
+{"level":"info","message":"[REDIS] Connected","role":"publisher","service":"lead-gen-api","timestamp":"2026-04-27 19:15:41"}
+{"level":"info","message":"[REDIS] Ready","role":"subscriber","service":"lead-gen-api","timestamp":"2026-04-27 19:15:41"}
+{"level":"info","message":"[REDIS] Ready","role":"publisher","service":"lead-gen-api","timestamp":"2026-04-27 19:15:41"}
+{"channel":"leadgen:realtime","level":"info","message":"[SOCKET] Redis pub/sub bridge ready","service":"lead-gen-api","timestamp":"2026-04-27 19:15:41"}
+{"level":"info","message":"[SOCKET] Realtime gateway initialized","service":"lead-gen-api","timestamp":"2026-04-27 19:15:41"}
+{"level":"info","message":"[SERVER] API is live","mode":"development","port":5000,"service":"lead-gen-api","timestamp":"2026-04-27 19:15:41"}
+{"level":"info","message":"[REDIS] Connected","role":"default","service":"lead-gen-api","timestamp":"2026-04-28 10:55:26"}
+{"level":"info","message":"[REDIS] Connected","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-28 10:55:26"}
+{"level":"info","message":"[REDIS] Ready","role":"default","service":"lead-gen-api","timestamp":"2026-04-28 10:55:26"}
+{"level":"info","message":"[REDIS] Ready","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-28 10:55:26"}
+{"idle":0,"level":"debug","message":"[DB] Client connected","service":"lead-gen-api","timestamp":"2026-04-28 10:55:26","total":1,"waiting":0}
+{"level":"info","message":"[REDIS] Connected","role":"publisher","service":"lead-gen-api","timestamp":"2026-04-28 10:55:26"}
+{"level":"info","message":"[REDIS] Connected","role":"subscriber","service":"lead-gen-api","timestamp":"2026-04-28 10:55:26"}
+{"level":"info","message":"[REDIS] Ready","role":"publisher","service":"lead-gen-api","timestamp":"2026-04-28 10:55:26"}
+{"level":"info","message":"[REDIS] Ready","role":"subscriber","service":"lead-gen-api","timestamp":"2026-04-28 10:55:26"}
+{"channel":"leadgen:realtime","level":"info","message":"[SOCKET] Redis pub/sub bridge ready","service":"lead-gen-api","timestamp":"2026-04-28 10:55:26"}
+{"level":"info","message":"[SOCKET] Realtime gateway initialized","service":"lead-gen-api","timestamp":"2026-04-28 10:55:26"}
+{"level":"info","message":"[SERVER] API is live","mode":"development","port":5000,"service":"lead-gen-api","timestamp":"2026-04-28 10:55:26"}
+{"level":"info","message":"[REDIS] Connected","role":"default","service":"lead-gen-api","timestamp":"2026-04-28 11:41:09"}
+{"level":"info","message":"[REDIS] Connected","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-28 11:41:09"}
+{"level":"info","message":"[REDIS] Ready","role":"default","service":"lead-gen-api","timestamp":"2026-04-28 11:41:09"}
+{"level":"info","message":"[REDIS] Ready","role":"bullmq","service":"lead-gen-api","timestamp":"2026-04-28 11:41:09"}
+{"idle":0,"level":"debug","message":"[DB] Client connected","service":"lead-gen-api","timestamp":"2026-04-28 11:41:09","total":1,"waiting":0}
+{"level":"info","message":"[REDIS] Connected","role":"publisher","service":"lead-gen-api","timestamp":"2026-04-28 11:41:09"}
+{"level":"info","message":"[REDIS] Connected","role":"subscriber","service":"lead-gen-api","timestamp":"2026-04-28 11:41:09"}
+{"level":"info","message":"[REDIS] Ready","role":"publisher","service":"lead-gen-api","timestamp":"2026-04-28 11:41:09"}
+{"level":"info","message":"[REDIS] Ready","role":"subscriber","service":"lead-gen-api","timestamp":"2026-04-28 11:41:09"}
+{"channel":"leadgen:realtime","level":"info","message":"[SOCKET] Redis pub/sub bridge ready","service":"lead-gen-api","timestamp":"2026-04-28 11:41:09"}
+{"level":"info","message":"[SOCKET] Realtime gateway initialized","service":"lead-gen-api","timestamp":"2026-04-28 11:41:09"}
+{"level":"info","message":"[SERVER] API is live","mode":"development","port":5000,"service":"lead-gen-api","timestamp":"2026-04-28 11:41:09"}

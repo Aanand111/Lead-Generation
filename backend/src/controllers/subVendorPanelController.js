@@ -142,15 +142,14 @@ const requestSettlement = async (req, res, next) => {
 
         // Add socket notification exclusively to Admins
         try {
-            const { getIO } = require('../utils/socket');
-            const io = getIO();
+            const { sendToUser } = require('../utils/socket');
             
             // Get all admin users
             const adminsRes = await pool.query("SELECT id FROM users WHERE role = 'admin'");
             const adminIds = adminsRes.rows.map(row => row.id.toString());
             
             adminIds.forEach(adminId => {
-                io.to(adminId).emit('notification', {
+                sendToUser(adminId, 'notification', {
                     title: 'Sub-Vendor Payout',
                     body: `${subVendorName} (Sub-Vendor) requested ₹${amount.toFixed(2)}.`
                 });

@@ -1,210 +1,332 @@
-// Server Protocol Hub - [FORCE RESTART: 2026-04-13]
 const express = require('express');
+const http = require('http');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const hpp = require('hpp');
+const { RedisStore } = require('rate-limit-redis');
+
 require('dotenv').config();
 
-const path = require('path');
-const { errorHandler } = require('./middlewares/errorMiddleware');
+const { validateEnv, parseBoolean, parseCsv, parseNumber, isProduction } = require('./config/env');
+const logger = require('./utils/logger');
 const swaggerSetup = require('./config/swagger');
+const correlationMiddleware = require('./middlewares/correlationMiddleware');
+const { errorHandler } = require('./middlewares/errorMiddleware');
+const {
+    redisConnection,
+    isRedisConfigured,
+    getRedisStatus,
+    waitForRedisReady,
+    closeRedisConnections
+} = require('./config/redis');
+const {
+    getPoolStatus,
+    checkDatabaseHealth,
+    closePool
+} = require('./config/db');
+const socketGateway = require('./utils/socket');
+
+validateEnv();
 
 const app = express();
+let server;
+let shuttingDown = false;
+let isOverloaded = false;
 
-// Graceful Shutdown & Process Handlers
-process.on('uncaughtException', (err) => {
-    console.error('[FATAL] Uncaught Exception:', err.message);
-    process.exit(1);
-});
-
-process.on('unhandledRejection', (reason) => {
-    console.error('[FATAL] Unhandled Rejection:', reason);
-});
-
-// CORS Configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',')
+const allowedOrigins = parseCsv(process.env.ALLOWED_ORIGINS);
+const effectiveAllowedOrigins = allowedOrigins.length > 0
+    ? allowedOrigins
     : [
         'http://localhost:3000',
         'http://localhost:5173',
         'http://localhost:5174',
         'https://lead-generation-hp33p72jp-aaanandjoshiii-1651s-projects.vercel.app',
         'https://lead-generation-ivory-two.vercel.app',
-        'https://lead-generation-lcnf9bgx3-aaanandjoshiii-1651s-projects.vercel.app',
+        'https://lead-generation-lcnf9bgx3-aaanandjoshiii-1651s-projects.vercel.app'
     ];
+
+app.set('trust proxy', parseBoolean(process.env.TRUST_PROXY, true) ? 1 : false);
+app.disable('x-powered-by');
+
+app.use(correlationMiddleware);
+
+morgan.token('correlation-id', (req) => req.correlationId || '-');
+app.use(morgan(':correlation-id :method :url :status :res[content-length] - :response-time ms', {
+    stream: {
+        write: (message) => logger.info(message.trim())
+    }
+}));
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
+        if (!origin || effectiveAllowedOrigins.includes(origin)) {
+            return callback(null, true);
         }
+
+        return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-ID', 'Idempotency-Key']
 }));
 
 app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginResourcePolicy: {
+        policy: 'cross-origin'
+    }
 }));
 app.use(compression());
 
-// --- EXTREME OVERLOAD PROTECTION (Event Loop Lag Monitor) ---
-// If the Node event loop is lagging by more than 70ms, it means the server is overwhelmed 
-// (e.g. 1 million concurrent hits). We fast-fail new requests to protect the server from crashing.
-let isOverloaded = false;
+const eventLoopLagThresholdMs = parseNumber(process.env.EVENT_LOOP_LAG_THRESHOLD_MS, 70);
 setInterval(() => {
-    const start = Date.now();
+    const startedAt = Date.now();
     setImmediate(() => {
-        const lag = Date.now() - start;
-        isOverloaded = lag > 70; // 70ms is extremely high for Node.js
+        isOverloaded = Date.now() - startedAt > eventLoopLagThresholdMs;
     });
 }, 500).unref();
 
 app.use((req, res, next) => {
-    if (isOverloaded && req.path !== '/api/health') {
+    if (isOverloaded && !req.path.startsWith('/api/health')) {
         res.set('Connection', 'close');
-        return res.status(503).json({ 
-            success: false, 
-            message: 'Server Overloaded (Traffic Peak). Please try again in a few seconds.' 
+        return res.status(503).json({
+            success: false,
+            message: 'Server overloaded. Please retry shortly.'
         });
     }
-    next();
+
+    return next();
 });
 
-// Body Parsers
-app.use(express.json({ limit: '5kb' })); // Reduced payload limit from 10kb to 5kb for security
-app.use(express.urlencoded({ extended: true, limit: '5kb' }));
+const bodyLimitKb = parseNumber(process.env.MAX_JSON_BODY_KB, 32);
+app.use(express.json({ limit: `${bodyLimitKb}kb` }));
+app.use(express.urlencoded({ extended: true, limit: `${bodyLimitKb}kb` }));
 app.use(hpp());
 
-// Rate Limiters
-const { RedisStore } = require('rate-limit-redis');
-const { redisConnection } = require('./config/redis');
+const createRateLimitStore = (prefix) => {
+    if (!isRedisConfigured()) {
+        logger.warn('[RATE LIMIT] Redis not configured, using in-memory store', { prefix });
+        return undefined;
+    }
+
+    return new RedisStore({
+        sendCommand: (...args) => redisConnection.call(...args),
+        prefix
+    });
+};
+
+const generalStore = createRateLimitStore('rl:general:');
+const authStore = createRateLimitStore('rl:auth:');
+const contactStore = createRateLimitStore('rl:contact:');
 
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5000,
+    max: parseNumber(process.env.GENERAL_RATE_LIMIT_MAX, 5000),
     standardHeaders: true,
     legacyHeaders: false,
-    store: new RedisStore({
-        sendCommand: (...args) => redisConnection.call(...args),
-    }),
+    passOnStoreError: true,
+    ...(generalStore ? { store: generalStore } : {}),
     message: { success: false, message: 'Too many requests. Please try again later.' },
-    skip: (req) => req.path === '/api/health',
+    skip: (req) => req.path.startsWith('/api/health')
 });
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 15,
+    max: parseNumber(process.env.AUTH_RATE_LIMIT_MAX, 15),
     standardHeaders: true,
     legacyHeaders: false,
-    store: new RedisStore({
-        sendCommand: (...args) => redisConnection.call(...args),
-        prefix: 'rl:auth:',
-    }),
-    message: { success: false, message: 'Too many login attempts. Please wait 15 minutes.' },
+    passOnStoreError: true,
+    ...(authStore ? { store: authStore } : {}),
+    message: { success: false, message: 'Too many login attempts. Please wait 15 minutes.' }
 });
 
 const contactLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
-    max: 10,
+    max: parseNumber(process.env.CONTACT_RATE_LIMIT_MAX, 10),
     standardHeaders: true,
     legacyHeaders: false,
-    store: new RedisStore({
-        sendCommand: (...args) => redisConnection.call(...args),
-        prefix: 'rl:contact:',
-    }),
-    message: { success: false, message: 'Contact limit exceeded. Please try again after an hour.' },
+    passOnStoreError: true,
+    ...(contactStore ? { store: contactStore } : {}),
+    message: { success: false, message: 'Contact limit exceeded. Please try again after an hour.' }
 });
 
-// HTTP Logging
-if (process.env.NODE_ENV === 'development') {
-    app.use(morgan('dev'));
-} else {
-    app.use(morgan('combined'));
-}
-
-// Swagger API Documentation
 swaggerSetup(app);
 
-// Server Status
 app.get('/', (req, res) => {
-    res.send('✅ Lead-Generation API is running!');
+    res.send('Lead Generation API is running.');
 });
 
-// Health Check
-app.get('/api/health', (req, res) => {
-    const { getPoolStatus } = require('./config/db');
+const buildHealthPayload = async () => {
+    const db = await checkDatabaseHealth();
+    const redis = getRedisStatus();
+    const socket = socketGateway.getStatus();
+    const redisRequired = parseBoolean(process.env.REQUIRE_REDIS_FOR_READINESS, isProduction());
+    const redisUp = redis.status === 'ready';
+    const socketHealthy = !socket.configured || socket.bridgeStatus === 'ready';
+    const healthy = db.status === 'UP' && (!redisRequired || (redisUp && socketHealthy));
+
+    return {
+        httpStatus: healthy ? 200 : 503,
+        body: {
+            success: healthy,
+            status: healthy ? 'healthy' : 'degraded',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            services: {
+                server: 'UP',
+                database: db.status,
+                redis: redisUp ? 'UP' : (redis.configured ? 'DOWN' : 'DISABLED'),
+                realtime: socket.bridgeStatus === 'ready'
+                    ? 'UP'
+                    : (socket.configured ? socket.bridgeStatus.toUpperCase() : 'DISABLED')
+            },
+            latencyMs: {
+                database: db.latencyMs
+            },
+            pool: getPoolStatus(),
+            runtime: {
+                role: process.env.RUNTIME_ROLE || 'api',
+                pid: process.pid
+            }
+        }
+    };
+};
+
+app.get('/api/health/live', (req, res) => {
     res.status(200).json({
-        status: 'UP',
-        timestamp: new Date(),
-        db_pool: getPoolStatus(),
-        uptime: process.uptime()
+        success: true,
+        status: 'live',
+        timestamp: new Date().toISOString()
     });
 });
 
-app.get('/api/diagnostic/vendors', async (req, res) => {
-    try {
-        const { pool } = require('./config/db');
-        const u = await pool.query("SELECT id, full_name, email, phone, role, status, referred_by FROM users WHERE full_name ILIKE '%Nirmal%' OR full_name ILIKE '%Viking%'");
-        const v = await pool.query("SELECT id, name, email, phone, status, referred_by_vendor_id FROM vendors WHERE name ILIKE '%Nirmal%' OR name ILIKE '%Viking%'");
-        res.json({ users: u.rows, vendors: v.rows });
-    } catch(err) {
-        res.status(500).json({ error: err.message });
-    }
+app.get('/api/health/ready', async (req, res) => {
+    const payload = await buildHealthPayload();
+    res.status(payload.httpStatus).json(payload.body);
 });
 
-// Routes
+app.get('/api/health', async (req, res) => {
+    const payload = await buildHealthPayload();
+    res.status(payload.httpStatus).json(payload.body);
+});
+
 app.use('/api/', generalLimiter);
-app.use('/api/auth', authLimiter, require('./routes/authRoutes'));
+app.use('/api/auth', authLimiter, require('./modules/auth/auth.routes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/vendor', require('./routes/vendorRoutes'));
 app.use('/api/sub-vendor', require('./routes/subVendorRoutes'));
 app.use('/api/user', require('./routes/userRoutes'));
+app.use('/api/notifications', require('./modules/notifications/notifications.routes'));
 
-// Public contact form
 const { submitMessage } = require('./controllers/contactController');
 app.post('/api/contact', contactLimiter, submitMessage);
 
-// Static assets
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Global Error Handler
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-// Initialize Background Workers & Schedulers
-require('./workers/notificationWorker');
-const { scheduleJobs } = require('./queues/cronQueue');
-const http = require('http');
-const server = http.createServer(app);
+const shutdown = async (signal, exitCode = 0) => {
+    if (shuttingDown) {
+        return;
+    }
 
-// Initialize Socket.io
-require('./utils/socket').init(server);
+    shuttingDown = true;
+    logger.warn('[SERVER] Shutdown requested', { signal });
 
-// Configure Keep-Alive Timers for High Load / Load Balancers
-server.keepAliveTimeout = 65000; // 65 seconds
-server.headersTimeout = 66000; // Keep slightly higher than keepAliveTimeout
+    if (server) {
+        await new Promise((resolve) => {
+            server.close(resolve);
+        });
+    }
 
-server.listen(PORT, () => {
-    console.log(`[SERVER] Port ${PORT} | Mode: ${process.env.NODE_ENV || 'development'}`);
-    scheduleJobs();
-    
-    // One-time deep sync for existing vendors to fix missing records
-    const { syncAllVendorsRegistry } = require('./jobs/maintenanceJobs');
-    syncAllVendorsRegistry().catch(err => console.error('[SYNC_ERROR]', err.message));
+    await Promise.allSettled([
+        socketGateway.close(),
+        closeRedisConnections(),
+        closePool()
+    ]);
+
+    process.exit(exitCode);
+};
+
+const startServer = async () => {
+    const dbHealth = await checkDatabaseHealth();
+    if (dbHealth.status !== 'UP') {
+        throw new Error(`Database unavailable during startup: ${dbHealth.error || 'unknown error'}`);
+    }
+
+    const requireRedisForStartup = parseBoolean(
+        process.env.REQUIRE_REDIS_FOR_STARTUP,
+        isProduction() && isRedisConfigured()
+    );
+
+    if (isRedisConfigured()) {
+        try {
+            await waitForRedisReady('default');
+        } catch (error) {
+            if (requireRedisForStartup) {
+                throw error;
+            }
+
+            logger.warn('[SERVER] Redis not ready during startup, continuing in degraded mode', {
+                message: error.message
+            });
+        }
+    } else if (requireRedisForStartup) {
+        throw new Error('Redis is required for API startup but no Redis configuration was provided.');
+    }
+
+    server = http.createServer(app);
+    await socketGateway.init(server, {
+        requireRedisBridge: requireRedisForStartup && isRedisConfigured()
+    });
+
+    server.keepAliveTimeout = parseNumber(process.env.KEEP_ALIVE_TIMEOUT_MS, 65000);
+    server.headersTimeout = parseNumber(process.env.HEADERS_TIMEOUT_MS, 66000);
+    server.requestTimeout = parseNumber(process.env.REQUEST_TIMEOUT_MS, 30000);
+
+    const port = parseNumber(process.env.PORT, 5000);
+    server.listen(port, () => {
+        logger.info('[SERVER] API is live', {
+            port,
+            mode: process.env.NODE_ENV || 'development'
+        });
+    });
+};
+
+process.on('SIGTERM', () => {
+    shutdown('SIGTERM');
 });
 
-// Graceful Shutdown
-process.on('SIGTERM', () => {
-    server.close(() => {
-        process.exit(0);
+process.on('SIGINT', () => {
+    shutdown('SIGINT');
+});
+
+process.on('uncaughtException', (error) => {
+    logger.error('[SERVER] Uncaught exception', {
+        message: error.message,
+        stack: error.stack
     });
+    shutdown('uncaughtException', 1);
+});
+
+process.on('unhandledRejection', (reason) => {
+    const error = reason instanceof Error ? reason : new Error(String(reason));
+    logger.error('[SERVER] Unhandled rejection', {
+        message: error.message,
+        stack: error.stack
+    });
+    shutdown('unhandledRejection', 1);
+});
+
+startServer().catch((error) => {
+    logger.error('[SERVER] Failed to start', {
+        message: error.message,
+        stack: error.stack
+    });
+    shutdown('startupFailure', 1);
 });
 
 module.exports = app;

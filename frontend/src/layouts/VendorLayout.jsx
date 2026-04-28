@@ -2,36 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import VendorSidebar from '../components/VendorSidebar';
 import Header from '../components/Header';
-import { io } from 'socket.io-client';
 import { toast } from 'react-hot-toast';
 import { Zap, MapPin, Bell } from 'lucide-react';
+import { acquireSocket, releaseSocket } from '../utils/socketClient';
 
 const VendorLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        const user = storedUser ? JSON.parse(storedUser) : null;
-        const userId = user?.id || user?.user_id;
+        const token = localStorage.getItem('token');
+        if (!token) {
+            return undefined;
+        }
 
-        const socketUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-        const socket = io(socketUrl, {
-            query: { userId }
-        });
+        const socket = acquireSocket(token);
 
-        socket.on('connect', () => {
+        const onConnect = () => {
             console.log('[SOCKET] Vendor connected. ID:', socket.id);
-        });
+        };
 
-        socket.on('connect_error', (error) => {
+        const onConnectError = (error) => {
             console.error('[SOCKET] Vendor connection error:', error.message);
-        });
+        };
 
-        // Generic Notification Listener
-        socket.on('notification', (data) => {
+        const onNotification = (data) => {
             console.log('[VENDOR_NOTIF] System notification:', data);
             toast.success(
-                (t) => (
+                () => (
                     <div className="flex flex-col gap-1 min-w-[200px]">
                         <span className="font-black text-[10px] uppercase tracking-widest text-indigo-600">{data.title || 'Notification'}</span>
                         <span className="text-xs font-bold text-gray-800">{data.body || data.message}</span>
@@ -48,13 +45,12 @@ const VendorLayout = () => {
                     }
                 }
             );
-        });
+        };
 
-        // Global Announcement Listener
-        socket.on('global_notification', (data) => {
+        const onGlobalNotification = (data) => {
             console.log('[VENDOR_NOTIF] Global announcement received:', data);
             toast.success(
-                (t) => (
+                () => (
                     <div className="flex flex-col gap-2 min-w-[220px]">
                         <div className="flex items-center gap-2">
                              <div className="w-8 h-8 rounded-full bg-indigo-500/10 text-indigo-600 flex items-center justify-center animate-bounce">
@@ -82,12 +78,12 @@ const VendorLayout = () => {
                     }
                 }
             );
-        });
+        };
 
-        socket.on('new_lead_added', (data) => {
+        const onNewLeadAdded = (data) => {
             console.log('[VENDOR_NOTIF] New lead alert:', data);
             toast.success(
-                (t) => (
+                () => (
                     <div className="flex flex-col gap-2 min-w-[200px]">
                         <div className="flex items-center gap-2">
                              <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center animate-pulse">
@@ -116,10 +112,21 @@ const VendorLayout = () => {
                     }
                 }
             );
-        });
+        };
+
+        socket.on('connect', onConnect);
+        socket.on('connect_error', onConnectError);
+        socket.on('notification', onNotification);
+        socket.on('global_notification', onGlobalNotification);
+        socket.on('new_lead_added', onNewLeadAdded);
 
         return () => {
-            socket.disconnect();
+            socket.off('connect', onConnect);
+            socket.off('connect_error', onConnectError);
+            socket.off('notification', onNotification);
+            socket.off('global_notification', onGlobalNotification);
+            socket.off('new_lead_added', onNewLeadAdded);
+            releaseSocket(socket);
         };
     }, []);
 

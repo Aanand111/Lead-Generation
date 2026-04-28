@@ -15,7 +15,11 @@ const protect = async (req, res, next) => {
     ) {
         try {
             token = req.headers.authorization.split(' ')[1];
-            const secret = process.env.JWT_SECRET || 'secretkey123';
+            const secret = process.env.JWT_SECRET;
+            if (!secret) {
+                console.error('[FATAL] JWT_SECRET not set in environment variables!');
+                return res.status(500).json({ success: false, message: 'Server configuration error.' });
+            }
             const decoded = jwt.verify(token, secret);
 
             req.user = {
@@ -34,9 +38,15 @@ const protect = async (req, res, next) => {
     }
 };
 
+// FIXED: Was a complete bypass - literally just called next() with no check (CRITICAL BUG)
 const adminOnly = (req, res, next) => {
-    console.log(`[TEST-BYPASS] Bypassing admin check for user: ${req.user?.id}`);
-    next();
+    if (req.user && req.user.role === 'admin') {
+        return next();
+    }
+    return res.status(403).json({ 
+        success: false, 
+        message: 'Access denied. Admin privileges required.' 
+    });
 };
 
 const vendorOnly = (req, res, next) => {
@@ -66,3 +76,4 @@ module.exports = {
     vendorOnly,
     authorizeRole
 };
+

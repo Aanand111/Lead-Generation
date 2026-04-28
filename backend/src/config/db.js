@@ -1,50 +1,148 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+const logger = require('../utils/logger');
+const { parseBoolean, parseNumber, getRuntimeRole } = require('./env');
 
-const poolConfig = process.env.DATABASE_URL
-    ? {
-          connectionString: process.env.DATABASE_URL,
-      }
-    : {
-          user: process.env.DB_USER || 'postgres',
-          host: process.env.DB_HOST || 'localhost',
-          database: process.env.DB_NAME || 'leadgen',
-          password: process.env.DB_PASSWORD || 'postgres',
-          port: process.env.DB_PORT || 5432,
-      };
+const buildSslConfig = () => {
+    if (!parseBoolean(process.env.DB_SSL, false)) {
+        return undefined;
+    }
 
-// ── Optimized Pool Configuration for 1M+ Users ──
-Object.assign(poolConfig, {
-    max: 100,                      // Increase max connections for higher throughput
-    min: 10,                       // Maintain more warm connections ready
-    idleTimeoutMillis: 30000,      // Close idle connections after 30 seconds
-    connectionTimeoutMillis: 5000, // Slightly longer timeout for peak loads
-    statement_timeout: 10000,      // ABORT any query taking more than 10s (protects DB from hanging on 10M hits)
-    maxUses: 7500,                 // Periodically rotate connections to prevent memory leaks
+    return {
+        rejectUnauthorized: parseBoolean(process.env.DB_SSL_REJECT_UNAUTHORIZED, false)
+    };
+};
+
+const buildBasePoolConfig = () => {
+    const ssl = buildSslConfig();
+
+    if (process.env.DATABASE_URL) {
+        return {
+            connectionString: process.env.DATABASE_URL,
+            ...(ssl ? { ssl } : {})
+        };
+    }
+
+    return {
+        user: process.env.DB_USER || 'postgres',
+        host: process.env.DB_HOST || 'localhost',
+        database: process.env.DB_NAME || 'leadgen',
+        password: process.env.DB_PASSWORD || 'postgres',
+        port: parseNumber(process.env.DB_PORT, 5432),
+        ...(ssl ? { ssl } : {})
+    };
+};
+
+const runtimeRole = getRuntimeRole();
+const totalDbConnections = parseNumber(process.env.DB_MAX_CONNECTIONS, 100);
+const reservedConnections = parseNumber(process.env.DB_RESERVED_CONNECTIONS, 20);
+const apiInstanceCount = Math.max(1, parseNumber(process.env.API_INSTANCE_COUNT || process.env.WEB_CONCURRENCY, 1));
+const workerInstanceCount = Math.max(0, parseNumber(process.env.WORKER_INSTANCE_COUNT, 1));
+const schedulerInstanceCount = Math.max(1, parseNumber(process.env.SCHEDULER_INSTANCE_COUNT, 1));
+const totalRuntimeProcesses = Math.max(1, apiInstanceCount + workerInstanceCount + schedulerInstanceCount);
+const usableConnections = Math.max(1, totalDbConnections - reservedConnections);
+const derivedPoolMax = Math.max(
+    1,
+    Math.floor(usableConnections / totalRuntimeProcesses)
+);
+const rolePoolCaps = {
+    api: 20,
+    worker: 10,
+    scheduler: 4
+};
+const rolePoolMins = {
+    api: 2,
+    worker: 1,
+    scheduler: 1
+};
+const configuredPoolMax = parseNumber(
+    process.env[`DB_POOL_MAX_${runtimeRole.toUpperCase()}`],
+    parseNumber(process.env.DB_POOL_MAX, Math.min(derivedPoolMax, rolePoolCaps[runtimeRole] || 10))
+);
+const configuredPoolMin = parseNumber(
+    process.env[`DB_POOL_MIN_${runtimeRole.toUpperCase()}`],
+    parseNumber(process.env.DB_POOL_MIN, Math.min(rolePoolMins[runtimeRole] || 1, configuredPoolMax))
+);
+
+const poolConfig = {
+    ...buildBasePoolConfig(),
+    max: Math.max(1, configuredPoolMax),
+    min: Math.min(configuredPoolMin, configuredPoolMax),
+    idleTimeoutMillis: parseNumber(process.env.DB_POOL_IDLE_TIMEOUT_MS, 30000),
+    connectionTimeoutMillis: parseNumber(process.env.DB_POOL_CONNECTION_TIMEOUT_MS, 5000),
+    statement_timeout: parseNumber(process.env.DB_STATEMENT_TIMEOUT_MS, 15000),
+    query_timeout: parseNumber(process.env.DB_QUERY_TIMEOUT_MS, 15000),
+    idle_in_transaction_session_timeout: parseNumber(process.env.DB_IDLE_TX_TIMEOUT_MS, 10000),
+    keepAlive: true,
     allowExitOnIdle: false,
-});
+    maxUses: parseNumber(process.env.DB_POOL_MAX_USES, 7500),
+    application_name: process.env.DB_APPLICATION_NAME || `leadgen-${runtimeRole}-${process.pid}`
+};
 
 const pool = new Pool(poolConfig);
 
-// Log when a new connection is established
-pool.on('connect', (client) => {
-    console.log(`[DB Pool] New client connected. Total: ${pool.totalCount} | Idle: ${pool.idleCount} | Waiting: ${pool.waitingCount}`);
-});
-
-// Log and gracefully handle unexpected errors on idle clients
-pool.on('error', (err, client) => {
-    console.error('[DB Pool] Unexpected error on idle client:', err.message);
-    // Do NOT exit process here — let the pool recover on its own
-});
-
-module.exports = {
-    query: (text, params) => pool.query(text, params),
-    pool,
-
-    // Helper to check pool health (used in /api/health route)
-    getPoolStatus: () => ({
+pool.on('connect', () => {
+    logger.debug('[DB] Client connected', {
         total: pool.totalCount,
         idle: pool.idleCount,
-        waiting: pool.waitingCount,
-    }),
+        waiting: pool.waitingCount
+    });
+});
+
+pool.on('error', (err) => {
+    logger.error('[DB] Unexpected idle client error', {
+        message: err.message,
+        stack: err.stack
+    });
+});
+
+const query = (text, params) => pool.query(text, params);
+
+const checkDatabaseHealth = async () => {
+    const startedAt = Date.now();
+
+    try {
+        await query('SELECT 1');
+        return {
+            status: 'UP',
+            latencyMs: Date.now() - startedAt
+        };
+    } catch (error) {
+        return {
+            status: 'DOWN',
+            latencyMs: Date.now() - startedAt,
+            error: error.message
+        };
+    }
+};
+
+const getPoolStatus = () => ({
+    total: pool.totalCount,
+    idle: pool.idleCount,
+    waiting: pool.waitingCount,
+    max: pool.options.max,
+    min: pool.options.min,
+    role: runtimeRole,
+    budget: {
+        totalDbConnections,
+        reservedConnections,
+        usableConnections,
+        totalRuntimeProcesses,
+        apiInstanceCount,
+        workerInstanceCount,
+        schedulerInstanceCount,
+        derivedPoolMax
+    }
+});
+
+const closePool = async () => {
+    await pool.end();
+};
+
+module.exports = {
+    query,
+    pool,
+    poolConfig,
+    getPoolStatus,
+    checkDatabaseHealth,
+    closePool
 };

@@ -4,9 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node src/database/migrate.js && node src/server.js",
-    "dev": "node scripts/redis-check.js && nodemon src/server.js",
+    "start": "node src/server.js",
+    "redis:ensure": "node scripts/redis-check.js",
+    "start:api": "npm run redis:ensure && node src/server.js",
+    "start:worker": "npm run redis:ensure && node src/worker-entry.js",
+    "start:scheduler": "npm run redis:ensure && node src/scheduler-entry.js",
+    "start:pm2": "pm2 start ecosystem.config.js --env production",
     "start:prod": "pm2 start ecosystem.config.js --env production",
+    "dev": "npm run redis:ensure && nodemon",
     "db:migrate": "node src/database/migrate.js",
     "db:setup": "npm run db:migrate",
     "test": "echo \"Error: no test specified\" && exit 1"

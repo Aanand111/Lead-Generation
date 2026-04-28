@@ -1,5 +1,4 @@
 const NotificationService = require('../services/notificationService');
-const { pool } = require('../config/db');
 
 /**
  * Send targeted notification (By Roles or Specific Users)
@@ -18,9 +17,7 @@ const sendTargetedNotification = async (req, res, next) => {
             await NotificationService.sendPushToAllUsers(title, body);
             sentCount = 'ALL ONLINE';
         } else if (targetType === 'ROLE' && targetRole) {
-            const users = await pool.query('SELECT id FROM users WHERE role = $1', [targetRole]);
-            const ids = users.rows.map(u => u.id);
-            sentCount = await NotificationService.sendBulkPush(ids, title, body);
+            sentCount = await NotificationService.sendPushToRole(targetRole, title, body);
         } else if (targetType === 'SPECIFIC' && targetIds) {
             sentCount = await NotificationService.sendBulkPush(targetIds, title, body);
         }

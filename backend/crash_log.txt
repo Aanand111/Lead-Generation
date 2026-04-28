@@ -1,0 +1,24 @@
+2026-04-24T12:55:37.247Z - Dashboard: error: relation "mv_user_stats" does not exist
+    at D:\Workspace\LeadgenrationApp\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getDashboardStats (D:\Workspace\LeadgenrationApp\backend\src\controllers\userController.js:10:23)
+2026-04-24T12:55:37.347Z - Dashboard: error: relation "mv_user_stats" does not exist
+    at D:\Workspace\LeadgenrationApp\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getDashboardStats (D:\Workspace\LeadgenrationApp\backend\src\controllers\userController.js:10:23)
+2026-04-24T12:55:52.968Z - Dashboard: error: relation "mv_user_stats" does not exist
+    at D:\Workspace\LeadgenrationApp\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getDashboardStats (D:\Workspace\LeadgenrationApp\backend\src\controllers\userController.js:10:23)
+2026-04-24T12:55:53.069Z - Dashboard: error: relation "mv_user_stats" does not exist
+    at D:\Workspace\LeadgenrationApp\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getDashboardStats (D:\Workspace\LeadgenrationApp\backend\src\controllers\userController.js:10:23)
+2026-04-24T12:56:04.966Z - Dashboard: error: relation "mv_user_stats" does not exist
+    at D:\Workspace\LeadgenrationApp\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getDashboardStats (D:\Workspace\LeadgenrationApp\backend\src\controllers\userController.js:10:23)
+2026-04-24T12:56:05.356Z - Dashboard: error: relation "mv_user_stats" does not exist
+    at D:\Workspace\LeadgenrationApp\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getDashboardStats (D:\Workspace\LeadgenrationApp\backend\src\controllers\userController.js:10:23)
