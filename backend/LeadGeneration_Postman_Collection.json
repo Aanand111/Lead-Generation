@@ -1,0 +1,132 @@
+{
+  "info": {
+    "name": "Lead Generation App API",
+    "description": "Comprehensive Postman Collection for Lead Generation Backend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health & System",
+      "item": [
+        {
+          "name": "Check Live Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "http://localhost:5000/api/health/live", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "health", "live"]}
+          }
+        },
+        {
+          "name": "Check Readiness Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "http://localhost:5000/api/health/ready", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "health", "ready"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"test@test.com\",\n  \"password\": \"123456\",\n  \"role\": \"user\",\n  \"name\": \"Test User\",\n  \"phone\": \"9876543210\"\n}"},
+            "url": {"raw": "http://localhost:5000/api/auth/register", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "auth", "register"]}
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"test@test.com\",\n  \"password\": \"123456\"\n}"},
+            "url": {"raw": "http://localhost:5000/api/auth/login", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "auth", "login"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Portal",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "http://localhost:5000/api/user/dashboard-stats", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "user", "dashboard-stats"]}
+          }
+        },
+        {
+          "name": "Get Available Leads",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "http://localhost:5000/api/user/leads/available-leads?page=1&limit=20", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "user", "leads", "available-leads"]}
+          }
+        },
+        {
+          "name": "Purchase Lead",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "http://localhost:5000/api/user/leads/purchase-lead/123", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "user", "leads", "purchase-lead", "123"]}
+          }
+        },
+        {
+          "name": "Get My Leads",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "http://localhost:5000/api/user/my-leads", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "user", "my-leads"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Portal",
+      "item": [
+        {
+          "name": "Get Admin Stats",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "http://localhost:5000/api/admin/stats", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "admin", "stats"]}
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "http://localhost:5000/api/admin/users?page=1&limit=10", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "admin", "users"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "http://localhost:5000/api/notifications", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "notifications"]}
+          }
+        },
+        {
+          "name": "Mark Read",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "http://localhost:5000/api/notifications/mark-read/456", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "notifications", "mark-read", "456"]}
+          }
+        }
+      ]
+    }
+  ]
+}
