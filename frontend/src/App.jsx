@@ -184,16 +184,16 @@ const App = () => {
                         </Route>
 
                         {/* User Panel Routes nested inside Customer Layout */}
-                        {/* <Route element={<ProtectedRoute allowedRoles={['user', 'customer']}><CustomerLayout /></ProtectedRoute>}>
+                        <Route element={<ProtectedRoute allowedRoles={['user', 'customer']}><CustomerLayout /></ProtectedRoute>}>
                             <Route path="/user/dashboard" element={<UserDashboard />} />
-                            <Route path="/user/leads/available" element={<UserAvailableLeads />} />
+                            {/* <Route path="/user/leads/available" element={<UserAvailableLeads />} />
                             <Route path="/user/leads/my" element={<UserMyLeads />} />
                             <Route path="/user/referrals" element={<UserReferrals />} />
                             <Route path="/user/posters" element={<UserPosters />} />
                             <Route path="/user/subscriptions" element={<UserSubscriptions />} />
                             <Route path="/user/news" element={<UserNews />} />
-                            <Route path="/user/profile" element={<UserProfile />} />
-                        </Route> */}
+                            <Route path="/user/profile" element={<UserProfile />} /> */}
+                        </Route>
 
                         <Route path="*" element={<div style={{ padding: '20px' }}>Page coming soon...</div>} />
                     </Routes>
