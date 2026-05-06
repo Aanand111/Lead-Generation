@@ -1,28 +1,39 @@
-const { pool } = require('../config/db');
 const fs = require('fs');
 const path = require('path');
+const { pool } = require('../config/db');
+const {
+    MIGRATIONS_TABLE,
+    MIGRATION_LOCK_ID,
+    migrationsPath,
+    getMigrationFiles
+} = require('./migrationRegistry');
+
+const ensureMigrationsTable = async (client) => {
+    await client.query(`
+        CREATE TABLE IF NOT EXISTS ${MIGRATIONS_TABLE} (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
+};
 
 const runMigrations = async () => {
     const client = await pool.connect();
+
     try {
         console.log('Starting database migrations...');
-        const migrationsPath = path.join(__dirname, 'migrations');
+        await client.query('SELECT pg_advisory_lock($1)', [MIGRATION_LOCK_ID]);
+        console.log(`Migration lock acquired (${MIGRATION_LOCK_ID}).`);
 
-        // Check if migration table exists, if not create it
-        await client.query(`
-      CREATE TABLE IF NOT EXISTS migrations (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+        await ensureMigrationsTable(client);
 
-        const files = fs.readdirSync(migrationsPath).filter(f => f.endsWith('.sql')).sort();
+        const files = getMigrationFiles();
+        const executedResult = await client.query(`SELECT name FROM ${MIGRATIONS_TABLE}`);
+        const executedMigrations = new Set(executedResult.rows.map((row) => row.name));
 
         for (const file of files) {
-            // Check if migration already ran
-            const { rows } = await client.query('SELECT * FROM migrations WHERE name = $1', [file]);
-            if (rows.length > 0) {
+            if (executedMigrations.has(file)) {
                 console.log(`Skipping ${file} - already executed.`);
                 continue;
             }
@@ -31,12 +42,12 @@ const runMigrations = async () => {
             const filePath = path.join(migrationsPath, file);
             const sql = fs.readFileSync(filePath, 'utf-8');
 
-            // Execute SQL inside a transaction
             await client.query('BEGIN');
             try {
                 await client.query(sql);
-                await client.query('INSERT INTO migrations (name) VALUES ($1)', [file]);
+                await client.query(`INSERT INTO ${MIGRATIONS_TABLE} (name) VALUES ($1)`, [file]);
                 await client.query('COMMIT');
+                executedMigrations.add(file);
                 console.log(`Successfully executed ${file}`);
             } catch (error) {
                 await client.query('ROLLBACK');
@@ -45,13 +56,28 @@ const runMigrations = async () => {
         }
 
         console.log('All migrations completed successfully.');
-    } catch (error) {
-        console.error('Migration failed:', error);
-        process.exit(1);
     } finally {
+        try {
+            await client.query('SELECT pg_advisory_unlock($1)', [MIGRATION_LOCK_ID]);
+        } catch (unlockError) {
+            console.warn(`Failed to release migration lock (${MIGRATION_LOCK_ID}):`, unlockError.message);
+        }
+
         client.release();
-        pool.end();
     }
 };
 
-runMigrations();
+if (require.main === module) {
+    runMigrations()
+        .catch((error) => {
+            console.error('Migration failed:', error);
+            process.exitCode = 1;
+        })
+        .finally(async () => {
+            await pool.end();
+        });
+}
+
+module.exports = {
+    runMigrations
+};

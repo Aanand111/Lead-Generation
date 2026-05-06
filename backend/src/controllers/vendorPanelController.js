@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const NotificationService = require('../services/notificationService');
 
 const getVendorStats = async (req, res, next) => {
     try {
@@ -117,6 +118,12 @@ const referUser = async (req, res, next) => {
         }
 
         res.status(201).json({ success: true, message: 'User referred & added successfully', data: newUser });
+
+        // Notify Admin
+        NotificationService.notifyAdmins('New User Added', `Vendor ${req.user.full_name || 'Node'} added a new user: ${full_name}`, {
+            userId: newUser.id,
+            referrerId: vendorId
+        }).catch(err => console.error('[ADMIN_NOTIFY_ERROR]', err.message));
     } catch (error) {
         next(error);
     }
@@ -232,6 +239,13 @@ const referVendor = async (req, res, next) => {
         } catch (sErr) {
             console.error('[SOCKET_ERROR] Failed to emit referral signal:', sErr.message);
         }
+
+        // Notify Admin via persistent notification and socket alert
+        NotificationService.notifyAdmins('New Sub-Vendor Registered', `${full_name} was registered by ${req.user.full_name || 'Primary Node'}.`, {
+            userId: newUser.id,
+            referrerId: vendorId,
+            role: 'vendor'
+        }).catch(err => console.error('[ADMIN_NOTIFY_ERROR]', err.message));
 
         res.status(201).json({ 
             success: true, 

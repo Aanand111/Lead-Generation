@@ -40,9 +40,9 @@ class SubscriptionsRepository {
         return result.rows[0];
     }
 
-    async findActiveSubscription(userId, category) {
+    async findActiveSubscription(userId, category, client = pool) {
         // Find latest active subscription for a category
-        const result = await pool.query(
+        const result = await client.query(
             `SELECT s.* FROM subscriptions s
              JOIN subscription_plans sp ON s.plan_id = sp.id
              WHERE s.user_id = $1 AND s.status = 'Active' AND s.end_date > NOW()
@@ -51,6 +51,13 @@ class SubscriptionsRepository {
             [userId, category]
         );
         return result.rows[0];
+    }
+
+    async incrementUsedLeads(subscriptionId, client = pool) {
+        await client.query(
+            'UPDATE subscriptions SET used_leads = used_leads + 1 WHERE id = $1',
+            [subscriptionId]
+        );
     }
 }
 

@@ -8,5 +8,6 @@ router.use(protect); // All lead routes require auth
 
 router.get('/available', (req, res, next) => leadsController.getAvailableLeads(req, res, next));
 router.post('/purchase/:id', (req, res, next) => leadsController.purchaseLead(req, res, next));
+router.post('/submit', (req, res, next) => leadsController.submitLead(req, res, next));
 
 module.exports = router;

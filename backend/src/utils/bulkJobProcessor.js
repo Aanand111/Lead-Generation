@@ -24,16 +24,35 @@ class BulkJobProcessor {
         console.log(`[BULK JOB] Starting batch processing for role: ${role}`);
 
         while (hasMore) {
-            // Using ID-based pagination (Seek Method) is MUCH faster than OFFSET for 1M+ records
-            const query = `
-                SELECT id, phone, fcm_token, full_name
-                FROM users
-                WHERE role = $1 AND status = $2 AND id > $3
-                ORDER BY id ASC
-                LIMIT $4
+            // Construct query dynamically based on presence of role/status/excludedCity
+            let query = `
+                SELECT u.id, u.phone, u.fcm_token, u.full_name 
+                FROM users u
+                LEFT JOIN user_profiles up ON u.id = up.user_id
+                WHERE 1=1 
             `;
+            const queryParams = [];
 
-            const { rows } = await pool.query(query, [role, status, lastSeenId, batchSize]);
+            if (role) {
+                queryParams.push(role);
+                query += ` AND u.role = $${queryParams.length}`;
+            }
+            if (status) {
+                queryParams.push(status);
+                query += ` AND u.status = $${queryParams.length}`;
+            }
+            if (options.excludeCity) {
+                queryParams.push(options.excludeCity);
+                query += ` AND (up.city IS NULL OR up.city NOT ILIKE $${queryParams.length})`;
+            }
+            
+            queryParams.push(lastSeenId);
+            query += ` AND u.id > $${queryParams.length}`;
+            
+            query += ` ORDER BY u.id ASC LIMIT $${queryParams.length + 1}`;
+            queryParams.push(batchSize);
+
+            const { rows } = await pool.query(query, queryParams);
 
             if (rows.length === 0) {
                 hasMore = false;

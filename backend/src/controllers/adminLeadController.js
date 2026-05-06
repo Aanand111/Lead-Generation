@@ -1,4 +1,7 @@
 const adminLeadDb = require('../models/leadModel');
+const NotificationService = require('../services/notificationService');
+const { pool } = require('../config/db');
+const { broadcast } = require('../utils/socket');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -30,11 +33,9 @@ const uploadLead = async (req, res, next) => {
 
         // Notify appropriate party via Socket.io & FCM Push
         try {
-            const { broadcast } = require('../utils/socket');
-            const NotificationService = require('../services/notificationService');
 
             if (initialStatus === 'ACTIVE') {
-                // If Admin added it, notify EVERYONE
+                // If Admin added it, notify targeted users in that city
                 const notificationTitle = 'New Lead Available! 🚀';
                 const notificationBody = `A new ${category || 'General'} lead is available in ${city}. Buy now!`;
 
@@ -45,29 +46,37 @@ const uploadLead = async (req, res, next) => {
                     timestamp: new Date()
                 });
 
-                NotificationService.sendPushToAllUsers(notificationTitle, notificationBody, {
+                NotificationService.sendPushToCity(city, notificationTitle, notificationBody, {
                     type: 'NEW_LEAD',
                     city: city,
                     category: category || 'General'
                 });
             } else {
-                // If Vendor added it, notify ONLY ADMINS
-                broadcast('admin_notification', {
-                    title: 'New Lead Approval Required 🛡️',
-                    body: `Vendor ${user.full_name} submitted a new lead for ${category} in ${city}.`,
-                    timestamp: new Date()
-                });
+                // Fetch full uploader details for the notification
+                const uploaderRes = await pool.query('SELECT full_name, referred_by FROM users WHERE id = $1', [user.id]);
+                const uploader = uploaderRes.rows[0] || { full_name: 'A User', referred_by: null };
+
+                // If Vendor/Sub-Vendor added it, notify ALL ADMINS
+                const isSubVendor = !!uploader.referred_by;
+                const roleLabel = isSubVendor ? 'Sub-Vendor' : 'Vendor';
                 
-                // You can also send email to admin if configured
+                const adminTitle = 'New Lead Approval Required 🛡️';
+                const adminBody = `${roleLabel} ${uploader.full_name} submitted a new lead for ${category} in ${city}.`;
+
+                await NotificationService.notifyAdmins(adminTitle, adminBody, {
+                    type: 'LEAD_APPROVAL_REQUEST',
+                    leadId: lead.id,
+                    uploaderId: user.id,
+                    uploaderRole: user.role,
+                    isSubVendor: isSubVendor
+                });
             }
         } catch (sErr) {
             console.error('[NOTIFICATION_ERROR] Failed to send notification:', sErr.message);
         }
 
-
         res.status(201).json({ success: true, message: 'Lead added successfully', data: lead });
     } catch (error) {
-        // Pass error to global error handler
         console.error("Error in uploadLead controller:", error);
         next(error);
     }
@@ -85,7 +94,6 @@ const editLead = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Please provide at least customer phone, and city.' });
         }
 
-        // Normalize numeric and date fields
         const normalizedLeadValue = (lead_value === '' || lead_value === undefined) ? null : lead_value;
         const normalizedExpiryDate = (expiry_date === '' || expiry_date === undefined) ? null : expiry_date;
 
@@ -167,23 +175,7 @@ const getPurchasedLeadsBase = async (req, res, next) => {
             }
         });
     } catch (error) {
-        try {
-            const pool = require('../config/db').pool;
-            const schemaRes = await pool.query(`
-                SELECT table_name, column_name, data_type 
-                FROM information_schema.columns 
-                WHERE table_name IN ('lead_purchases', 'leads', 'user_packages', 'packages') 
-                AND data_type LIKE '%ARRAY%' OR data_type LIKE '%[]%'
-            `);
-            res.status(200).json({ 
-                success: false, 
-                message: error.message, 
-                stack: error.stack,
-                arrayColumns: schemaRes.rows
-            });
-        } catch (e) {
-            res.status(200).json({ success: false, message: error.message, stack: error.stack, innerError: e.message });
-        }
+        next(error);
     }
 };
 
@@ -213,7 +205,7 @@ const getPendingLeads = async (req, res, next) => {
 const approveLead = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { status } = req.body; // Status can be ACTIVE or REJECTED
+        const { status } = req.body; 
 
         if (!isUuid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid ID format. Must be a UUID.' });
@@ -228,33 +220,61 @@ const approveLead = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Lead not found' });
         }
 
-        // Notify Vendor about approval if applicable
         if (status === 'ACTIVE') {
             const NotificationService = require('../services/notificationService');
             const { broadcast } = require('../utils/socket');
 
-            // 1. Notify the individual vendor who created it
+            // 1. Fetch uploader details
+            let uploaderName = 'System';
+            let uploaderRole = 'admin';
             if (lead.created_by) {
-                NotificationService.sendPushToUserId(lead.created_by, 'Lead Approved! 🎉', `Your lead "${lead.customer_name}" has been approved and is now live.`);
+                const uploaderRes = await pool.query('SELECT full_name, role FROM users WHERE id = $1', [lead.created_by]);
+                if (uploaderRes.rows.length > 0) {
+                    uploaderName = uploaderRes.rows[0].full_name || 'A Partner';
+                    uploaderRole = uploaderRes.rows[0].role;
+                }
             }
 
-            // 2. Broadcast to ALL users (as requested: "sare vendors ko notification jaega")
-            const broadcastTitle = 'New Approved Lead! 🔥';
-            const broadcastBody = `A fresh approved lead is now available in ${lead.city || 'your area'}.`;
+            // 2. Notify the uploader themselves
+            if (lead.created_by) {
+                await NotificationService.sendPushToUserId(lead.created_by, 'Lead Approved! 🎉', `Your lead "${lead.customer_name}" has been approved and is now live.`);
+            }
+
+            // 3. SPECIAL Notification for users in the SAME CITY (Urgent)
+            const cityLabel = lead.city || 'your area';
+            const specialTitle = `Urgent: New Lead in ${cityLabel}! 🔥`;
+            const specialBody = `A fresh ${lead.category || 'General'} lead was just uploaded in ${cityLabel} (Pincode: ${lead.pincode || 'N/A'}). Grab it now before someone else does!`;
             
+            await NotificationService.sendPushToCity(lead.city, specialTitle, specialBody, {
+                type: 'NEW_LEAD',
+                leadId: lead.id,
+                city: lead.city,
+                category: lead.category,
+                isSpecial: true
+            });
+
+            // 4. GENERAL Notification for ALL OTHER users
+            const generalTitle = 'New Lead Alert! 🚀';
+            const generalBody = `${uploaderName} uploaded a new ${lead.category || 'General'} lead in ${cityLabel}. Check it out now!`;
+
+            await NotificationService.sendPushToAllExceptCity(lead.city, generalTitle, generalBody, {
+                type: 'NEW_LEAD',
+                leadId: lead.id,
+                city: lead.city,
+                category: lead.category,
+                uploader: uploaderName,
+                isSpecial: false
+            });
+
+            // 5. Socket broadcast (Immediate toast for everyone)
             broadcast('new_lead_added', {
-                message: broadcastBody,
+                message: generalBody,
                 category: lead.category,
                 city: lead.city,
+                uploader: uploaderName,
                 timestamp: new Date()
             });
-
-            NotificationService.sendPushToAllUsers(broadcastTitle, broadcastBody, {
-                type: 'NEW_LEAD',
-                leadId: lead.id
-            });
         }
-
 
         res.status(200).json({ success: true, message: `Lead ${status || 'ACTIVE'} successfully`, data: lead });
     } catch (error) {
@@ -266,7 +286,6 @@ const getLead = async (req, res, next) => {
     try {
         const { id } = req.params;
 
-        // Some older deployments routed `/leads/pending` into this handler.
         if (id === 'pending') {
             return getPendingLeads(req, res, next);
         }

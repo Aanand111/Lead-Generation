@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import { getApiBaseUrl } from '../utils/urls';
 
 const VendorDashboard = () => {
     const [stats, setStats] = useState({ 
@@ -20,9 +21,8 @@ const VendorDashboard = () => {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
                 const token = localStorage.getItem('token');
-                const res = await fetch(`${API_BASE_URL}/vendor/stats`, {
+                const res = await fetch(`${getApiBaseUrl()}/vendor/stats`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();

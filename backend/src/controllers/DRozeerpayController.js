@@ -149,6 +149,14 @@ const verifySubscriptionPayment = async (req, res, next) => {
             [creditsToAward, name, email, address, userId]
         );
 
+        // Update user_profiles with PAN
+        await client.query(
+            `INSERT INTO user_profiles (user_id, pan_number) 
+             VALUES ($1, $2) 
+             ON CONFLICT (user_id) DO UPDATE SET pan_number = EXCLUDED.pan_number`,
+            [userId, panNumber]
+        );
+
         // Activate Subscription Record
         const durationStr = plan.duration + ' days';
         await client.query(

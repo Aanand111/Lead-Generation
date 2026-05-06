@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useConfirm } from '../context/ConfirmContext';
+import { getApiBaseUrl } from '../utils/urls';
 
 const VendorEarnings = () => {
     const [stats, setStats] = useState({ 
@@ -18,18 +19,17 @@ const VendorEarnings = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
                 const token = localStorage.getItem('token');
                 
                 // Fetch Stats
-                const statsRes = await fetch(`${API_BASE_URL}/vendor/stats`, {
+                const statsRes = await fetch(`${getApiBaseUrl()}/vendor/stats`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const statsData = await statsRes.json();
                 if (statsData.success) setStats(statsData.data);
 
                 // Fetch Transactions
-                const transRes = await fetch(`${API_BASE_URL}/vendor/earnings`, {
+                const transRes = await fetch(`${getApiBaseUrl()}/vendor/earnings`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const transData = await transRes.json();
@@ -69,9 +69,8 @@ const VendorEarnings = () => {
                         if (!confirmed) return;
                         
                         try {
-                            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
                             const token = localStorage.getItem('token');
-                            const res = await fetch(`${API_BASE_URL}/vendor/request-settlement`, {
+                            const res = await fetch(`${getApiBaseUrl()}/vendor/request-settlement`, {
                                 method: 'POST',
                                 headers: { 'Authorization': `Bearer ${token}` }
                             });

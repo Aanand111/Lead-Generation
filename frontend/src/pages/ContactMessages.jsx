@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Trash2, Eye, RefreshCw, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useConfirm } from '../context/ConfirmContext';
 import { toast } from 'react-hot-toast';
+import api from '../utils/api';
 
 const ContactMessages = () => {
     const { confirm } = useConfirm();
@@ -14,11 +15,7 @@ const ContactMessages = () => {
     const fetchMessages = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/api/admin/contact-messages', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
+            const { data } = await api.get('/admin/contact-messages');
             if (data.success) setMessages(data.data || []);
         } catch (err) {
             console.error('Failed to fetch messages', err);
@@ -31,13 +28,7 @@ const ContactMessages = () => {
 
     const handleStatusUpdate = async (id, status) => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:5000/api/admin/contact-messages/${id}/status`, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status })
-            });
-            const data = await res.json();
+            const { data } = await api.put(`/admin/contact-messages/${id}/status`, { status });
             if (data.success) {
                 setMessages(prev => prev.map(m => m.id === id ? { ...m, status } : m));
                 if (selectedMsg?.id === id) setSelectedMsg(prev => ({ ...prev, status }));
@@ -54,12 +45,7 @@ const ContactMessages = () => {
         );
         if (!confirmed) return;
         try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:5000/api/admin/contact-messages/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
+            const { data } = await api.delete(`/admin/contact-messages/${id}`);
             if (data.success) {
                 setMessages(prev => prev.filter(m => m.id !== id));
                 if (selectedMsg?.id === id) setSelectedMsg(null);

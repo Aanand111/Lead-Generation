@@ -35,7 +35,7 @@ const boot = async () => {
 
     const dbHealth = await checkDatabaseHealth();
     if (dbHealth.status !== 'UP') {
-        throw new Error(`Database unavailable during worker startup: ${dbHealth.error || 'unknown error'}`);
+        throw new Error(`Database unavailable during worker startup: ${dbHealth.error || `schema ${dbHealth.schemaStatus || 'unknown'}`}`);
     }
 
     if (!isRedisConfigured()) {

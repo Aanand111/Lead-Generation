@@ -45,7 +45,9 @@ const createRedisClient = (role = 'default') => {
     });
 
     client.on('error', (error) => {
-        const key = `${role}:${error.message}`;
+        const errorMessage = error.message || (typeof error === 'string' ? error : JSON.stringify(error)) || 'Unknown Redis Error';
+        const key = `${role}:${errorMessage}`;
+        
         if (loggedErrors.has(key)) {
             return;
         }
@@ -53,7 +55,7 @@ const createRedisClient = (role = 'default') => {
         loggedErrors.add(key);
         logger.warn('[REDIS] Client error', {
             role,
-            message: error.message
+            error: errorMessage
         });
     });
 
@@ -79,7 +81,12 @@ const getRedisSubscriber = () => getRedisClient('subscriber');
 const getBullConnection = () => getRedisClient('bullmq');
 
 const isRedisReady = () => redisConnection.status === 'ready';
-const isRedisConfigured = () => Boolean(process.env.REDIS_URL || process.env.REDIS_HOST);
+const isRedisConfigured = () => {
+    if (parseBoolean(process.env.REDIS_DISABLED, false)) {
+        return false;
+    }
+    return Boolean(process.env.REDIS_URL || process.env.REDIS_HOST);
+};
 
 const waitForRedisReady = async (role = 'default', timeoutMs = parseNumber(process.env.REDIS_READY_TIMEOUT_MS, 10000)) => {
     if (!isRedisConfigured()) {

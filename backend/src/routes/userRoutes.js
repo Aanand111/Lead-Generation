@@ -6,6 +6,8 @@ const cache = require('../middlewares/cacheMiddleware');
 const { recordBannerInteraction } = require('../controllers/adminAnalyticsController');
 const leadsController = require('../modules/leads/leads.controller');
 const subscriptionsController = require('../modules/subscriptions/subscriptions.controller');
+const { fileUpload } = require('../config/cloudinary');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -14,6 +16,10 @@ router.use(authenticateToken);
 router.use(authorizeRole(['user', 'vendor', 'customer', 'admin']));
 
 router.get('/dashboard-stats', cache(30), (req, res, next) => userController.getDashboardStats(req, res, next));
+router.post('/profile-picture', fileUpload.single('image'), (req, res, next) => {
+    logger.info(`[USER ROUTE] Profile picture upload attempt for user ${req.user.id}`);
+    userController.updateProfilePicture(req, res, next);
+});
 
 // Modular Leads (Phase 2)
 router.use('/leads', require('../modules/leads/leads.routes'));
@@ -32,11 +38,11 @@ router.post('/subscription/create-order', createSubscriptionOrder);
 router.post('/subscription/verify-payment', verifySubscriptionPayment);
 
 router.get('/my-leads', (req, res, next) => userController.getMyLeads(req, res, next));
+router.get('/my-uploaded-leads', (req, res, next) => userController.getMyUploadedLeads(req, res, next));
 router.get('/referral-stats', (req, res, next) => userController.getReferralStats(req, res, next));
 router.get('/posters', (req, res, next) => userController.getPosters(req, res, next));
 router.get('/poster-templates', (req, res, next) => userController.getPosterTemplates(req, res, next));
 
-const { fileUpload } = require('../config/cloudinary');
 router.post('/generate-poster', fileUpload.fields([
     { name: 'logo', maxCount: 1 },
     { name: 'image', maxCount: 1 }

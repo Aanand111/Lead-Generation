@@ -1,6 +1,7 @@
 const { Pool } = require('pg');
 const logger = require('../utils/logger');
 const { parseBoolean, parseNumber, getRuntimeRole } = require('./env');
+const { getMigrationFiles, MIGRATIONS_TABLE } = require('../database/migrationRegistry');
 
 const buildSslConfig = () => {
     if (!parseBoolean(process.env.DB_SSL, false)) {
@@ -97,21 +98,61 @@ pool.on('error', (err) => {
 
 const query = (text, params) => pool.query(text, params);
 
+const inspectSchemaHealth = async (client) => {
+    const expectedMigrations = getMigrationFiles();
+    const expectedCount = expectedMigrations.length;
+
+    const migrationTableResult = await client.query(`SELECT to_regclass('public.${MIGRATIONS_TABLE}') AS table_name`);
+    if (!migrationTableResult.rows[0]?.table_name) {
+        return {
+            status: 'PENDING',
+            expectedCount,
+            executedCount: 0,
+            pendingCount: expectedCount,
+            pendingMigrations: expectedMigrations
+        };
+    }
+
+    const executedResult = await client.query(`SELECT name FROM ${MIGRATIONS_TABLE} ORDER BY executed_at ASC, id ASC`);
+    const executedMigrations = executedResult.rows.map((row) => row.name);
+    const executedSet = new Set(executedMigrations);
+    const pendingMigrations = expectedMigrations.filter((file) => !executedSet.has(file));
+
+    return {
+        status: pendingMigrations.length === 0 ? 'READY' : 'PENDING',
+        expectedCount,
+        executedCount: executedMigrations.length,
+        pendingCount: pendingMigrations.length,
+        pendingMigrations,
+        lastExecutedMigration: executedMigrations.at(-1) || null
+    };
+};
+
 const checkDatabaseHealth = async () => {
     const startedAt = Date.now();
+    const client = await pool.connect();
 
     try {
-        await query('SELECT 1');
+        await client.query('SELECT 1');
+        const schema = await inspectSchemaHealth(client);
+
         return {
-            status: 'UP',
-            latencyMs: Date.now() - startedAt
+            status: schema.status === 'READY' ? 'UP' : 'DEGRADED',
+            connectionStatus: 'UP',
+            schemaStatus: schema.status,
+            latencyMs: Date.now() - startedAt,
+            schema
         };
     } catch (error) {
         return {
             status: 'DOWN',
+            connectionStatus: 'DOWN',
+            schemaStatus: 'UNKNOWN',
             latencyMs: Date.now() - startedAt,
             error: error.message
         };
+    } finally {
+        client.release();
     }
 };
 

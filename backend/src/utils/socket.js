@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const logger = require('./logger');
-const { parseBoolean, parseCsv } = require('../config/env');
+const { parseBoolean } = require('../config/env');
+const { getAllowedOrigins } = require('../config/origins');
 const { getRedisPublisher, getRedisSubscriber, isRedisConfigured, waitForRedisReady } = require('../config/redis');
 
 const REALTIME_CHANNEL = process.env.REALTIME_CHANNEL || 'leadgen:realtime';
@@ -102,15 +103,6 @@ const dispatchRealtimeEvent = (payload) => {
     }
 };
 
-const allowedOrigins = () => {
-    const configured = parseCsv(process.env.ALLOWED_ORIGINS);
-    if (configured.length > 0) {
-        return configured;
-    }
-
-    return ['http://localhost:5173', 'http://localhost:3000'];
-};
-
 module.exports = {
     init: async (server, options = {}) => {
         if (io) {
@@ -119,7 +111,7 @@ module.exports = {
 
         io = require('socket.io')(server, {
             cors: {
-                origin: allowedOrigins(),
+                origin: getAllowedOrigins(),
                 methods: ['GET', 'POST']
             }
         });
@@ -134,7 +126,7 @@ module.exports = {
                 }
 
                 logger.warn('[SOCKET] Redis bridge unavailable, running in single-node mode', {
-                    message: error.message
+                    error: error.message
                 });
             }
         } else {

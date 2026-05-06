@@ -47,6 +47,7 @@ const customerSchema = Joi.object({
     phone: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
         'string.pattern.base': 'Phone number must be exactly 10 digits'
     }),
+    password: Joi.string().min(6).optional().allow('', null),
     whatsapp: Joi.string().pattern(/^[0-9]{10}$/).optional().allow('', null).messages({
         'string.pattern.base': 'WhatsApp number must be exactly 10 digits'
     }),

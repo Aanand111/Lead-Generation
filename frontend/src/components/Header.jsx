@@ -5,6 +5,7 @@ import InsureeLogo from '../assets/insuree.png';
 
 import { useTheme } from '../utils/ThemeContext';
 import { acquireSocket, releaseSocket } from '../utils/socketClient';
+import api from '../utils/api';
 
 const Header = ({ toggleSidebar, isSidebarOpen }) => {
     console.log("Header Reander");
@@ -20,6 +21,38 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isSubVendor, setIsSubVendor] = useState(false);
+
+    const formatNotificationTime = (timestamp) => {
+        if (!timestamp) return 'Just now';
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+        return date.toLocaleDateString();
+    };
+
+    const fetchNotifications = async () => {
+        try {
+            const response = await api.get('/notifications');
+            if (response.data.success) {
+                const mapped = response.data.notifications.map(n => ({
+                    id: n.id,
+                    title: n.title,
+                    body: n.body,
+                    time: formatNotificationTime(n.created_at),
+                    isRead: n.is_read
+                }));
+                setNotifications(mapped);
+                setUnreadCount(response.data.unreadCount || 0);
+            }
+        } catch (error) {
+            console.error('[NOTIFY] Failed to fetch notifications', error);
+        }
+    };
+
 
 
 
@@ -55,6 +88,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
         };
 
         fetchUser();
+        fetchNotifications();
         window.addEventListener('userProfileUpdated', fetchUser);
 
         const storedUser = localStorage.getItem('user');
@@ -68,7 +102,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
         const socket = acquireSocket(token);
         const onNotification = (payload) => {
             const newNotification = {
-                id: Date.now(),
+                id: payload.id || Date.now(),
                 title: payload.title,
                 body: payload.body,
                 time: 'Just now',

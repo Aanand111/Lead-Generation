@@ -1,15 +1,15 @@
 import { io } from 'socket.io-client';
+import { getSocketBaseUrl } from './urls';
 
 let socket = null;
 let activeToken = null;
 let referenceCount = 0;
 
-const getSocketUrl = () => import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-
 const createSocket = (token) => {
     activeToken = token;
-    socket = io(getSocketUrl(), {
-        auth: { token }
+    socket = io(getSocketBaseUrl(), {
+        auth: { token },
+        path: '/socket.io'
     });
     return socket;
 };

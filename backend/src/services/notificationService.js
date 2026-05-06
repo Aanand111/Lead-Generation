@@ -80,13 +80,16 @@ class NotificationService {
 
     static async sendPushToAllUsers(title, body, data = {}) {
         try {
+            // 1. Real-time Socket Broadcast
             broadcast('notification', {
                 title,
                 body,
                 ...data,
                 timestamp: new Date().toISOString()
             });
-            return { success: true };
+
+            // 2. Persistent Push to all ACTIVE users (any role)
+            return this.sendPushToAll(title, body, data);
         } catch (error) {
             logger.error('[NOTIFICATION] Broadcast to all users failed', {
                 title,
@@ -96,12 +99,17 @@ class NotificationService {
         }
     }
 
-    static async sendPushToRole(role, title, body, data = {}) {
-        let sentCount = 0;
+    static async sendPushToAll(title, body, data = {}) {
+        return this.sendPushToAllExceptCity(null, title, body, data);
+    }
 
+    static async sendPushToAllExceptCity(excludeCity, title, body, data = {}) {
+        let sentCount = 0;
         await BulkProcessor.processUsersInBatches({
             batchSize: BATCH_SIZE,
-            role,
+            role: null, // Global
+            status: 'ACTIVE',
+            excludeCity: excludeCity,
             useBatchHandler: true,
             handler: async (rows) => {
                 const batchCount = await this.sendBulkPush(
@@ -113,8 +121,81 @@ class NotificationService {
                 sentCount += batchCount;
             }
         });
+        return sentCount;
+    }
+
+    static async sendPushToRole(role, title, body, data = {}) {
+        let sentCount = 0;
+
+        const { status, ...restData } = data;
+        await BulkProcessor.processUsersInBatches({
+            batchSize: BATCH_SIZE,
+            role,
+            status,
+            useBatchHandler: true,
+            handler: async (rows) => {
+                const batchCount = await this.sendBulkPush(
+                    rows.map((row) => row.id),
+                    title,
+                    body,
+                    restData
+                );
+                sentCount += batchCount;
+            }
+        });
 
         return sentCount;
+    }
+
+    static async sendPushToCity(city, title, body, data = {}) {
+        if (!city) return 0;
+        
+        try {
+            const { rows } = await pool.query(
+                `SELECT user_id FROM user_profiles WHERE city ILIKE $1`,
+                [city]
+            );
+            
+            if (rows.length === 0) return 0;
+            
+            const userIds = rows.map(r => r.user_id);
+            return this.sendBulkPush(userIds, title, body, data);
+        } catch (error) {
+            logger.error('[NOTIFICATION] City push failed', {
+                city,
+                message: error.message
+            });
+            return 0;
+        }
+    }
+
+    static async notifyAdmins(title, body, data = {}) {
+        try {
+            // 1. Send persistent notifications to all admins
+            await this.sendPushToRole('admin', title, body, {
+                ...data,
+                type: 'ADMIN_ALERT',
+                status: null
+            });
+
+            // 2. Also emit real-time socket event for immediate toast notifications
+            const { broadcast } = require('../utils/socket');
+            broadcast('admin_notification', {
+                title,
+                body,
+                ...data,
+                timestamp: new Date()
+            });
+
+            logger.info('[NOTIFICATION] Admins notified', { title });
+            return true;
+        } catch (error) {
+            logger.error('[NOTIFICATION] Failed to notify admins', {
+                title,
+                message: error.message
+            });
+            return false;
+        }
     }
 }
 

@@ -144,6 +144,17 @@ const registerUser = async (req, res, next) => {
             }).catch(err => {
                 console.error('[PARENT NOTIFICATION ERROR]', err.message);
             });
+
+            // --- ADDED: Notify Admin as well ---
+            const adminSubject = role === 'vendor' ? 'New Sub-Vendor Registration' : 'New User Registration';
+            const adminBody = `${name} has registered as a ${role} via referral.`;
+            NotificationService.notifyAdmins(adminSubject, adminBody, {
+                userId: user.id,
+                referrerId: referredById,
+                role: role
+            }).catch(err => {
+                console.error('[ADMIN NOTIFICATION ERROR]', err.message);
+            });
         }
 
         // Record standard referral for "Refer & Earn" tracking

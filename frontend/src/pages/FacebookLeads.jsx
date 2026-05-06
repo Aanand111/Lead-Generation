@@ -1,9 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Facebook, Search, Filter, RefreshCcw, Activity, Layers, ExternalLink } from 'lucide-react';
+import api from '../utils/api';
 
 const FacebookLeads = () => {
     const [leads, setLeads] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+
+    const fetchFacebookLeads = async () => {
+        setLoading(true);
+        try {
+            // We'll search for leads with prefix 'L-' (from our submitLead) or matching search
+            const response = await api.get(`/admin/leads?search=${search || 'L-'}`);
+            if (response.data.success) {
+                setLeads(response.data.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch Facebook leads", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchFacebookLeads();
+    }, [search]);
 
     return (
         <div className="page-content animate-fade-in text-[var(--text-dark)]">
@@ -61,6 +82,8 @@ const FacebookLeads = () => {
                         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-500 transition-colors" />
                         <input 
                             type="text" 
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
                             className="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium shadow-sm focus:border-indigo-500 outline-none transition-all placeholder:text-[var(--text-muted)]/50 text-[var(--text-dark)]" 
                             placeholder="Search Facebook leads..." 
                         />
@@ -104,19 +127,20 @@ const FacebookLeads = () => {
                                         </td>
                                         <td>
                                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-tight border border-blue-500/20">
-                                                <Layers size={10} /> {lead.form_id}
+                                                <Layers size={10} /> {lead.category || 'AD_FORM'}
                                             </div>
                                         </td>
                                         <td>
-                                            <div className="font-black text-[var(--text-dark)] uppercase">{lead.name}</div>
-                                            <div className="text-[10px] text-[var(--text-muted)] font-medium">{lead.email}</div>
+                                            <div className="font-black text-[var(--text-dark)] uppercase">{lead.customer_name}</div>
+                                            <div className="text-[10px] text-[var(--text-muted)] font-medium">{lead.customer_email}</div>
                                         </td>
                                         <td>
-                                            <div className="font-bold text-indigo-500 tabular-nums">{lead.phone}</div>
+                                            <div className="font-bold text-indigo-500 tabular-nums">{lead.customer_phone}</div>
+                                            <div className="text-[9px] text-[var(--text-muted)] italic uppercase">{lead.city}, {lead.state}</div>
                                         </td>
                                         <td>
                                             <div className="text-[10px] font-black text-[var(--text-muted)] uppercase">
-                                                {lead.created_at}
+                                                {new Date(lead.created_at).toLocaleDateString()}
                                             </div>
                                         </td>
                                         <td className="text-right">

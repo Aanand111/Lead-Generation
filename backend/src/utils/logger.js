@@ -13,9 +13,11 @@ const logFormat = winston.format.combine(
 const consoleFormat = winston.format.combine(
     winston.format.colorize(),
     winston.format.printf(
-        ({ level, message, timestamp, stack, correlationId }) => {
+        (info) => {
+            const { level, message, timestamp, stack, correlationId, ...meta } = info;
             const id = correlationId ? ` [${correlationId}]` : '';
-            return `${timestamp}${id} ${level}: ${stack || message}`;
+            const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+            return `${timestamp}${id} ${level}: ${stack || message}${metaStr}`;
         }
     )
 );

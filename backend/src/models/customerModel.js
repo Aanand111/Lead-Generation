@@ -1,5 +1,7 @@
 const { pool } = require('../config/db');
 
+const bcrypt = require('bcryptjs');
+
 /**
  * Aggregates all Customer nodes from the primary User directory.
  * Includes members registered via the mobile application (Vendor Referrals) 
@@ -86,17 +88,21 @@ const getAllCustomers = async (page = 1, limit = 10, search = '') => {
 };
 
 const createCustomer = async (data) => {
-    const { name, email, phone, whatsapp, referral, state, city, pincode, status } = data;
+    const { name, email, phone, whatsapp, referral, state, city, pincode, status, password } = data;
 
     // Create a new customer record
     // Adds a user and initializes their profile entry
+    // Use provided password if available, otherwise fallback to default '123456'
+    const salt = await bcrypt.genSalt(8);
+    const password_hash = await bcrypt.hash(password || '123456', salt);
+
     const query = `
-        INSERT INTO users (full_name, email, phone, role, status)
-        VALUES ($1, $2, $3, 'user', $4)
+        INSERT INTO users (full_name, email, phone, role, status, password_hash)
+        VALUES ($1, $2, $3, 'user', $4, $5)
         RETURNING *
     `;
 
-    const values = [name, email, phone, status === 'Active' ? 'ACTIVE' : 'BLOCKED'];
+    const values = [name, email, phone, status === 'Active' ? 'ACTIVE' : 'BLOCKED', password_hash];
     const result = await pool.query(query, values);
     const newUser = result.rows[0];
 

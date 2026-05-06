@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "redis:ensure": "node scripts/redis-check.js",
-    "start:api": "npm run redis:ensure && node src/server.js",
+    "start:api": "node src/server.js",
     "start:worker": "npm run redis:ensure && node src/worker-entry.js",
     "start:scheduler": "npm run redis:ensure && node src/scheduler-entry.js",
     "start:pm2": "pm2 start ecosystem.config.js --env production",

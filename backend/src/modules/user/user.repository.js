@@ -99,6 +99,19 @@ class UserRepository {
         return result.rows;
     }
 
+    async getUploadedLeadsWithStats(userId, client = pool) {
+        const result = await client.query(`
+            SELECT 
+                l.id, l.lead_id as lead_uid, l.customer_name, l.category, l.city, l.pincode, l.status, l.created_at,
+                (SELECT COUNT(*) FROM lead_purchases lp WHERE lp.lead_id = l.id) as purchase_count,
+                (SELECT COUNT(*) FROM lead_feedback lf WHERE lf.lead_id = l.id) as interest_count
+            FROM leads l
+            WHERE l.created_by = $1
+            ORDER BY l.created_at DESC
+        `, [userId]);
+        return result.rows;
+    }
+
     async getProfile(userId, client = pool) {
         const result = await client.query(`
             SELECT
@@ -108,7 +121,7 @@ class UserRepository {
                     WHEN v.name IS NOT NULL AND v.name != u.phone THEN v.name
                     ELSE COALESCE(u.full_name, v.name)
                 END as full_name,
-                u.email, up.address, up.city, up.state, up.pincode, up.profile_image as profile_pic,
+                u.email, up.address, up.city, up.state, up.pincode, up.pan_number, up.profile_image as profile_pic,
                 u.status, u.referral_code, u.referred_by, p.full_name as parent_name
             FROM users u
             LEFT JOIN user_profiles up ON u.id = up.user_id
@@ -119,13 +132,14 @@ class UserRepository {
         return result.rows[0];
     }
 
-    async updateUserIdentity(userId, name, email, client = pool) {
+    async updateUserIdentity(userId, name, email, phone, client = pool) {
         await client.query(
             `UPDATE users
              SET full_name = COALESCE(NULLIF($1, ''), full_name),
-                 email = COALESCE(NULLIF($2, ''), email)
-             WHERE id = $3`,
-            [name, email, userId]
+                 email = COALESCE(NULLIF($2, ''), email),
+                 phone = COALESCE(NULLIF($3, ''), phone)
+             WHERE id = $4`,
+            [name, email, phone, userId]
         );
     }
 
@@ -145,17 +159,19 @@ class UserRepository {
     }
 
     async upsertProfile(userId, profile, client = pool) {
-        const { address, city, state, pincode } = profile;
+        const { address, city, state, pincode, pan_number, profile_image } = profile;
         await client.query(
-            `INSERT INTO user_profiles (user_id, address, city, state, pincode)
-             VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO user_profiles (user_id, address, city, state, pincode, pan_number, profile_image)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
              ON CONFLICT (user_id)
              DO UPDATE SET
-                address = EXCLUDED.address,
-                city = EXCLUDED.city,
-                state = EXCLUDED.state,
-                pincode = EXCLUDED.pincode`,
-            [userId, address, city, state, pincode]
+                address = COALESCE(EXCLUDED.address, user_profiles.address),
+                city = COALESCE(EXCLUDED.city, user_profiles.city),
+                state = COALESCE(EXCLUDED.state, user_profiles.state),
+                pincode = COALESCE(EXCLUDED.pincode, user_profiles.pincode),
+                pan_number = COALESCE(EXCLUDED.pan_number, user_profiles.pan_number),
+                profile_image = COALESCE(EXCLUDED.profile_image, user_profiles.profile_image)`,
+            [userId, address, city, state, pincode, pan_number, profile_image]
         );
     }
 
@@ -193,7 +209,7 @@ class UserRepository {
             SELECT n.*, c.name as category_name
             FROM news n
             LEFT JOIN news_categories c ON n.category_id = c.id
-            WHERE n.status = true OR n.status = 'Publish'
+            WHERE n.status = true
             ORDER BY n.created_at DESC
         `);
         return result.rows;

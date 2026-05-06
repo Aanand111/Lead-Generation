@@ -4,6 +4,7 @@ import {
     Activity, Zap, Sparkles, Clock, Briefcase, Users, Search, Gem
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getApiBaseUrl } from '../utils/urls';
 
 const VendorReferrals = () => {
     const [referrals, setReferrals] = useState([]);
@@ -25,9 +26,8 @@ const VendorReferrals = () => {
     const fetchReferrals = async () => {
         setLoading(true);
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/vendor/referrals`, {
+            const res = await fetch(`${getApiBaseUrl()}/vendor/referrals`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -44,9 +44,8 @@ const VendorReferrals = () => {
     const handleApproval = async (subVendorId, action) => {
         setActionLoading(subVendorId);
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/vendor/approve-sub-vendor/${subVendorId}`, {
+            const res = await fetch(`${getApiBaseUrl()}/vendor/approve-sub-vendor/${subVendorId}`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -73,10 +72,9 @@ const VendorReferrals = () => {
         setFormLoading(true);
         setMsg({ text: '', type: '' });
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
             const token = localStorage.getItem('token');
             const endpoint = activeTab === 'vendor' ? '/vendor/refer-vendor' : '/vendor/refer-user';
-            const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+            const res = await fetch(`${getApiBaseUrl()}${endpoint}`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',

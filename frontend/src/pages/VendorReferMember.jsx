@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import { getApiBaseUrl } from '../utils/urls';
 
 const VendorReferMember = ({ mode = 'user' }) => {
     const [formData, setFormData] = useState({ phone: '', email: '', password: '', full_name: '', pincode: '', city: '', state: '' });
@@ -23,9 +24,8 @@ const VendorReferMember = ({ mode = 'user' }) => {
 
     const fetchStats = async () => {
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/vendor/stats`, {
+            const res = await fetch(`${getApiBaseUrl()}/vendor/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -36,9 +36,8 @@ const VendorReferMember = ({ mode = 'user' }) => {
     const fetchReferrals = async () => {
         setTableLoading(true);
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/vendor/referrals`, {
+            const res = await fetch(`${getApiBaseUrl()}/vendor/referrals`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -53,10 +52,9 @@ const VendorReferMember = ({ mode = 'user' }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
             const token = localStorage.getItem('token');
             const endpoint = isVendorMode ? '/vendor/refer-vendor' : '/vendor/refer-user';
-            const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+            const res = await fetch(`${getApiBaseUrl()}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({

@@ -46,18 +46,31 @@ const run = (command, args) => {
 
 const tryStartViaWsl = () => {
     const candidates = [
+        ['redis-server', '--daemonize', 'yes'],
         ['sh', '-lc', 'redis-server --daemonize yes'],
-        ['sh', '-lc', 'service redis-server start'],
-        ['sh', '-lc', '/etc/init.d/redis-server start']
+        ['sudo', 'service', 'redis-server', 'start'],
+        ['service', 'redis-server', 'start'],
+        ['sh', '-lc', 'service redis-server start']
     ];
 
+    let errors = [];
     for (const args of candidates) {
         try {
-            run('wsl', args);
-            return true;
+            require('child_process').execFileSync('wsl', args, {
+                stdio: 'pipe', // Capture output to check stderr
+                windowsHide: true
+            });
+            return true; // Success!
         } catch (error) {
-            // Try next startup command.
+            const stderr = error.stderr ? error.stderr.toString().trim() : '';
+            errors.push(`[${args.join(' ')}] failed: ${stderr || error.message}`);
         }
+    }
+    
+    // Log why WSL failed to start Redis, ignoring ENOENT (WSL not installed)
+    if (!errors[0].includes('ENOENT')) {
+        console.warn('[REDIS WARNING] Tried starting via WSL but failed. Errors:');
+        errors.forEach(err => console.warn(`  -> ${err}`));
     }
 
     return false;
@@ -65,7 +78,18 @@ const tryStartViaWsl = () => {
 
 const tryStartViaNativeRedis = () => {
     try {
-        run('redis-server', ['--daemonize', 'yes']);
+        // Native Windows Redis does not support --daemonize
+        // First check if redis-server is available
+        require('child_process').execFileSync('redis-server', ['--version'], { stdio: 'ignore', windowsHide: true });
+        
+        // Spawn it detached so it runs in background
+        const child = require('child_process').spawn('redis-server', [], {
+            detached: true,
+            stdio: 'ignore',
+            windowsHide: true
+        });
+        child.unref();
+        
         return true;
     } catch (error) {
         return false;
@@ -103,6 +127,7 @@ const ensureRedis = async () => {
 };
 
 ensureRedis().catch((error) => {
-    console.error(`[REDIS] ${error.message}`);
-    process.exit(1);
+    console.warn(`[REDIS WARNING] ${error.message}`);
+    console.warn('[REDIS WARNING] Dev server will proceed without Redis, but some realtime features/queues may be disabled.');
+    process.exit(0);
 });

@@ -1,5 +1,6 @@
 const leadsRepository = require('./leads.repository');
 const walletService = require('../wallet/wallet.service');
+const subscriptionsRepository = require('../subscriptions/subscriptions.repository');
 const AppError = require('../../utils/AppError');
 const { withTransaction } = require('../../utils/transaction');
 
@@ -37,15 +38,25 @@ class LeadsService {
             if (!lead) throw new AppError('Lead not found.', 404);
             if (lead.status !== 'ACTIVE') throw new AppError('This lead is no longer available.', 400);
 
-            // 2. Check if already purchased
+            // 2. Check for Active Subscription and Limits
+            const subscription = await subscriptionsRepository.findActiveSubscription(userId, lead.category, client);
+            if (!subscription) {
+                throw new AppError('An active subscription is required to purchase leads in this category.', 403);
+            }
+
+            if (subscription.total_leads > 0 && subscription.used_leads >= subscription.total_leads) {
+                throw new AppError(`You have reached the lead limit (${subscription.total_leads}) for your current plan.`, 403);
+            }
+
+            // 3. Check if already purchased
             const exists = await leadsRepository.checkPurchaseExists(userId, leadId, client);
             if (exists) throw new AppError('You have already purchased this lead.', 409);
 
-            // 3. Process Payment via WalletService (Pass client for transaction)
-            const cost = 10; // Business rule: fixed cost
+            // 4. Process Payment via WalletService (Pass client for transaction)
+            const cost = lead.credit_cost || 10; 
             await walletService.debit(userId, cost, `Purchased lead #${leadId}`, leadId, client);
 
-            // 4. Record Purchase
+            // 5. Record Purchase
             const purchase = await leadsRepository.recordPurchase({
                 user_id: userId,
                 lead_id: leadId,
@@ -54,11 +65,30 @@ class LeadsService {
                 lead_value: lead.lead_value
             }, client);
 
+            // 6. Increment Subscription Usage
+            await subscriptionsRepository.incrementUsedLeads(subscription.id, client);
+
             return purchase;
         });
 
         walletService.emitBalanceUpdate(userId);
         return purchase;
+    }
+
+    async submitLead(userId, leadData) {
+        // Use the existing leadModel to create a lead
+        const leadModel = require('../../models/leadModel');
+        
+        // Generate a lead UID if not provided
+        const lead_id = leadData.lead_id || `L-${Date.now()}`;
+        
+        const lead = await leadModel.createLead({
+            ...leadData,
+            lead_id,
+            status: 'PENDING' // Self-submitted leads need approval or stay pending for vendors
+        }, userId, 'PENDING');
+
+        return lead;
     }
 
     _maskLeads(leads) {

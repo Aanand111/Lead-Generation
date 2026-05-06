@@ -2,6 +2,7 @@ const AppError = require('../../utils/AppError');
 const { withTransaction } = require('../../utils/transaction');
 const walletService = require('../wallet/wallet.service');
 const userRepository = require('./user.repository');
+const logger = require('../../utils/logger');
 
 class UserService {
     async getDashboardStats(userId) {
@@ -66,22 +67,57 @@ class UserService {
         }));
     }
 
+    async getMyUploadedLeads(userId) {
+        const leads = await userRepository.getUploadedLeadsWithStats(userId);
+        return leads.map(l => ({
+            id: l.id,
+            lead_uid: l.lead_uid,
+            customer_name: l.customer_name,
+            category: l.category,
+            city: l.city,
+            pincode: l.pincode,
+            status: l.status,
+            created_at: l.created_at,
+            purchase_count: parseInt(l.purchase_count, 10),
+            interest_count: parseInt(l.interest_count, 10)
+        }));
+    }
+
     async getProfile(userId) {
         return userRepository.getProfile(userId);
     }
 
     async updateProfile(userId, payload) {
-        const { name: reqName, full_name, email, address, city, state, pincode } = payload;
+        logger.info(`[USER SERVICE] Updating profile for user ${userId}`, { payload });
+        const { name: reqName, full_name, email, phone: reqPhone, address, city, state, pincode, pan_number } = payload;
         const name = full_name || reqName;
 
         await withTransaction(async (client) => {
-            await userRepository.updateUserIdentity(userId, name, email, client);
-            const phone = await userRepository.getUserPhone(userId, client);
-            if (phone) {
-                await userRepository.syncVendorIdentity(phone, name, email, client);
+            // Get the old phone number to correctly update the vendor table
+            const oldPhone = await userRepository.getUserPhone(userId, client);
+            
+            await userRepository.updateUserIdentity(userId, name, email, reqPhone, client);
+            
+            const newPhone = reqPhone || oldPhone;
+
+            if (oldPhone && newPhone && oldPhone !== newPhone) {
+                // Phone number changed, update vendors table phone number
+                await client.query('UPDATE vendors SET phone = $1 WHERE phone = $2', [newPhone, oldPhone]);
             }
-            await userRepository.upsertProfile(userId, { address, city, state, pincode }, client);
+
+            if (newPhone) {
+                await userRepository.syncVendorIdentity(newPhone, name, email, client);
+            }
+            await userRepository.upsertProfile(userId, { address, city, state, pincode, pan_number }, client);
         });
+    }
+
+    async updateProfilePicture(userId, file) {
+        if (!file) throw new AppError('No image provided', 400);
+        const imageUrl = file.path; // Cloudinary returns the URL in file.path
+
+        await userRepository.upsertProfile(userId, { profile_image: imageUrl });
+        return imageUrl;
     }
 
     async getReferralStats(userId) {
@@ -145,11 +181,12 @@ class UserService {
             let hasPosterPlan = Boolean(hasPosterPackage);
             let subscriptionId = null;
 
-            if (!hasPosterPlan && subscription) {
-                if (subscription.total_posters === 0 || subscription.used_posters < subscription.total_posters) {
-                    hasPosterPlan = true;
-                    subscriptionId = subscription.id;
+            if (subscription) {
+                if (subscription.total_posters > 0 && subscription.used_posters >= subscription.total_posters) {
+                    throw new AppError(`You have reached the poster limit (${subscription.total_posters}) for your current plan.`, 403);
                 }
+                hasPosterPlan = true;
+                subscriptionId = subscription.id;
             }
 
             const extraPosterCost = 5;
@@ -203,7 +240,7 @@ class UserService {
             return {
                 success: true,
                 message: hasPosterPlan
-                    ? 'Poster generated! (Unlimited Subscription Active)'
+                    ? 'Poster generated using your active plan!'
                     : (isPaid ? 'Poster generated (Credits deducted)' : 'Poster generated using free daily pass'),
                 data: poster,
                 shouldEmitWalletUpdate

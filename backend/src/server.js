@@ -11,11 +11,13 @@ const { RedisStore } = require('rate-limit-redis');
 
 require('dotenv').config();
 
-const { validateEnv, parseBoolean, parseCsv, parseNumber, isProduction } = require('./config/env');
+const { validateEnv, parseBoolean, parseNumber, isProduction } = require('./config/env');
+const { isOriginAllowed } = require('./config/origins');
 const logger = require('./utils/logger');
 const swaggerSetup = require('./config/swagger');
 const correlationMiddleware = require('./middlewares/correlationMiddleware');
 const { errorHandler } = require('./middlewares/errorMiddleware');
+const { runMigrations } = require('./database/migrate');
 const {
     redisConnection,
     isRedisConfigured,
@@ -37,18 +39,6 @@ let server;
 let shuttingDown = false;
 let isOverloaded = false;
 
-const allowedOrigins = parseCsv(process.env.ALLOWED_ORIGINS);
-const effectiveAllowedOrigins = allowedOrigins.length > 0
-    ? allowedOrigins
-    : [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'https://lead-generation-hp33p72jp-aaanandjoshiii-1651s-projects.vercel.app',
-        'https://lead-generation-ivory-two.vercel.app',
-        'https://lead-generation-lcnf9bgx3-aaanandjoshiii-1651s-projects.vercel.app'
-    ];
-
 app.set('trust proxy', parseBoolean(process.env.TRUST_PROXY, true) ? 1 : false);
 app.disable('x-powered-by');
 
@@ -63,7 +53,7 @@ app.use(morgan(':correlation-id :method :url :status :res[content-length] - :res
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || effectiveAllowedOrigins.includes(origin)) {
+        if (isOriginAllowed(origin)) {
             return callback(null, true);
         }
 
@@ -177,7 +167,8 @@ const buildHealthPayload = async () => {
             uptime: process.uptime(),
             services: {
                 server: 'UP',
-                database: db.status,
+                database: db.connectionStatus || db.status,
+                schema: db.schemaStatus || 'UNKNOWN',
                 redis: redisUp ? 'UP' : (redis.configured ? 'DOWN' : 'DISABLED'),
                 realtime: socket.bridgeStatus === 'ready'
                     ? 'UP'
@@ -186,6 +177,7 @@ const buildHealthPayload = async () => {
             latencyMs: {
                 database: db.latencyMs
             },
+            schema: db.schema || null,
             pool: getPoolStatus(),
             runtime: {
                 role: process.env.RUNTIME_ROLE || 'api',
@@ -220,6 +212,7 @@ app.use('/api/vendor', require('./routes/vendorRoutes'));
 app.use('/api/sub-vendor', require('./routes/subVendorRoutes'));
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/notifications', require('./modules/notifications/notifications.routes'));
+app.use('/api/webhooks', require('./routes/webhookRoutes'));
 
 const { submitMessage } = require('./controllers/contactController');
 app.post('/api/contact', contactLimiter, submitMessage);
@@ -252,10 +245,16 @@ const shutdown = async (signal, exitCode = 0) => {
 };
 
 const startServer = async () => {
+    logger.debug('[SERVER] Starting server initialization...');
+    
+    // Auto-run migrations on startup
+    await runMigrations();
+    
     const dbHealth = await checkDatabaseHealth();
     if (dbHealth.status !== 'UP') {
-        throw new Error(`Database unavailable during startup: ${dbHealth.error || 'unknown error'}`);
+        throw new Error(`Database unavailable during startup: ${dbHealth.error || `schema ${dbHealth.schemaStatus || 'unknown'}`}`);
     }
+    logger.debug('[SERVER] Database health verified');
 
     const requireRedisForStartup = parseBoolean(
         process.env.REQUIRE_REDIS_FOR_STARTUP,
@@ -263,25 +262,30 @@ const startServer = async () => {
     );
 
     if (isRedisConfigured()) {
+        logger.debug('[SERVER] Waiting for Redis (optional)...');
         try {
             await waitForRedisReady('default');
+            logger.debug('[SERVER] Redis is ready');
         } catch (error) {
             if (requireRedisForStartup) {
+                logger.error('[SERVER] Redis required but failed to connect', { error: error.message });
                 throw error;
             }
 
             logger.warn('[SERVER] Redis not ready during startup, continuing in degraded mode', {
-                message: error.message
+                error: error.message
             });
         }
     } else if (requireRedisForStartup) {
         throw new Error('Redis is required for API startup but no Redis configuration was provided.');
     }
 
+    logger.debug('[SERVER] Initializing Socket.io gateway...');
     server = http.createServer(app);
     await socketGateway.init(server, {
         requireRedisBridge: requireRedisForStartup && isRedisConfigured()
     });
+    logger.debug('[SERVER] Socket.io gateway initialized');
 
     server.keepAliveTimeout = parseNumber(process.env.KEEP_ALIVE_TIMEOUT_MS, 65000);
     server.headersTimeout = parseNumber(process.env.HEADERS_TIMEOUT_MS, 66000);

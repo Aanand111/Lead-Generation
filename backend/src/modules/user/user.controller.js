@@ -24,6 +24,15 @@ class UserController {
         }
     }
 
+    async getMyUploadedLeads(req, res, next) {
+        try {
+            const data = await userService.getMyUploadedLeads(req.user.id);
+            res.status(200).json({ success: true, data });
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async getProfile(req, res, next) {
         try {
             const data = await userService.getProfile(req.user.id);
@@ -37,6 +46,15 @@ class UserController {
         try {
             await userService.updateProfile(req.user.id, req.body);
             res.status(200).json({ success: true, message: 'Profile updated successfully.' });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async updateProfilePicture(req, res, next) {
+        try {
+            const imageUrl = await userService.updateProfilePicture(req.user.id, req.file);
+            res.status(200).json({ success: true, url: imageUrl });
         } catch (error) {
             next(error);
         }

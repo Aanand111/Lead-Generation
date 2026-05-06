@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Phone, Mail, MapPin, Linkedin, Twitter, Instagram, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import api from '../utils/api';
 
 const ContactUs = () => {
     const [form, setForm] = useState({
@@ -23,12 +24,7 @@ const ContactUs = () => {
         setError('');
         setSuccess(false);
         try {
-            const res = await fetch('http://localhost:5000/api/contact', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form)
-            });
-            const data = await res.json();
+            const { data } = await api.post('/contact', form);
             if (data.success) {
                 setSuccess(true);
                 setForm({ full_name: '', email: '', subject: '', message: '' });

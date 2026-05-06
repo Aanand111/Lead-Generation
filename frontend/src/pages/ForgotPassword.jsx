@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Smartphone, Lock, CheckCircle, Eye, EyeOff, Hash } from 'lucide-react';
-import axios from 'axios';
 import InsureBg from '../assets/Insure.png';
 import InsureeLogo from '../assets/insuree.png';
-
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api' });
+import api from '../utils/api';
 
 const ForgotPassword = () => {
     const [step, setStep] = useState(1); // 1: Phone, 2: OTP, 3: Password, 4: Done

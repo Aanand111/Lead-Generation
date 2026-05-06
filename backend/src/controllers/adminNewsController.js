@@ -3,7 +3,7 @@ const adminNewsModel = require('../models/adminNewsModel');
 const addNews = async (req, res, next) => {
     try {
         const { title, content, category_id, publish_date, status, is_push_notification } = req.body;
-        
+
         let image = null;
         if (req.file) {
             image = req.file.path;
@@ -22,20 +22,15 @@ const addNews = async (req, res, next) => {
         // If push notification is enabled, broadcast to all vendors
         if (pushNotify && statusBool) {
             const { pool } = require('../config/db');
-            // Fetch all vendors
-            const vendors = await pool.query("SELECT id FROM users WHERE role = 'vendor' AND status = 'ACTIVE'");
-            
-            if (vendors.rows.length > 0) {
-                // Bulk insert notifications
-                const notificationValues = vendors.rows.map(v => 
-                    `('${v.id}', '${title.replace(/'/g, "''")}', '${(content || '').substring(0, 100).replace(/'/g, "''")}...', 'SYSTEM_NEWS', '{"news_id": "${newNews.id}"}')`
-                ).join(',');
-
-                await pool.query(`
-                    INSERT INTO notifications (user_id, title, body, type, data)
-                    VALUES ${notificationValues}
-                `);
-            }
+            await pool.query(`
+                INSERT INTO notifications (user_id, title, body, type, data)
+                SELECT id, $1, $2, 'SYSTEM_NEWS', $3
+                FROM users WHERE role = 'vendor' AND status = 'ACTIVE'
+            `, [
+                title,
+                (content || '').substring(0, 100) + '...',
+                `{"news_id": "${newNews.id}"}`
+            ]);
         }
 
         res.status(201).json({ success: true, message: 'News added and broadcasted successfully', data: newNews });
@@ -57,7 +52,7 @@ const editNews = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { title, content, category_id, publish_date, status, is_push_notification } = req.body;
-        
+
         let image = null;
         if (req.file) {
             image = req.file.path;

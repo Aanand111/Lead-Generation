@@ -29,6 +29,19 @@ class LeadsController {
             next(error);
         }
     }
+
+    async submitLead(req, res, next) {
+        try {
+            const lead = await leadsService.submitLead(req.user.id, req.body);
+            res.status(201).json({
+                success: true,
+                message: 'Lead submitted successfully! Our team will contact you soon.',
+                data: lead
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new LeadsController();

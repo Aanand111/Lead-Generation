@@ -1,8 +1,24 @@
 const { Queue } = require('bullmq');
 const { getBullConnection } = require('../config/redis');
+const logger = require('../utils/logger');
 
 const maintenanceQueue = new Queue('MaintenanceQueue', {
     connection: getBullConnection()
+});
+
+const loggedQueueErrors = new Set();
+
+// Prevent process crash if Redis is unavailable
+maintenanceQueue.on('error', (error) => {
+    const key = `maintenance:${error.message}`;
+    if (loggedQueueErrors.has(key)) return;
+
+    loggedQueueErrors.add(key);
+    logger.warn('[QUEUE] Maintenance queue connection error', {
+        error: error.message
+    });
+
+    setTimeout(() => loggedQueueErrors.delete(key), 60000).unref();
 });
 
 const repeatableJobs = [

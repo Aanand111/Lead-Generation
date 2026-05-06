@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { User, Mail, Phone, MapPin, BadgeInfo, Building2, Building, ToggleLeft, ArrowLeft, Save, Sparkles, Globe, Briefcase, Camera } from 'lucide-react';
+import { User, Mail, Phone, MapPin, BadgeInfo, Building2, Building, ToggleLeft, ArrowLeft, Save, Sparkles, Globe, Briefcase, Camera, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import CustomSelect from '../components/CustomSelect';
@@ -10,6 +10,7 @@ const CustomerCreate = () => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
+        password: '',
         phone: '',
         whatsapp: '',
         referral: '',
@@ -32,7 +33,7 @@ const CustomerCreate = () => {
         "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Rajahmundry", "Tirupati", "Kadapa", "Anantapur", "Kakinada" , "Ongole", "Chittoor", "Eluru", "Vizianagaram", "Nandyal", "Machilipatnam", "Proddatur", "Bhimavaram", "Tenali", "Srikakulam"],
         "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Tawang", "Ziro", "Bomdila", "Aalo (Along)","Tezu","Anini","Changlang","Khonsa","Namsai","Roing","Seppa","Tawang","Yingkiong","Yumko"],
         "Assam": ["Guwahati", "Silchar", "Dibrugarh", "Jorhat", "Nagaon", "Tinsukia", "Tezpur", "Bongaigaon", "Karimganj", "Lakhimpur", "Dhubri", "Golaghat", "Sivasagar", "Barpeta", "Kokrajhar", "Hailakandi", "Dhemaji", "Marigaon", "Nalbari", "Sonitpur", "Udalguri", "Kamrup Metropolitan"],
-        "Bihar": ["Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Purnia", "Darbhanga", "Bihar Sharif", "Arrah", "Begusarai", "Katihar", "Munger", "Saharsa", "Jehanabad", "Buxar", "Nawada", "Samastipur", "Sitamarhi", "Siwan", "Vaishali", "Aurangabad"],
+        "Bihar": ["Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Purnia", "Darbhanga", "Bihar Sharif", "Arrah", "Begusarai", "Katihar", "Munger", " Saharsa", "Jehanabad", "Buxar", "Nawada", "Samastipur", "Sitamarhi", "Siwan", "Vaishali", "Aurangabad"],
         "Chhattisgarh": ["Raipur", "Bhilai", "Bilaspur", "Korba", "Rajnandgaon", "Raigarh", "Jagdalpur", "Ambikapur", "Durg", "Bhilai Nagar", "Raigarh", "Korba", "Ambikapur", "Rajnandgaon", "Jagdalpur", "Dhamtari", "Kawardha", "Mahasamund", "Janjgir-Champa", "Koriya", "Sukma", "Bijapur", "Narayanpur", "Balod", "Bemetara", "Mungeli", "Gaurela-Pendra-Marwahi"],
         "Goa": ["Panaji","Margao", "Mapusa", "Ponda", "Bicholim", "Cuncolim", "Sancoale", "Valpoi", "Pernem", "Canacona", "Quepem", "Sanguem", "Bassiim", "Mormugao", "Bardez", "Salcete", "Ponda", "Tiswadi", "Bicholim", "Sattari", "Pernem", "Canacona", "Quepem", "Sanguem", "Bassiim", "Mormugao", "Bardez", "Salcete", "Ponda", "Tiswadi",],
         "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar", "Junagadh", "Gandhinagar", "Nadiad", "Porbandar", "Anand", "Kheda" ],
@@ -191,6 +192,18 @@ const CustomerCreate = () => {
                                         type="email" name="email" value={formData.email} onChange={handleChange} 
                                         className="w-full pl-12 pr-4 py-4 rounded-2xl font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none"
                                         placeholder="EX: USER@PROTOCOL.COM" required 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Security Key (Password)</label>
+                                <div className="relative group">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-500 transition-colors" size={18} />
+                                    <input 
+                                        type="password" name="password" value={formData.password} onChange={handleChange} 
+                                        className="w-full pl-12 pr-4 py-4 rounded-2xl font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none"
+                                        placeholder="MIN 6 CHARACTERS" minLength={6} 
                                     />
                                 </div>
                             </div>

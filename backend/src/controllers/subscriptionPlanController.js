@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { broadcast } = require('../utils/socket');
 
 // ── GET all plans ────────────────────────────────────────────────
 const getSubscriptionPlans = async (req, res, next) => {
@@ -90,10 +91,38 @@ const addSubscriptionPlan = async (req, res, next) => {
             ]
         );
 
+        const newPlan = result.rows[0];
+
+        // Broadcast notification to all active users/vendors
+        try {
+            await db.query(`
+                INSERT INTO notifications (user_id, title, body, type, data)
+                SELECT id, $1, $2, 'PLAN_ANNOUNCEMENT', $3
+                FROM users 
+                WHERE role != 'admin' AND status = 'ACTIVE'
+            `, [
+                `New Plan Launched: ${newPlan.name}`,
+                `Check out our new ${newPlan.category} plan at ₹${newPlan.price}! Includes ${newPlan.leads_limit} leads and ${newPlan.poster_limit} posters.`,
+                JSON.stringify({ plan_id: newPlan.id, type: 'subscription_plan' })
+            ]);
+
+            // Real-time broadcast
+            broadcast('notification', {
+                id: Date.now(),
+                title: `New Plan Launched: ${newPlan.name}`,
+                body: `Check out our new ${newPlan.category} plan at ₹${newPlan.price}! Includes ${newPlan.leads_limit} leads and ${newPlan.poster_limit} posters.`,
+                time: 'Just now',
+                isRead: false
+            });
+        } catch (notifyError) {
+            console.error('[NOTIFY] Failed to broadcast new plan notification:', notifyError.message);
+            // Don't fail the request if notification fails
+        }
+
         res.status(201).json({
             success: true,
-            message: 'Subscription plan created successfully',
-            data: result.rows[0]
+            message: 'Subscription plan created and broadcasted successfully',
+            data: newPlan
         });
     } catch (error) {
         next(error);

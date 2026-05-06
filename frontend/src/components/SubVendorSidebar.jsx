@@ -16,6 +16,7 @@ const SubVendorSidebar = ({ isOpen }) => {
 
     const menuItems = [
         { path: '/sub-vendor/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+        { path: '/sub-vendor/leads/my', label: 'My Leads', icon: <Activity size={20} /> },
         { path: '/sub-vendor/refer-user', label: 'Refer User', icon: <UserPlus size={20} /> },
         { path: '/sub-vendor/referrals', label: 'My Referrals', icon: <Users size={20} /> },
         { path: '/sub-vendor/leads/upload', label: 'Forge Leads', icon: <Plus size={20} /> },
