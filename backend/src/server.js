@@ -292,6 +292,16 @@ const startServer = async () => {
     server.requestTimeout = parseNumber(process.env.REQUEST_TIMEOUT_MS, 30000);
 
     const port = parseNumber(process.env.PORT, 5000);
+    server.on('error', (error) => {
+        if (error.code === 'EADDRINUSE') {
+            logger.error(`[SERVER] Port ${port} is already in use. Please kill the process using this port or use a different one.`);
+            process.exit(1);
+        } else {
+            logger.error('[SERVER] Unexpected error during startup', { error: error.message });
+            process.exit(1);
+        }
+    });
+
     server.listen(port, () => {
         logger.info('[SERVER] API is live', {
             port,
