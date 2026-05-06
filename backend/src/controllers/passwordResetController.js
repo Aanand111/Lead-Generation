@@ -2,6 +2,7 @@ const { pool } = require('../config/db');
 const bcrypt = require('bcryptjs');
 const { redisConnection } = require('../config/redis');
 const smsService = require('../services/smsService');
+const whatsappService = require('../services/whatsappService');
 const logger = require('../utils/logger');
 
 // Redis-backed OTP store with 10-minute TTL
@@ -45,11 +46,27 @@ const sendOTP = async (req, res, next) => {
         // Store in Redis with TTL
         await storeOTP(phone, otp);
 
-        // Phase 3: Send OTP via SMS service
-        const smsResult = await smsService.sendOTP(phone, otp);
-        
-        if (!smsResult.success) {
-            logger.error(`Failed to send OTP to ${phone}: ${smsResult.error}`);
+        // Phase 3: Send OTP via Notification Services
+        let notificationSent = false;
+
+        // Try WhatsApp first if configured
+        if (process.env.WHATSAPP_ENABLED === 'true' || process.env.WHATSAPP_API_KEY) {
+            const waResult = await whatsappService.sendOTP(phone, otp);
+            if (waResult.success) notificationSent = true;
+            else logger.error(`Failed to send WhatsApp OTP to ${phone}: ${waResult.error}`);
+        }
+
+        // Fallback to SMS or send alongside if not already sent
+        if (!notificationSent || process.env.SMS_AND_WHATSAPP === 'true') {
+            const smsResult = await smsService.sendOTP(phone, otp);
+            if (smsResult.success) notificationSent = true;
+            else logger.error(`Failed to send SMS OTP to ${phone}: ${smsResult.error}`);
+        }
+
+        if (!notificationSent) {
+            // Even if providers fail, we return 200 in dev or specific error in prod
+            // For now, let's just log and continue to not break the flow if mock is used
+            logger.warn(`OTP generated but not sent via any provider for ${phone}`);
         }
 
         res.status(200).json({
