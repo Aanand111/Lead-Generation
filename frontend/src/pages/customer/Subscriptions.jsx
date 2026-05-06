@@ -128,7 +128,7 @@ const UserSubscriptions = () => {
             <div className="flex flex-col md:flex-row justify-between items-end gap-8 relative z-10">
                 <div className="max-w-2xl">
                     <div className="flex items-center gap-3 mb-4">
-                        <span className="px-3 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full">Financial Console</span>
+                        <span className="px-3 py-1 bg-gray-400/20 text-[var(--text-dark)] text-[9px] font-black uppercase tracking-[0.2em] rounded-full">Financial Console</span>
                         <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-500 uppercase tracking-widest italic">
                             <Crown size={12} fill="currentColor" /> Authorized Tier: Premium
                         </div>
@@ -203,12 +203,7 @@ const UserSubscriptions = () => {
                     ))
                 ) : filteredPlans.length > 0 ? (
                     filteredPlans.map((plan, idx) => (
-                        <div key={plan.id} className={`group relative bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[4rem] shadow-sm hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.2)] transition-all duration-700 flex flex-col overflow-hidden ${idx === 1 ? 'md:-translate-y-6 md:scale-105 border-indigo-500/20' : ''}`}>
-                            
-                            {idx === 1 && (
-                                <div className="absolute top-0 right-14 -translate-y-1/2 px-6 py-2 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-[0.3em] rounded-full shadow-2xl z-20 italic">Recommended</div>
-                            )}
-
+                        <div key={plan.id} className={`group relative bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[4rem] shadow-sm hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.2)] transition-all duration-700 flex flex-col overflow-hidden ${idx === 1 ? 'md:-translate-y-6 md:scale-105 border-indigo-500/20' : ''}`}>                           
                             <div className="p-12 pb-10 border-b border-slate-50 bg-gradient-to-br from-slate-50/50 to-transparent relative">
                                 <div className={`w-20 h-20 rounded-[2.5rem] flex items-center justify-center mb-10 shadow-2xl group-hover:scale-110 transition-transform duration-500 ${
                                     idx === 0 ? 'bg-amber-100 text-amber-600' : idx === 1 ? 'bg-indigo-600 text-white' : 'bg-rose-100 text-rose-600'
@@ -224,21 +219,21 @@ const UserSubscriptions = () => {
 
                             <div className="p-12 space-y-10 flex-1">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-5 bg-slate-50 rounded-3xl border border-transparent hover:border-indigo-500/10 transition-all">
+                                    <div className="p-5 rounded-3xl border border-transparent hover:border-indigo-500/10 transition-all">
                                         <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 italic">Capacity</div>
-                                        <div className="text-lg font-black text-[var(--text-dark)] uppercase leading-none">{plan.lead_limit} Leads</div>
+                                        <div className="text-lg font-black text-yellow-500 uppercase leading-none">{plan.lead_limit} Leads</div>
                                     </div>
-                                    <div className="p-5 bg-slate-50 rounded-3xl border border-transparent hover:border-indigo-500/10 transition-all">
+                                    <div className="p-5 rounded-3xl border border-transparent hover:border-indigo-500/10 transition-all">
                                         <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 italic">Credits</div>
-                                        <div className="text-lg font-black text-[var(--text-dark)] uppercase leading-none">{plan.credits} CR</div>
+                                        <div className="text-lg font-black text-green-600 uppercase leading-none">{plan.credits} CR</div>
                                     </div>
-                                    <div className="p-5 bg-slate-50 rounded-3xl border border-transparent hover:border-indigo-500/10 transition-all">
+                                    <div className="p-5 rounded-3xl border border-transparent hover:border-indigo-500/10 transition-all">
                                         <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 italic">Creative</div>
-                                        <div className="text-lg font-black text-[var(--text-dark)] uppercase leading-none">{plan.poster_limit} Posters</div>
+                                        <div className="text-lg font-black text-purple-600 uppercase leading-none">{plan.poster_limit} Posters</div>
                                     </div>
                                     <div className="p-5 bg-slate-50 rounded-3xl border border-transparent hover:border-indigo-500/10 transition-all">
                                         <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 italic">Horizon</div>
-                                        <div className="text-lg font-black text-[var(--text-dark)] uppercase leading-none">{plan.validity_days} Days</div>
+                                        <div className="text-lg font-black text-orange-600 uppercase leading-none">{plan.validity_days} Days</div>
                                     </div>
                                 </div>
 
