@@ -16,12 +16,16 @@ const archiveExpiredPosters = async () => {
         );
 
         if (expiredPostersRes.rows.length > 0) {
-            for (const poster of expiredPostersRes.rows) {
-                await NotificationService.sendPushToUser(
-                    poster.phone,
-                    'Poster Expired & Archived',
-                    `Your poster "${poster.title}" has reached its validity limit and is now archived.`
-                );
+            const batchSize = 50;
+            for (let i = 0; i < expiredPostersRes.rows.length; i += batchSize) {
+                const batch = expiredPostersRes.rows.slice(i, i + batchSize);
+                await Promise.allSettled(batch.map(poster =>
+                    NotificationService.sendPushToUser(
+                        poster.phone,
+                        'Poster Expired & Archived',
+                        `Your poster "${poster.title}" has reached its validity limit and is now archived.`
+                    )
+                ));
             }
         }
 
@@ -78,12 +82,16 @@ const checkPackageRenewals = async () => {
         );
 
         if (expiringRes.rows.length > 0) {
-            for (const sub of expiringRes.rows) {
-                await NotificationService.sendPushToUser(
-                    sub.phone,
-                    'Package Expiring Soon!',
-                    `Your "${sub.plan_name}" plan will expire on ${new Date(sub.end_date).toLocaleDateString()}. Renew now to continue enjoying leads!`
-                );
+            const batchSize = 50;
+            for (let i = 0; i < expiringRes.rows.length; i += batchSize) {
+                const batch = expiringRes.rows.slice(i, i + batchSize);
+                await Promise.allSettled(batch.map(sub =>
+                    NotificationService.sendPushToUser(
+                        sub.phone,
+                        'Package Expiring Soon!',
+                        `Your "${sub.plan_name}" plan will expire on ${new Date(sub.end_date).toLocaleDateString()}. Renew now to continue enjoying leads!`
+                    )
+                ));
             }
         }
 
@@ -98,63 +106,8 @@ const checkPackageRenewals = async () => {
     }
 };
 
-const syncAllVendorsRegistry = async () => {
-    try {
-        logger.info('[JOBS] Starting vendor registry synchronization');
-
-        const activeVendorsRes = await pool.query(
-            "SELECT id, phone, email, full_name, password_hash, referral_code, status, referred_by FROM users WHERE role = 'vendor'"
-        );
-
-        logger.info('[JOBS] Vendor registry scan loaded', {
-            vendorCount: activeVendorsRes.rowCount
-        });
-
-        for (const user of activeVendorsRes.rows) {
-            let vendorStatus = 'Active';
-            if (user.status && user.status.toUpperCase() === 'PENDING') vendorStatus = 'Pending';
-            if (user.status && user.status.toUpperCase() === 'BLOCKED') vendorStatus = 'Inactive';
-
-            const regRes = await pool.query(
-                'SELECT id FROM vendors WHERE phone = $1 OR email = $2 LIMIT 1',
-                [user.phone, user.email]
-            );
-
-            if (regRes.rows.length === 0) {
-                logger.info('[JOBS] Backfilling vendor registry entry', {
-                    fullName: user.full_name,
-                    userId: user.id
-                });
-
-                await pool.query(
-                    `INSERT INTO vendors (name, phone, email, password, referral_code, status)
-                     VALUES ($1, $2, $3, $4, $5, $6)`,
-                    [user.full_name, user.phone, user.email, user.password_hash, user.referral_code, vendorStatus]
-                );
-            }
-        }
-
-        logger.info('[JOBS] Synchronizing vendor hierarchy links');
-        const syncLinksRes = await pool.query(`
-            UPDATE vendors v
-            SET referred_by_vendor_id = parent_vendor.id
-            FROM users child_user
-            JOIN users parent_user ON child_user.referred_by = parent_user.id
-            JOIN vendors parent_vendor ON parent_user.phone = parent_vendor.phone
-            WHERE v.phone = child_user.phone
-            AND v.referred_by_vendor_id IS NULL
-        `);
-
-        logger.info('[JOBS] Vendor registry synchronization completed', {
-            updatedLinks: syncLinksRes.rowCount
-        });
-    } catch (error) {
-        logger.error('[JOBS] Vendor registry synchronization failed', {
-            message: error.message,
-            stack: error.stack
-        });
-    }
-};
+// syncAllVendorsRegistry has been completely removed as part of the architecture refactor.
+// Vendors are now solely managed natively in the users table, eliminating dual-table redundancy.
 
 const refreshAnalyticsView = async () => {
     try {
@@ -174,7 +127,6 @@ const runAllMaintenanceTasks = async () => {
     await archiveExpiredPosters();
     await expirePurchasedLeads();
     await checkPackageRenewals();
-    await syncAllVendorsRegistry();
     await refreshAnalyticsView();
     logger.info('[JOBS] Manual maintenance sequence completed');
 };
@@ -183,7 +135,6 @@ module.exports = {
     archiveExpiredPosters,
     expirePurchasedLeads,
     checkPackageRenewals,
-    syncAllVendorsRegistry,
     refreshAnalyticsView,
     runAllMaintenanceTasks
 };

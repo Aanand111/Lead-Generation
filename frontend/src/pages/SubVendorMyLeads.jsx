@@ -5,12 +5,11 @@ import {
     ArrowUpRight, AlertCircle, FileText
 } from 'lucide-react';
 import api from '../utils/api';
-import { toast } from 'react-hot-toast';
 
 const SubVendorMyLeads = () => {
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [_error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
 
     const fetchMyUploadedLeads = async () => {

@@ -76,6 +76,16 @@ const UserSubscriptions = () => {
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         setPurchasing(selectedPlan.id);
+
+        // PAN Card Validation
+        const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+        if (!panRegex.test(userDetails.panNumber)) {
+            setMessage({ type: 'error', text: 'Invalid PAN Card Format. Use ABCDE1234F.' });
+            setPurchasing(null);
+            setTimeout(() => setMessage({ type: '', text: '' }), 4000);
+            return;
+        }
+
         try {
             const { data: orderData } = await api.post('/user/subscription/create-order', {
                 planId: selectedPlan.id,
@@ -101,9 +111,11 @@ const UserSubscriptions = () => {
                             setMessage({ type: 'success', text: `Success: ${verifyData.message}` });
                             setShowForm(false);
                             fetchPlans();
+                            setTimeout(() => setMessage({ type: '', text: '' }), 4000);
                         }
                     } catch (err) {
                         setMessage({ type: 'error', text: 'Synchronization Failed.' });
+                        setTimeout(() => setMessage({ type: '', text: '' }), 4000);
                     }
                 },
                 prefill: { name: userDetails.name, email: userDetails.email, contact: userDetails.phone },
@@ -111,12 +123,14 @@ const UserSubscriptions = () => {
             };
 
             const rzp = new window.Razorpay(options);
-            rzp.on('payment.failed', function (response){
+            rzp.on('payment.failed', function (){
                 setMessage({ type: 'error', text: 'Transaction Rejected.' });
+                setTimeout(() => setMessage({ type: '', text: '' }), 4000);
             });
             rzp.open();
         } catch (err) {
             setMessage({ type: 'error', text: 'Payment Initialization Failed.' });
+            setTimeout(() => setMessage({ type: '', text: '' }), 4000);
         } finally {
             setPurchasing(null);
         }
@@ -202,67 +216,90 @@ const UserSubscriptions = () => {
                         </div>
                     ))
                 ) : filteredPlans.length > 0 ? (
-                    filteredPlans.map((plan, idx) => (
-                        <div key={plan.id} className={`group relative bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[4rem] shadow-sm hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.2)] transition-all duration-700 flex flex-col overflow-hidden ${idx === 1 ? 'md:-translate-y-6 md:scale-105 border-indigo-500/20' : ''}`}>                           
-                            <div className="p-12 pb-10 border-b border-slate-50 bg-gradient-to-br from-slate-50/50 to-transparent relative">
-                                <div className={`w-20 h-20 rounded-[2.5rem] flex items-center justify-center mb-10 shadow-2xl group-hover:scale-110 transition-transform duration-500 ${
-                                    idx === 0 ? 'bg-amber-100 text-amber-600' : idx === 1 ? 'bg-indigo-600 text-white' : 'bg-rose-100 text-rose-600'
-                                }`}>
-                                    {idx === 0 ? <Zap size={32} /> : idx === 1 ? <Rocket size={32} /> : <Crown size={32} />}
-                                </div>
-                                <h3 className="text-3xl font-black italic tracking-tighter uppercase text-[var(--text-dark)] mb-4">{plan.name}</h3>
-                                <div className="flex items-baseline gap-3">
-                                    <span className="text-5xl font-black text-[var(--text-dark)] tracking-tighter tabular-nums">₹{plan.price}</span>
-                                    <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest italic opacity-50">One-Time Asset</span>
-                                </div>
-                            </div>
-
-                            <div className="p-12 space-y-10 flex-1">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-5 rounded-3xl border border-transparent hover:border-indigo-500/10 transition-all">
-                                        <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 italic">Capacity</div>
-                                        <div className="text-lg font-black text-yellow-500 uppercase leading-none">{plan.lead_limit} Leads</div>
+                    filteredPlans.map((plan, idx) => {
+                        const isPremium = plan.category?.toUpperCase() === 'PREMIUM' || plan.name?.toUpperCase().includes('PREMIUM');
+                        return (
+                            <div key={plan.id} className={`group relative rounded-[4rem] shadow-sm transition-all duration-700 flex flex-col overflow-hidden ${
+                                isPremium 
+                                ? 'bg-gradient-to-br from-[#1a1a1a] via-[#2c2c2c] to-[#000000] border-2 border-amber-500/30 shadow-[0_50px_100px_-20px_rgba(245,158,11,0.2)] md:-translate-y-6 md:scale-105' 
+                                : 'bg-[var(--surface-color)] border border-[var(--border-color)] hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.2)]'
+                            } ${!isPremium && idx === 1 ? 'md:-translate-y-6 md:scale-105 border-indigo-500/20' : ''}`}>
+                                {isPremium && (
+                                    <div className="absolute top-0 right-0 px-8 py-3 bg-gradient-to-r from-amber-400 to-amber-600 text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-bl-[2rem] shadow-xl z-20 flex items-center gap-2">
+                                        <Gem size={14} fill="currentColor" /> VIP ELITE
                                     </div>
-                                    <div className="p-5 rounded-3xl border border-transparent hover:border-indigo-500/10 transition-all">
-                                        <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 italic">Credits</div>
-                                        <div className="text-lg font-black text-green-600 uppercase leading-none">{plan.credits} CR</div>
+                                )}
+                                
+                                <div className={`p-12 pb-10 border-b relative ${isPremium ? 'border-amber-500/10' : 'border-slate-50 bg-gradient-to-br from-slate-50/50 to-transparent'}`}>
+                                    <div className={`w-20 h-20 rounded-[2.5rem] flex items-center justify-center mb-10 shadow-2xl group-hover:scale-110 transition-transform duration-500 ${
+                                        isPremium 
+                                        ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-black shadow-amber-500/20' 
+                                        : (idx === 0 ? 'bg-amber-100 text-amber-600' : idx === 1 ? 'bg-indigo-600 text-white' : 'bg-rose-100 text-rose-600')
+                                    }`}>
+                                        {isPremium ? <Crown size={32} fill="currentColor" /> : (idx === 0 ? <Zap size={32} /> : idx === 1 ? <Rocket size={32} /> : <Crown size={32} />)}
                                     </div>
-                                    <div className="p-5 rounded-3xl border border-transparent hover:border-indigo-500/10 transition-all">
-                                        <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 italic">Creative</div>
-                                        <div className="text-lg font-black text-purple-600 uppercase leading-none">{plan.poster_limit} Posters</div>
-                                    </div>
-                                    <div className="p-5 bg-slate-50 rounded-3xl border border-transparent hover:border-indigo-500/10 transition-all">
-                                        <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 italic">Horizon</div>
-                                        <div className="text-lg font-black text-orange-600 uppercase leading-none">{plan.validity_days} Days</div>
+                                    <h3 className={`text-3xl font-black italic tracking-tighter uppercase mb-4 ${isPremium ? 'text-white' : 'text-[var(--text-dark)]'}`}>{plan.name}</h3>
+                                    <div className="flex items-baseline gap-3">
+                                        <span className={`text-5xl font-black tracking-tighter tabular-nums ${isPremium ? 'text-amber-400' : 'text-[var(--text-dark)]'}`}>₹{plan.price}</span>
+                                        <span className={`text-[11px] font-black uppercase tracking-widest italic opacity-50 ${isPremium ? 'text-white/60' : 'text-[var(--text-muted)]'}`}>One-Time Asset</span>
                                     </div>
                                 </div>
 
-                                <div className="space-y-5">
-                                    {['Premium Dashboard Access', 'Live Market Updates', 'Priority Data Delivery', 'Secure Cloud Archiving'].map(perk => (
-                                        <div key={perk} className="flex items-center gap-4 group/perk">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow-lg group-hover/perk:scale-125 transition-transform">
-                                                <Check size={14} strokeWidth={4} />
-                                            </div>
-                                            <span className="text-[11px] font-black text-[var(--text-dark)] uppercase tracking-widest italic opacity-70 group-hover/perk:opacity-100 transition-opacity">{perk}</span>
+                                <div className="p-12 space-y-10 flex-1">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className={`p-5 rounded-3xl border transition-all ${isPremium ? 'bg-white/5 border-amber-500/10 hover:border-amber-500/30' : 'border-transparent hover:border-indigo-500/10'}`}>
+                                            <div className={`text-[9px] font-black uppercase tracking-widest mb-1 italic ${isPremium ? 'text-amber-500/70' : 'text-[var(--text-muted)]'}`}>Capacity</div>
+                                            <div className={`text-lg font-black uppercase leading-none ${isPremium ? 'text-amber-500' : 'text-yellow-500'}`}>{plan.lead_limit} Leads</div>
                                         </div>
-                                    ))}
-                                </div>
+                                        <div className={`p-5 rounded-3xl border transition-all ${isPremium ? 'bg-white/5 border-amber-500/10 hover:border-amber-500/30' : 'border-transparent hover:border-indigo-500/10'}`}>
+                                            <div className={`text-[9px] font-black uppercase tracking-widest mb-1 italic ${isPremium ? 'text-amber-500/70' : 'text-[var(--text-muted)]'}`}>Credits</div>
+                                            <div className={`text-lg font-black uppercase leading-none ${isPremium ? 'text-amber-400' : 'text-green-600'}`}>{plan.credits} CR</div>
+                                        </div>
+                                        <div className={`p-5 rounded-3xl border transition-all ${isPremium ? 'bg-white/5 border-amber-500/10 hover:border-amber-500/30' : 'border-transparent hover:border-indigo-500/10'}`}>
+                                            <div className={`text-[9px] font-black uppercase tracking-widest mb-1 italic ${isPremium ? 'text-amber-500/70' : 'text-[var(--text-muted)]'}`}>Creative</div>
+                                            <div className={`text-lg font-black uppercase leading-none ${isPremium ? 'text-amber-300' : 'text-purple-600'}`}>{plan.poster_limit} Posters</div>
+                                        </div>
+                                        <div className={`p-5 rounded-3xl border transition-all ${isPremium ? 'bg-white/5 border-amber-500/10 hover:border-amber-500/30' : 'border-transparent hover:border-indigo-500/10'}`}>
+                                            <div className={`text-[9px] font-black uppercase tracking-widest mb-1 italic ${isPremium ? 'text-amber-500/70' : 'text-[var(--text-muted)]'}`}>Horizon</div>
+                                            <div className={`text-lg font-black uppercase leading-none ${isPremium ? 'text-amber-500' : 'text-orange-600'}`}>{plan.validity_days} Days</div>
+                                        </div>
+                                    </div>
 
-                                <div className="pt-10">
-                                    <button 
-                                        onClick={() => initiatePurchase(plan)}
-                                        disabled={purchasing === plan.id}
-                                        className={`w-full py-6 rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-[12px] shadow-2xl transition-all duration-500 active:scale-95 flex items-center justify-center gap-3 ${
-                                        idx === 1 
-                                        ? 'bg-black text-white hover:bg-indigo-600' 
-                                        : 'bg-[var(--surface-color)] text-[var(--text-dark)] border border-[var(--border-color)] hover:bg-black hover:text-white'
-                                    } ${purchasing === plan.id ? 'opacity-30 cursor-wait' : 'cursor-pointer'}`}>
-                                        {purchasing === plan.id ? <RefreshCcw className="animate-spin" size={20} /> : <>Initialize Acquisition <ArrowRight size={18} /></>}
-                                    </button>
+                                    <div className="space-y-5">
+                                        {[
+                                            'Premium Dashboard Access', 
+                                            'Live Market Updates', 
+                                            'Priority Data Delivery', 
+                                            'Secure Cloud Archiving',
+                                            ...(isPremium ? ['VIP Support Line', 'Advanced Lead Analytics'] : [])
+                                        ].map(perk => (
+                                            <div key={perk} className="flex items-center gap-4 group/perk">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center shadow-lg group-hover/perk:scale-125 transition-transform ${isPremium ? 'bg-amber-500 text-black' : 'bg-indigo-500 text-white'}`}>
+                                                    <Check size={14} strokeWidth={4} />
+                                                </div>
+                                                <span className={`text-[11px] font-black uppercase tracking-widest italic opacity-70 group-hover/perk:opacity-100 transition-opacity ${isPremium ? 'text-white/80' : 'text-[var(--text-dark)]'}`}>{perk}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="pt-10">
+                                        <button 
+                                            onClick={() => initiatePurchase(plan)}
+                                            disabled={purchasing === plan.id}
+                                            className={`w-full py-6 rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-[12px] shadow-2xl transition-all duration-500 active:scale-95 flex items-center justify-center gap-3 ${
+                                                isPremium 
+                                                ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-black hover:scale-105' 
+                                                : (idx === 1 
+                                                    ? 'bg-black text-white hover:bg-indigo-600' 
+                                                    : 'bg-[var(--surface-color)] text-[var(--text-dark)] border border-[var(--border-color)] hover:bg-black hover:text-white')
+                                            } ${purchasing === plan.id ? 'opacity-30 cursor-wait' : 'cursor-pointer'}`}>
+                                            {purchasing === plan.id ? <RefreshCcw className="animate-spin" size={20} /> : <>{isPremium ? 'ELEVATE ACCESS' : 'Initialize Acquisition'} <ArrowRight size={18} /></>}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 ) : (
                     <div className="col-span-full py-40 text-center rounded-[4rem] bg-[var(--surface-color)] border border-[var(--border-color)] opacity-20">
                          <CreditCard size={84} strokeWidth={1} className="mx-auto mb-6" />
@@ -293,16 +330,16 @@ const UserSubscriptions = () => {
             {/* --- Secure Checkout Modal --- */}
             {showForm && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-[40px] animate-fade-in">
-                    <div className="w-full max-w-2xl bg-white rounded-[4rem] shadow-2xl overflow-hidden animate-zoom-in relative">
-                        <div className="p-12 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+                    <div className="w-full max-w-2xl bg-[var(--surface-color)] rounded-[4rem] shadow-2xl overflow-hidden animate-zoom-in relative">
+                        <div className="p-12 border-b border-slate-50  flex justify-between items-center">
                             <div>
-                                <h3 className="text-2xl font-black uppercase tracking-tighter italic flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center"><Lock size={20} /></div>
+                                <h3 className="text-2xl font-black text-indigo-500 uppercase tracking-tighter italic flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white  flex items-center justify-center"><Lock size={20} /></div>
                                     Secure Verification
                                 </h3>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2 ml-14">Required for Transaction Authorization</p>
                             </div>
-                            <button onClick={() => setShowForm(false)} className="w-14 h-14 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-300 hover:text-rose-500 transition-all"><X size={24} /></button>
+                            <button onClick={() => setShowForm(false)} className="w-14 h-14 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 hover:text-rose-500 transition-all"><X size={24} /></button>
                         </div>
                         
                         <form onSubmit={handleFormSubmit} className="p-12 space-y-10">
@@ -320,14 +357,18 @@ const UserSubscriptions = () => {
                                     </div>
                                 </div>
                                 <div className="space-y-3 col-span-full">
-                                    <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest ml-1 italic">PAN Card Number (Required) <span className="text-rose-500">*</span></label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 italic">PAN Card Number (Required) <span className="text-rose-500">*</span></label>
                                     <input 
                                         type="text" 
                                         required 
                                         value={userDetails.panNumber}
                                         placeholder="EX: ABCDE1234F"
-                                        onChange={(e) => setUserDetails({...userDetails, panNumber: e.target.value.toUpperCase()})}
-                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-indigo-500 focus:bg-white outline-none transition-all shadow-inner"
+                                        maxLength={10}
+                                        onChange={(e) => {
+                                            const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                                            setUserDetails({...userDetails, panNumber: val});
+                                        }}
+                                        className="w-full p-5 bg-[var(--surface-color)] border border-slate-200 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-indigo-500 focus:bg-[var(--surface-color)] outline-none transition-all shadow-inner"
                                     />
                                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-2 italic">Your PAN will be encrypted and stored for compliance.</p>
                                 </div>

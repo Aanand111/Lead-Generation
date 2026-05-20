@@ -1,11 +1,28 @@
 const { pool } = require('../config/db');
 
+const appendQueryLimitOffset = (query, params, { limit, offset } = {}) => {
+    let nextQuery = query;
+
+    if (Number.isInteger(limit) && limit > 0) {
+        params.push(limit);
+        nextQuery += ` LIMIT $${params.length}`;
+    }
+
+    if (Number.isInteger(offset) && offset >= 0) {
+        params.push(offset);
+        nextQuery += ` OFFSET $${params.length}`;
+    }
+
+    return nextQuery;
+};
+
 /**
  * Report: Vendor Productivity 
  * Tracks: Uploaded leads, Successfully purchased leads, and overall conversion.
  */
-const getVendorProductivity = async () => {
-    const query = `
+const getVendorProductivity = async ({ limit, offset } = {}) => {
+    const params = [];
+    let query = `
         SELECT 
             u.id, 
             u.full_name as vendor_name, 
@@ -25,8 +42,21 @@ const getVendorProductivity = async () => {
         GROUP BY u.id
         ORDER BY leads_uploaded DESC
     `;
-    const result = await pool.query(query);
+
+    query = appendQueryLimitOffset(query, params, { limit, offset });
+
+    const result = await pool.query(query, params);
     return result.rows;
+};
+
+const countVendorProductivity = async () => {
+    const result = await pool.query(`
+        SELECT COUNT(*) AS total
+        FROM users u
+        WHERE u.role = 'vendor' OR u.role = 'admin'
+    `);
+
+    return parseInt(result.rows[0]?.total || '0', 10);
 };
 
 /**
@@ -104,7 +134,11 @@ const getLeadLifecycleAnalytics = async () => {
             COALESCE(COUNT(DISTINCT l.id), 0) as uploaded,
             COALESCE(COUNT(DISTINCT lp.id), 0) as purchased
         FROM (
-            SELECT generate_series(CURRENT_DATE - INTERVAL '14 days', CURRENT_DATE, '1 day'::interval)::date as day_val
+            SELECT generate_series(
+                COALESCE((SELECT MAX(created_at)::date FROM leads), CURRENT_DATE) - INTERVAL '14 days',
+                COALESCE((SELECT MAX(created_at)::date FROM leads), CURRENT_DATE),
+                '1 day'::interval
+            )::date as day_val
         ) d
         LEFT JOIN leads l ON l.created_at::date = d.day_val
         LEFT JOIN lead_purchases lp ON lp.purchase_date::date = d.day_val
@@ -136,10 +170,11 @@ const getLeadLifecycleAnalytics = async () => {
  * Report: Detailed Lead Inventory
  * Tracks: Each lead, its lifecycle, who bought it, and when.
  */
-const getDetailedLeadReports = async (filters = {}) => {
+const buildDetailedLeadReportsQuery = (filters = {}, { includeCursor = false } = {}) => {
     const { startDate, endDate, category, status } = filters;
     let query = `
         SELECT 
+            ${includeCursor ? 'l.id AS _cursor_id,' : ''}
             l.lead_id,
             l.customer_name,
             l.city,
@@ -177,9 +212,55 @@ const getDetailedLeadReports = async (filters = {}) => {
         query += ` AND l.status = $${params.length}`;
     }
 
-    query += ` ORDER BY l.created_at DESC`;
+    return { query, params };
+};
+
+const getDetailedLeadReports = async (filters = {}) => {
+    const { query: baseQuery, params } = buildDetailedLeadReportsQuery(filters);
+    let query = `${baseQuery} ORDER BY l.created_at DESC, l.id DESC`;
+
+    if (filters.limit) {
+        params.push(filters.limit);
+        query += ` LIMIT $${params.length}`;
+    }
+
     const result = await pool.query(query, params);
     return result.rows;
+};
+
+const countDetailedLeadReports = async (filters = {}) => {
+    const { query, params } = buildDetailedLeadReportsQuery(filters);
+    const result = await pool.query(
+        `SELECT COUNT(*) AS total FROM (${query}) AS filtered_leads`,
+        params
+    );
+
+    return parseInt(result.rows[0]?.total || '0', 10);
+};
+
+const getDetailedLeadReportBatch = async (filters = {}, options = {}) => {
+    const { limit = 1000, cursorCreatedAt = null, cursorId = null } = options;
+    const { query: baseQuery, params } = buildDetailedLeadReportsQuery(filters, { includeCursor: true });
+    let query = baseQuery;
+
+    if (cursorCreatedAt && cursorId) {
+        params.push(cursorCreatedAt, cursorId);
+        query += `
+            AND (
+                l.created_at < $${params.length - 1}
+                OR (l.created_at = $${params.length - 1} AND l.id < $${params.length})
+            )
+        `;
+    }
+
+    params.push(limit);
+    query += ` ORDER BY l.created_at DESC, l.id DESC LIMIT $${params.length}`;
+
+    const result = await pool.query(query, params);
+    return result.rows.map(({ _cursor_id, ...row }) => ({
+        ...row,
+        _cursor_id
+    }));
 };
 
 /**
@@ -207,10 +288,13 @@ const getVendorPerformanceTrends = async () => {
 
 module.exports = {
     getVendorProductivity,
+    countVendorProductivity,
     getFeedbackTrends,
     getBannerPerformance,
     getSubscriptionAnalytics,
     getLeadLifecycleAnalytics,
     getDetailedLeadReports,
+    countDetailedLeadReports,
+    getDetailedLeadReportBatch,
     getVendorPerformanceTrends
 };

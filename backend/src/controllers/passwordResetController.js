@@ -124,4 +124,51 @@ const resetPassword = async (req, res, next) => {
     }
 };
 
-module.exports = { sendOTP, resetPassword };
+// POST /api/auth/reset-password-confirm
+// Body: { token, newPassword }
+const resetPasswordConfirm = async (req, res, next) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        if (!token || !newPassword) {
+            return res.status(400).json({ success: false, message: 'Token and new password are required.' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long.' });
+        }
+
+        // Retrieve userId from Redis
+        const userId = await redisConnection.get(`pwd_reset_link:${token}`);
+
+        if (!userId) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired password reset link.' });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const password_hash = await bcrypt.hash(newPassword, salt);
+
+        // Update DB
+        const updateResult = await pool.query(
+            'UPDATE users SET password_hash = $1 WHERE id = $2 RETURNING id, full_name, email',
+            [password_hash, userId]
+        );
+
+        if (updateResult.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        // Delete the token so it cannot be used again
+        await redisConnection.del(`pwd_reset_link:${token}`);
+
+        res.status(200).json({
+            success: true,
+            message: 'Password reset successfully. You can now login with your new password.'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { sendOTP, resetPassword, resetPasswordConfirm };

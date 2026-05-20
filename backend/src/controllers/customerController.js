@@ -49,6 +49,13 @@ const addCustomer = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Name, and phone or whatsapp are required' });
         }
 
+        if (!customerData.password || customerData.password.trim().length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'Customer password is required and must be at least 6 characters.'
+            });
+        }
+
         const newCustomer = await customerDb.createCustomer(customerData);
 
         res.status(201).json({

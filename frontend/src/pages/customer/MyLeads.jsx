@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {  
+import {
     Search, MapPin, Smartphone, Mail, Download, History as HistoryIcon, 
     MoreVertical, Info, Activity, MessageSquare, Clipboard, 
     Zap, Gem, Target, TrendingUp, CheckCircle, ExternalLink, X,
@@ -8,7 +8,6 @@ import {
     Printer, Database, Layers, User
 } from 'lucide-react';
 import api from '../../utils/api';
-import { toast } from 'react-hot-toast';
 
 const UserMyLeads = () => {
     const [leads, setLeads] = useState([]);
@@ -52,12 +51,6 @@ const UserMyLeads = () => {
         (l.city?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (l.pincode || '').includes(searchTerm)
     );
-
-    const handleCopy = (text, label) => {
-        if(!text) return;
-        navigator.clipboard.writeText(text);
-        toast.success(`${label} copied to clipboard`);
-    };
 
     const handleWhatsApp = (phone, name) => {
         const message = `Hello ${name}, connecting with you via LeadGen Network regarding business opportunities.`;

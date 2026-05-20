@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
     Bell, Send, Users, Shield, Target, 
     History, CheckCircle, AlertCircle, RefreshCcw,
@@ -16,24 +16,6 @@ const AdminNotifications = () => {
         targetIds: ''
     });
     const [loading, setLoading] = useState(false);
-    const [history, setHistory] = useState([]);
-    const [users, setUsers] = useState([]);
-
-    useEffect(() => {
-        fetchUsers();
-    }, []);
-
-    const fetchUsers = async () => {
-        try {
-            const { data } = await api.get('/admin/users');
-            if (data.success) {
-                setUsers(data.data);
-            }
-        } catch (err) {
-            console.error("Failed to fetch users", err);
-        }
-    };
-
     const handleSend = async (e) => {
         e.preventDefault();
         if (!formData.title || !formData.body) {

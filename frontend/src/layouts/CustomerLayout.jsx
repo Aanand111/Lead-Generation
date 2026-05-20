@@ -4,12 +4,37 @@ import CustomerSidebar from '../components/CustomerSidebar';
 import Header from '../components/Header';
 import { toast } from 'react-hot-toast';
 import { Bell, Zap, MapPin } from 'lucide-react';
+import api from '../utils/api';
 import { acquireSocket, releaseSocket } from '../utils/socketClient';
 
 const CustomerLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const { data } = await api.get('/user/profile');
+                if (data.success) {
+                    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                    const updatedUser = {
+                        ...storedUser,
+                        name: data.data.full_name || data.data.name || storedUser.name,
+                        full_name: data.data.full_name || data.data.name || storedUser.full_name,
+                        email: data.data.email || storedUser.email,
+                        phone: data.data.phone || storedUser.phone,
+                        profile_pic: data.data.profile_pic || storedUser.profile_pic,
+                        isPremium: Boolean(data.data.is_premium)
+                    };
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                    window.dispatchEvent(new Event('userProfileUpdated'));
+                }
+            } catch (err) {
+                console.error("Failed to sync profile in layout", err);
+            }
+        };
+
+        fetchProfile();
+
         const token = localStorage.getItem('token');
         if (!token) {
             return undefined;
@@ -53,16 +78,16 @@ const CustomerLayout = () => {
                 () => (
                     <div className="flex flex-col gap-2 min-w-[220px]">
                         <div className="flex items-center gap-2">
-                             <div className="w-8 h-8 rounded-full bg-indigo-500/10 text-indigo-600 flex items-center justify-center animate-bounce">
-                                 <Bell size={16} />
-                             </div>
-                             <span className="font-black text-[10px] uppercase tracking-widest text-indigo-600">Announcement</span>
+                            <div className="w-8 h-8 rounded-full bg-indigo-500/10 text-indigo-600 flex items-center justify-center animate-bounce">
+                                <Bell size={16} />
+                            </div>
+                            <span className="font-black text-[10px] uppercase tracking-widest text-indigo-600">Announcement</span>
                         </div>
                         <div className="space-y-1">
-                             <div className="text-xs font-black text-gray-800 uppercase tracking-tight">{data.title || 'Notification'}</div>
-                             <div className="text-[10px] font-bold text-gray-500 leading-relaxed">
-                                 {data.message || data.body}
-                             </div>
+                            <div className="text-xs font-black text-gray-800 uppercase tracking-tight">{data.title || 'Notification'}</div>
+                            <div className="text-[10px] font-bold text-gray-500 leading-relaxed">
+                                {data.message || data.body}
+                            </div>
                         </div>
                     </div>
                 ),
@@ -82,24 +107,24 @@ const CustomerLayout = () => {
 
         const onNewLeadAdded = (data) => {
             console.log('[USER_NOTIF] Lead broadcast detected:', data);
-            
+
             toast.success(
                 (t) => (
                     <div className="flex flex-col gap-2 min-w-[200px]">
                         <div className="flex items-center gap-2">
-                             <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center animate-pulse">
-                                 <Zap size={16} />
-                             </div>
-                             <span className="font-black text-[10px] uppercase tracking-widest text-amber-600">New High-Value Lead</span>
+                            <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center animate-pulse">
+                                <Zap size={16} />
+                            </div>
+                            <span className="font-black text-[10px] uppercase tracking-widest text-amber-600">New High-Value Lead</span>
                         </div>
                         <div className="space-y-1">
-                             <div className="text-xs font-black text-gray-800 uppercase tracking-tight">{data.category} Lead Ready</div>
-                             <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500">
-                                 <MapPin size={10} className="text-indigo-500" />
-                                 Node: {data.city} (PIN-TARGET)
-                             </div>
+                            <div className="text-xs font-black text-gray-800 uppercase tracking-tight">{data.category} Lead Ready</div>
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500">
+                                <MapPin size={10} className="text-indigo-500" />
+                                Node: {data.city} (PIN-TARGET)
+                            </div>
                         </div>
-                        <button 
+                        <button
                             onClick={() => toast.dismiss(t.id)}
                             className="text-[9px] font-black uppercase tracking-widest text-indigo-600 pt-1 text-left hover:underline"
                         >
@@ -145,9 +170,9 @@ const CustomerLayout = () => {
         <div className="adminShell">
             <CustomerSidebar isOpen={isSidebarOpen} />
 
-            <div 
+            <div
                 className="adminContent"
-                style={{ 
+                style={{
                     marginLeft: isSidebarOpen ? 'var(--sidebar-width)' : 'var(--sidebar-collapsed-width)'
                 }}
             >

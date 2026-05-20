@@ -1,5 +1,7 @@
 const { pool } = require('../config/db');
 const NotificationService = require('../services/notificationService');
+const bcrypt = require('bcryptjs');
+const { broadcast, sendToUser } = require('../utils/socket');
 
 const getVendorStats = async (req, res, next) => {
     try {
@@ -28,30 +30,68 @@ const getVendorStats = async (req, res, next) => {
 const getVendorReferrals = async (req, res, next) => {
     try {
         const vendorId = req.user.id;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
         const offset = (page - 1) * limit;
 
         const queryStr = `
-            SELECT 
-                u.id, u.phone, 
-                CASE 
-                    WHEN u.full_name IS NOT NULL AND u.full_name != u.phone THEN u.full_name 
-                    WHEN v.name IS NOT NULL AND v.name != u.phone THEN v.name 
-                    ELSE COALESCE(u.full_name, v.name, 'Sub-Vendor') 
-                END as full_name,
-                u.role, u.status, u.created_at, u.last_login,
-                GREATEST(
-                    u.last_login,
-                    (SELECT MAX(created_at) FROM transactions t WHERE t.user_id = u.id AND t.type IN ('PURCHASE', 'PLAN_PURCHASE')),
-                    (SELECT MAX(created_at) FROM users u_sub WHERE u_sub.referred_by = u.id)
-                ) as last_activity,
-                (SELECT COALESCE(SUM(amount), 0) FROM transactions t WHERE t.user_id = u.id AND (t.type = 'PURCHASE' OR t.type = 'PLAN_PURCHASE')) as total_revenue
-            FROM users u 
-            LEFT JOIN vendors v ON u.phone = v.phone
-            WHERE u.referred_by = $1 
-            ORDER BY u.created_at DESC 
-            LIMIT $2 OFFSET $3
+            WITH paged_referrals AS (
+                SELECT
+                    u.id,
+                    u.phone,
+                    CASE
+                        WHEN u.full_name IS NOT NULL AND u.full_name != u.phone THEN u.full_name
+                        ELSE COALESCE(u.full_name, 'Sub-Vendor')
+                    END AS full_name,
+                    u.role,
+                    u.status,
+                    u.created_at,
+                    u.last_login
+                FROM users u
+                WHERE u.referred_by = $1
+                ORDER BY u.created_at DESC
+                LIMIT $2 OFFSET $3
+            ),
+            transaction_summary AS (
+                SELECT
+                    t.user_id,
+                    MAX(t.created_at) AS last_purchase_at,
+                    COALESCE(SUM(t.amount), 0) AS total_revenue
+                FROM transactions t
+                JOIN paged_referrals pr ON pr.id = t.user_id
+                WHERE t.type IN ('PURCHASE', 'PLAN_PURCHASE')
+                GROUP BY t.user_id
+            ),
+            child_summary AS (
+                SELECT
+                    u.referred_by AS referral_id,
+                    MAX(u.created_at) AS last_child_at,
+                    COUNT(*)::int AS child_count
+                FROM users u
+                JOIN paged_referrals pr ON pr.id = u.referred_by
+                GROUP BY u.referred_by
+            )
+            SELECT
+                pr.id,
+                pr.phone,
+                pr.full_name,
+                pr.role,
+                pr.status,
+                pr.created_at,
+                pr.last_login,
+                COALESCE(
+                    GREATEST(pr.last_login, ts.last_purchase_at, cs.last_child_at),
+                    pr.last_login,
+                    ts.last_purchase_at,
+                    cs.last_child_at,
+                    pr.created_at
+                ) AS last_activity,
+                COALESCE(ts.total_revenue, 0) AS total_revenue,
+                COALESCE(cs.child_count, 0) AS child_referrals
+            FROM paged_referrals pr
+            LEFT JOIN transaction_summary ts ON ts.user_id = pr.id
+            LEFT JOIN child_summary cs ON cs.referral_id = pr.id
+            ORDER BY pr.created_at DESC
         `;
         const result = await pool.query(queryStr, [vendorId, limit, offset]);
 
@@ -65,6 +105,7 @@ const getVendorReferrals = async (req, res, next) => {
                 total: parseInt(countRes.rows[0].count),
                 page,
                 limit,
+                pages: Math.ceil(parseInt(countRes.rows[0].count, 10) / limit),
             }
         });
     } catch (error) {
@@ -75,13 +116,50 @@ const getVendorReferrals = async (req, res, next) => {
 const getVendorEarnings = async (req, res, next) => {
     try {
         const vendorId = req.user.id;
-        const query = `
-            SELECT * FROM commission_transactions 
-            WHERE vendor_id = $1 
+
+        // Pagination params — default: page 1, 15 records per page
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 15));
+        const offset = (page - 1) * limit;
+
+        // Optional status filter (PENDING | REQUESTED | COMPLETED | FAILED)
+        const status = req.query.status ? req.query.status.toUpperCase() : null;
+
+        const params = [vendorId];
+        let whereClause = 'WHERE vendor_id = $1';
+
+        if (status) {
+            params.push(status);
+            whereClause += ` AND status = $${params.length}`;
+        }
+
+        // Paginated data query
+        const dataQuery = `
+            SELECT id, vendor_id, amount, status, remarks, type, created_at
+            FROM commission_transactions
+            ${whereClause}
             ORDER BY created_at DESC
+            LIMIT $${params.length + 1} OFFSET $${params.length + 2}
         `;
-        const result = await pool.query(query, [vendorId]);
-        res.status(200).json({ success: true, data: result.rows });
+        const dataResult = await pool.query(dataQuery, [...params, limit, offset]);
+
+        // Total count for pagination controls
+        const countQuery = `
+            SELECT COUNT(*) FROM commission_transactions ${whereClause}
+        `;
+        const countResult = await pool.query(countQuery, params);
+        const total = parseInt(countResult.rows[0].count, 10);
+
+        res.status(200).json({
+            success: true,
+            data: dataResult.rows,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit)
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -90,6 +168,7 @@ const getVendorEarnings = async (req, res, next) => {
 const referUser = async (req, res, next) => {
     // This will likely be handled by a user-facing signup using a referral code.
     // However, if a vendor can add them manually:
+    const client = await pool.connect();
     try {
         const vendorId = req.user.id;
         const { phone, email, password, pincode, city, state } = req.body;
@@ -97,25 +176,28 @@ const referUser = async (req, res, next) => {
 
         if (!email) return res.status(400).json({ success: false, message: 'Email is required for user registration.' });
 
-        const bcrypt = require('bcryptjs');
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
         const newReferralCode = `USR-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-        const result = await pool.query(
+        await client.query('BEGIN');
+
+        const result = await client.query(
             'INSERT INTO users (phone, email, password_hash, full_name, role, referred_by, referral_code) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
             [phone, email, hashedPassword, full_name, 'user', vendorId, newReferralCode]
         );
 
         const newUser = result.rows[0];
 
-        // Synchronize with 'user_profiles' for pincode visibility in Admin Panel
+        // Synchronize with 'user_profiles'
         if (pincode || city || state) {
-            await pool.query(
+            await client.query(
                 'INSERT INTO user_profiles (user_id, pincode, city, state) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id) DO UPDATE SET pincode = EXCLUDED.pincode, city = EXCLUDED.city, state = EXCLUDED.state',
                 [newUser.id, pincode, city, state]
             );
         }
+
+        await client.query('COMMIT');
 
         res.status(201).json({ success: true, message: 'User referred & added successfully', data: newUser });
 
@@ -125,24 +207,24 @@ const referUser = async (req, res, next) => {
             referrerId: vendorId
         }).catch(err => console.error('[ADMIN_NOTIFY_ERROR]', err.message));
     } catch (error) {
+        await client.query('ROLLBACK');
         next(error);
+    } finally {
+        client.release();
     }
 };
 
 const referVendor = async (req, res, next) => {
+    const client = await pool.connect();
     try {
         const vendorId = req.user.id;
         const { phone, email, password, pincode, city, state } = req.body;
-        // Handle both full_name and name to ensure compatibility with different frontend versions
         const full_name = req.body.full_name || req.body.name || `Vendor_${phone?.slice(-4) || 'Node'}`;
 
         if (!email) return res.status(400).json({ success: false, message: 'Email is required for sub-vendor registration.' });
         if (!phone) return res.status(400).json({ success: false, message: 'Phone number is required.' });
 
-        // BRD Section 1.3: Secondary Vendor Restriction
-        // Primary Vendors have referred_by = NULL (added by Admin).
-        // Secondary/Sub-Vendors have referred_by = [Primary Vendor ID].
-        const checkVendor = await pool.query('SELECT referred_by, status, full_name, phone FROM users WHERE id = $1', [vendorId]);
+        const checkVendor = await client.query('SELECT referred_by, status, full_name, phone FROM users WHERE id = $1', [vendorId]);
         const vendor = checkVendor.rows[0];
 
         if (!vendor || vendor.status !== 'ACTIVE') {
@@ -150,182 +232,169 @@ const referVendor = async (req, res, next) => {
         }
 
         if (vendor.referred_by) {
-            console.warn(`[HIERARCHY_BLOCK] Sub-Vendor ${vendorId} attempted to add a 3rd-tier vendor.`);
-            return res.status(403).json({ 
-                message: 'Access Denied: Only primary vendors can refer other vendors.' 
-            });
+            return res.status(403).json({ message: 'Access Denied: Only primary vendors can refer other vendors.' });
         }
 
-        const bcrypt = require('bcryptjs');
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-
-        // Generate unique referral code for the new Sub-Vendor
         const newReferralCode = `VND-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-        // Get the current vendor's registry ID (from 'vendors' table) to maintain hierarchy
-        let registryVendorId = null;
-        try {
-            const userRes = await pool.query('SELECT phone, email, full_name, referral_code, password_hash FROM users WHERE id = $1', [vendorId]);
-            if (userRes.rows.length > 0) {
-                const parent = userRes.rows[0];
-                const vendorRes = await pool.query(
-                    'SELECT id FROM vendors WHERE phone = $1 OR email = $2 LIMIT 1',
-                    [parent.phone, parent.email]
-                );
-                
-                if (vendorRes.rows.length > 0) {
-                    registryVendorId = vendorRes.rows[0].id;
-                } else {
-                    // Sync parent to registry if missing
-                    const vendorDb = require('../models/vendorModel');
-                    const pRegRes = await vendorDb.createVendor({
-                        name: parent.full_name || parent.phone || 'Primary Vendor',
-                        phone: parent.phone,
-                        email: parent.email,
-                        password: parent.password_hash,
-                        referral_code: parent.referral_code,
-                        referred_by_vendor_id: null,
-                        status: 'Active'
-                    });
-                    registryVendorId = pRegRes.id;
-                }
-            }
-        } catch (e) {
-            console.error('Failed to resolve registry ID:', e.message);
-        }
+        await client.query('BEGIN');
 
-        // Synchronize with 'vendors' table for Admin visibility
-        const vendorDb = require('../models/vendorModel');
-        try {
-            await vendorDb.createVendor({
-                name: full_name,
-                phone: phone,
-                email: email,
-                password: hashedPassword,
-                referral_code: newReferralCode,
-                referred_by_vendor_id: registryVendorId || vendorId, // Fallback to user ID if registry entry missing
-                status: 'Active'
-            });
-        } catch (vErr) {
-            console.error('[SYNC_ERROR] Failed to populate vendors table:', vErr.message);
-        }
-
-        // Synchronize with 'users' table for Authentication
-        const result = await pool.query(
+        const result = await client.query(
             'INSERT INTO users (phone, email, password_hash, full_name, role, referred_by, referral_code, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
             [phone, email, hashedPassword, full_name, 'vendor', vendorId, newReferralCode, 'ACTIVE']
         );
 
         const newUser = result.rows[0];
 
-        // Synchronize with 'user_profiles' for pincode visibility
         if (pincode || city || state) {
-            await pool.query(
+            await client.query(
                 'INSERT INTO user_profiles (user_id, pincode, city, state) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id) DO UPDATE SET pincode = EXCLUDED.pincode, city = EXCLUDED.city, state = EXCLUDED.state',
                 [newUser.id, pincode, city, state]
             );
         }
 
-        // Emit real-time notification for Admin
+        await client.query('COMMIT');
+
         try {
-            const { broadcast } = require('../utils/socket');
             broadcast('new_vendor_referral', {
                 message: `New Sub-Vendor Added: ${full_name}`,
                 phone: phone,
                 referrer: req.user.full_name || 'Primary Node',
                 timestamp: new Date()
             });
-        } catch (sErr) {
-            console.error('[SOCKET_ERROR] Failed to emit referral signal:', sErr.message);
-        }
+        } catch (sErr) {}
 
-        // Notify Admin via persistent notification and socket alert
         NotificationService.notifyAdmins('New Sub-Vendor Registered', `${full_name} was registered by ${req.user.full_name || 'Primary Node'}.`, {
             userId: newUser.id,
             referrerId: vendorId,
             role: 'vendor'
-        }).catch(err => console.error('[ADMIN_NOTIFY_ERROR]', err.message));
+        }).catch(err => {});
 
-        res.status(201).json({ 
-            success: true, 
-            message: 'Sub-Vendor registered successfully.', 
-            data: { id: result.rows[0].id, phone: result.rows[0].phone, email: result.rows[0].email, referral_code: newReferralCode } 
+        res.status(201).json({
+            success: true,
+            message: 'Sub-Vendor registered successfully.',
+            data: { id: result.rows[0].id, phone: result.rows[0].phone, email: result.rows[0].email, referral_code: newReferralCode }
         });
     } catch (error) {
-        if (error.code === '23505') { // Unique constraint (phone/code)
-             return res.status(400).json({ success: false, message: 'Identity Conflict: Phone number or Referral code already exists.' });
+        await client.query('ROLLBACK');
+        if (error.code === '23505') {
+            return res.status(400).json({ success: false, message: 'Identity Conflict: Phone number or Referral code already exists.' });
         }
         next(error);
+    } finally {
+        client.release();
     }
 };
 
 const requestSettlement = async (req, res, next) => {
+    const client = await pool.connect();
+    let transactionOpen = false;
+
     try {
         const vendorId = req.user.id;
 
-        // Check if there are any pending commissions to request
-        const checkPending = await pool.query(
-            "SELECT COUNT(*), COALESCE(SUM(amount), 0) as total_amount FROM commission_transactions WHERE vendor_id = $1 AND status = 'PENDING'",
-            [vendorId]
-        );
+        let amount = 0;
+        let vendorName = 'A Vendor';
+        let adminIds = [];
 
-        if (parseInt(checkPending.rows[0].count) === 0) {
-            return res.status(400).json({ 
-                message: 'You have no pending commissions to request at this time.' 
+        await client.query('BEGIN');
+        transactionOpen = true;
+
+        const result = await client.query(`
+            WITH locked_rows AS (
+                SELECT id, amount
+                FROM commission_transactions
+                WHERE vendor_id = $1 AND status = 'PENDING'
+                FOR UPDATE
+            ),
+            updated_rows AS (
+                UPDATE commission_transactions ct
+                SET status = 'REQUESTED'
+                FROM locked_rows lr
+                WHERE ct.id = lr.id
+                RETURNING lr.amount
+            )
+            SELECT COUNT(*)::int AS updated_count, COALESCE(SUM(amount), 0)::numeric AS total_amount
+            FROM updated_rows
+        `, [vendorId]);
+
+        const rowCount = parseInt(result.rows[0].updated_count, 10);
+
+        if (rowCount === 0) {
+            const existingRequestRes = await client.query(
+                "SELECT COALESCE(SUM(amount), 0)::numeric AS total_amount FROM commission_transactions WHERE vendor_id = $1 AND status = 'REQUESTED'",
+                [vendorId]
+            );
+            const existingRequestedAmount = parseFloat(existingRequestRes.rows[0]?.total_amount || 0);
+
+            await client.query('ROLLBACK');
+            transactionOpen = false;
+
+            if (existingRequestedAmount > 0) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'A payout request is already pending review.',
+                    requested_amount: existingRequestedAmount
+                });
+            }
+
+            return res.status(400).json({
+                success: false,
+                message: 'You have no pending commissions to request at this time.'
             });
         }
 
-        const amount = parseFloat(checkPending.rows[0].total_amount);
+        amount = parseFloat(result.rows[0].total_amount);
 
-        // Update all PENDING to REQUESTED
-        await pool.query(
-            "UPDATE commission_transactions SET status = 'REQUESTED' WHERE vendor_id = $1 AND status = 'PENDING'",
-            [vendorId]
-        );
+        const metadataRes = await client.query(`
+            SELECT
+                COALESCE(MAX(CASE WHEN id = $1 THEN full_name END), 'A Vendor') AS vendor_name,
+                ARRAY(SELECT id::text FROM users WHERE role = 'admin') AS admin_ids
+            FROM users
+            WHERE id = $1 OR role = 'admin'
+        `, [vendorId]);
 
-        // Get vendor info for notification
-        let vendorName = 'A Vendor';
-        try {
-            const vendorRes = await pool.query('SELECT full_name FROM users WHERE id = $1', [vendorId]);
-            if (vendorRes.rows.length > 0) {
-                vendorName = vendorRes.rows[0].full_name;
-            }
-        } catch (err) {
-            console.error('[VENDOR_INFO_ERROR] Failed to fetch vendor name:', err.message);
-        }
+        vendorName = metadataRes.rows[0]?.vendor_name || vendorName;
+        adminIds = metadataRes.rows[0]?.admin_ids || [];
+
+        await client.query('COMMIT');
+        transactionOpen = false;
 
         // Add socket notification exclusively to Admins
         try {
-            const { sendToUser } = require('../utils/socket');
-            
-            // Get all admin users
-            const adminsRes = await pool.query("SELECT id FROM users WHERE role = 'admin'");
-            const adminIds = adminsRes.rows.map(row => row.id.toString());
-            
-            adminIds.forEach(adminId => {
+
+            for (const adminId of adminIds) {
                 // To show Bell Icon Notification Dropdown
                 sendToUser(adminId, 'notification', {
                     title: 'Commission Request',
                     body: `${vendorName} requested ₹${amount.toFixed(2)}.`
                 });
-                
+
                 // To show Toast Notification
                 sendToUser(adminId, 'admin_notification', {
                     title: 'New Commission Request',
                     body: `${vendorName} has requested a withdrawal of ₹${amount.toFixed(2)}.`
                 });
-            });
+            }
         } catch (sErr) {
             console.error('[SOCKET_ERROR] Failed to emit commission request notification:', sErr.message);
         }
 
-        res.status(200).json({ 
-            success: true, 
-            message: 'Payout request submitted successfully. Our team will review it shortly.' 
+        res.status(200).json({
+            success: true,
+            message: 'Payout request submitted successfully. Our team will review it shortly.'
         });
     } catch (error) {
+        if (transactionOpen) {
+            try {
+                await client.query('ROLLBACK');
+            } catch (rollbackError) {}
+        }
         next(error);
+    } finally {
+        client.release();
     }
 };
 
@@ -368,51 +437,10 @@ const approveSubVendor = async (req, res, next) => {
 
         const approvedUser = result.rows[0];
 
-        // If approved and is a vendor, sync with 'vendors' registry table for Admin visibility
-        if (action === 'APPROVE' && approvedUser.role === 'vendor') {
-            try {
-                const vendorDb = require('../models/vendorModel');
-                
-                // Get parent vendor's registry ID
-                let parentRegistryId = null;
-                const parentRes = await pool.query('SELECT phone, email, full_name, referral_code, password_hash FROM users WHERE id = $1', [vendorId]);
-                if (parentRes.rows.length > 0) {
-                    const parent = parentRes.rows[0];
-                    const regRes = await pool.query('SELECT id FROM vendors WHERE phone = $1 OR email = $2', [parent.phone, parent.email]);
-                    if (regRes.rows.length > 0) {
-                        parentRegistryId = regRes.rows[0].id;
-                    } else {
-                        // Parent is missing from registry (likely self-registered & approved but not synced)
-                        // Sync parent first to maintain hierarchical integrity
-                        const pRegRes = await vendorDb.createVendor({
-                            name: parent.full_name,
-                            phone: parent.phone,
-                            email: parent.email,
-                            password: parent.password_hash,
-                            referral_code: parent.referral_code,
-                            referred_by_vendor_id: null, // Parent is top-level if missing
-                            status: 'Active'
-                        });
-                        parentRegistryId = pRegRes.id;
-                    }
-                }
+        // Legacy vendors table sync removed as part of the dual table architecture refactor.
 
-                await vendorDb.createVendor({
-                    name: approvedUser.full_name || approvedUser.phone || 'Sub-Vendor',
-                    phone: approvedUser.phone,
-                    email: approvedUser.email,
-                    password: approvedUser.password_hash,
-                    referral_code: approvedUser.referral_code,
-                    referred_by_vendor_id: parentRegistryId,
-                    status: 'Active'
-                });
-            } catch (syncErr) {
-                console.error('[SYNC_ERROR] Failed to populate vendors registry during approval:', syncErr.message);
-            }
-        }
-
-        res.status(200).json({ 
-            success: true, 
+        res.status(200).json({
+            success: true,
             message: `${approvedUser.role === 'vendor' ? 'Sub-vendor' : 'User'} ${action === 'APPROVE' ? 'approved' : 'rejected'} successfully.`,
             data: {
                 id: approvedUser.id,

@@ -1,73 +1,85 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
-    Wallet, TrendingUp, Clock, CheckCircle, AlertCircle, 
-    ArrowUpRight, Download, Filter, Search, Activity, Zap
+    TrendingUp, Clock, CheckCircle,
+    ArrowUpRight, Download, Search, Activity, Zap,
+    ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { useConfirm } from '../context/ConfirmContext';
 import { getApiBaseUrl } from '../utils/urls';
 
+const PAGE_SIZE = 15;
+
 const VendorEarnings = () => {
-    const [stats, setStats] = useState({ 
-        total_earnings: 0, 
-        pending_earnings: 0 
-    });
+    const [stats, setStats] = useState({ total_earnings: 0, pending_earnings: 0 });
     const [transactions, setTransactions] = useState([]);
+    const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 1 });
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
 
+    // Fetch stats once (summary cards don't need pagination)
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                
-                // Fetch Stats
-                const statsRes = await fetch(`${getApiBaseUrl()}/vendor/stats`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const statsData = await statsRes.json();
-                if (statsData.success) setStats(statsData.data);
-
-                // Fetch Transactions
-                const transRes = await fetch(`${getApiBaseUrl()}/vendor/earnings`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const transData = await transRes.json();
-                if (transData.success) setTransactions(transData.data);
-                
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
+        const token = localStorage.getItem('token');
+        fetch(`${getApiBaseUrl()}/vendor/stats`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(r => r.json())
+            .then(d => { if (d.success) setStats(d.data); })
+            .catch(console.error);
     }, []);
 
-    const filteredTransactions = transactions.filter(t => {
-        if (activeTab === 'all') return true;
-        if (activeTab === 'pending') {
-            return t.status.toLowerCase() === 'pending' || t.status.toLowerCase() === 'requested';
+    // Fetch paginated earnings — called on tab change or page change
+    const fetchEarnings = useCallback(async (page, tab) => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const statusMap = {
+                all: '', completed: 'COMPLETED',
+                pending: 'PENDING', requested: 'REQUESTED', rejected: 'FAILED'
+            };
+            const statusParam = statusMap[tab] ? `&status=${statusMap[tab]}` : '';
+            const url = `${getApiBaseUrl()}/vendor/earnings?page=${page}&limit=${PAGE_SIZE}${statusParam}`;
+            const res  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) {
+                setTransactions(data.data);
+                setPagination(data.pagination);
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to load earnings.');
+        } finally {
+            setLoading(false);
         }
-        if (activeTab === 'rejected') {
-            return t.status.toLowerCase() === 'failed';
-        }
-        return t.status.toLowerCase() === activeTab.toLowerCase();
-    });
+    }, []);
+
+    useEffect(() => {
+        setCurrentPage(1);
+        fetchEarnings(1, activeTab);
+    }, [activeTab, fetchEarnings]);
+
+    useEffect(() => {
+        fetchEarnings(currentPage, activeTab);
+    }, [currentPage]); // eslint-disable-line
+
+    const handlePageChange = (newPage) => {
+        if (newPage < 1 || newPage > pagination.pages) return;
+        setCurrentPage(newPage);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     return (
         <div className="animate-fade-in space-y-8 pb-10">
-            {/* Premium Header */}
+            {/* Header */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
                 <div>
                     <h1 className="text-4xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-none mb-2">My Earnings</h1>
                     <p className="text-xs font-bold text-[var(--text-muted)] italic">Track your commissions and manage your payouts.</p>
                 </div>
-                <button 
+                <button
                     onClick={async () => {
-                        const confirmed = confirm('Do you want to request a payout for all your pending commissions?', 'Request Payout');
+                        const confirmed = confirm('Do you want to request a payout for all your pending commissions?');
                         if (!confirmed) return;
-                        
                         try {
                             const token = localStorage.getItem('token');
                             const res = await fetch(`${getApiBaseUrl()}/vendor/request-settlement`, {
@@ -77,11 +89,11 @@ const VendorEarnings = () => {
                             const data = await res.json();
                             if (data.success) {
                                 toast.success('Payout request sent successfully.');
-                                window.location.reload(); 
+                                window.location.reload();
                             } else {
                                 toast.error(data.message || 'Request could not be processed.');
                             }
-                        } catch (err) {
+                        } catch {
                             toast.error('Network error. Please try again.');
                         }
                     }}
@@ -91,45 +103,22 @@ const VendorEarnings = () => {
                 </button>
             </header>
 
-            {/* Earnings Overview */}
+            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
-                    { 
-                        title: 'Lifetime Revenue', 
-                        value: Number(stats.total_earnings) + Number(stats.pending_earnings), 
-                        icon: TrendingUp, 
-                        color: 'indigo', 
-                        subtitle: 'Total Money Earned' 
-                    },
-                    { 
-                        title: 'Pending Payout', 
-                        value: stats.pending_earnings, 
-                        icon: Clock, 
-                        color: 'amber', 
-                        subtitle: 'Awaiting Transfer' 
-                    },
-                    { 
-                        title: 'Settled Amount', 
-                        value: stats.total_earnings, 
-                        icon: CheckCircle, 
-                        color: 'emerald', 
-                        subtitle: 'Successfully Paid' 
-                    }
+                    { title: 'Lifetime Revenue', value: Number(stats.total_earnings) + Number(stats.pending_earnings), icon: TrendingUp, color: 'indigo', subtitle: 'Total Money Earned' },
+                    { title: 'Pending Payout',   value: stats.pending_earnings, icon: Clock,       color: 'amber',   subtitle: 'Awaiting Transfer' },
+                    { title: 'Settled Amount',   value: stats.total_earnings,   icon: CheckCircle, color: 'emerald', subtitle: 'Successfully Paid' }
                 ].map((card, i) => {
-                    // Helper to get consistent colors that definitely work in the build
-                    const bgIconClass = card.color === 'indigo' ? 'text-indigo-500/5' : 
-                                      card.color === 'amber' ? 'text-amber-500/5' : 'text-emerald-500/5';
-                    
-                    const smallBgClass = card.color === 'indigo' ? 'bg-indigo-500/10 text-indigo-500' : 
-                                       card.color === 'amber' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500';
-
+                    const bgIcon  = card.color === 'indigo' ? 'text-indigo-500/5'  : card.color === 'amber' ? 'text-amber-500/5'  : 'text-emerald-500/5';
+                    const smBg    = card.color === 'indigo' ? 'bg-indigo-500/10 text-indigo-500' : card.color === 'amber' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500';
                     return (
                         <div key={i} className="card p-8 border border-[var(--border-color)] bg-[var(--surface-elevated)] rounded-[2.5rem] relative overflow-hidden group shadow-lg">
-                            <div className={`absolute top-0 right-0 p-8 ${bgIconClass} group-hover:scale-150 transition-transform duration-700 pointer-events-none`}>
+                            <div className={`absolute top-0 right-0 p-8 ${bgIcon} group-hover:scale-150 transition-transform duration-700 pointer-events-none`}>
                                 <card.icon size={120} />
                             </div>
                             <div className="relative z-10 flex flex-col gap-4">
-                                <div className={`w-12 h-12 rounded-2xl ${smallBgClass} flex items-center justify-center`}>
+                                <div className={`w-12 h-12 rounded-2xl ${smBg} flex items-center justify-center`}>
                                     <card.icon size={24} />
                                 </div>
                                 <div>
@@ -145,14 +134,23 @@ const VendorEarnings = () => {
                 })}
             </div>
 
-            {/* Earnings History */}
+            {/* Earnings Table */}
             <div className="space-y-6">
+                {/* Toolbar */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
                     <div className="flex items-center gap-6">
-                        <h2 className="text-xl font-black text-[var(--text-dark)] uppercase tracking-tight">Earnings History</h2>
+                        <div>
+                            <h2 className="text-xl font-black text-[var(--text-dark)] uppercase tracking-tight">Earnings History</h2>
+                            {!loading && (
+                                <p className="text-[9px] font-bold text-[var(--text-muted)] mt-0.5">
+                                    {pagination.total} total transaction{pagination.total !== 1 ? 's' : ''}
+                                </p>
+                            )}
+                        </div>
+                        {/* Status tabs */}
                         <div className="flex bg-[var(--bg-color)]/50 p-1 rounded-xl border border-[var(--border-color)]">
-                            {['all', 'completed', 'pending', 'rejected'].map(tab => (
-                                <button 
+                            {['all', 'completed', 'pending', 'requested', 'rejected'].map(tab => (
+                                <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
                                     className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-indigo-600 text-white shadow-md' : 'text-[var(--text-muted)] hover:text-indigo-500'}`}
@@ -178,61 +176,106 @@ const VendorEarnings = () => {
                         <table className="table hover-highlight mb-0">
                             <thead className="bg-[var(--bg-color)]/50 border-b border-[var(--border-color)]">
                                 <tr>
-                                    <th className="px-8 py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Referral Type</th>
-                                    <th className="py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Amount</th>
-                                    <th className="py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none">Date</th>
-                                    <th className="py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest leading-none text-right px-8">Payout Status</th>
+                                    <th className="px-8 py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest">Referral Type</th>
+                                    <th className="py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest">Amount</th>
+                                    <th className="py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest">Date</th>
+                                    <th className="py-5 text-[9px] uppercase font-black text-[var(--text-muted)] tracking-widest text-right px-8">Payout Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {loading ? (
                                     <tr><td colSpan="4" className="py-24 text-center text-[10px] font-black text-indigo-500/50 uppercase tracking-[0.2em] animate-pulse">Loading your earnings...</td></tr>
-                                ) : filteredTransactions.length === 0 ? (
-                                    <tr><td colSpan="4" className="py-24 text-center text-xs font-bold text-[var(--text-muted)] italic px-12 leading-relaxed">No transactions found yet. Start referring to see your earnings here!</td></tr>
-                                ) : (
-                                    filteredTransactions.map(item => (
-                                        <tr key={item.id} className="group border-b border-[var(--border-color)]/30 last:border-0 hover:bg-white/[0.01]">
-                                            <td className="px-8 py-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center transition-all group-hover:rotate-6">
-                                                        <Activity size={18} />
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-black text-[11px] text-[var(--text-dark)] uppercase tracking-tight mb-1">{item.description || 'Referral Commission'}</div>
-                                                        <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-60">ID: {item.id.slice(0, 8)}</div>
-                                                    </div>
+                                ) : transactions.length === 0 ? (
+                                    <tr><td colSpan="4" className="py-24 text-center text-xs font-bold text-[var(--text-muted)] italic px-12 leading-relaxed">No transactions found. Start referring to see your earnings here!</td></tr>
+                                ) : transactions.map(item => (
+                                    <tr key={item.id} className="group border-b border-[var(--border-color)]/30 last:border-0 hover:bg-white/[0.01]">
+                                        <td className="px-8 py-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center transition-all group-hover:rotate-6">
+                                                    <Activity size={18} />
                                                 </div>
-                                            </td>
-                                            <td>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                                                        <Zap size={12} />
-                                                    </div>
-                                                    <span className="font-black text-sm text-[var(--text-dark)] tracking-tighter tabular-nums">
-                                                        +₹{Number(item.amount).toLocaleString()}
-                                                    </span>
+                                                <div>
+                                                    <div className="font-black text-[11px] text-[var(--text-dark)] uppercase tracking-tight mb-1">{item.remarks || 'Referral Commission'}</div>
+                                                    <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-60">ID: {item.id.slice(0, 8)}</div>
                                                 </div>
-                                            </td>
-                                            <td className="text-[10px] font-black text-[var(--text-muted)] tracking-tighter opacity-70">
-                                                {new Date(item.created_at).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                            </td>
-                                            <td className="text-right px-8">
-                                                <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all ${
-                                                    item.status.toLowerCase() === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 
-                                                    item.status.toLowerCase() === 'requested' ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20 animate-pulse' :
-                                                    item.status.toLowerCase() === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 
-                                                    'bg-red-500/10 text-red-500 border-red-500/20'
-                                                }`}>
-                                                    <div className={`w-1 h-1 rounded-full ${item.status.toLowerCase() === 'completed' ? 'bg-emerald-500' : (item.status.toLowerCase() === 'pending' || item.status.toLowerCase() === 'requested') ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`}></div>
-                                                    {item.status.toLowerCase() === 'failed' ? 'REJECTED' : item.status}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                                                    <Zap size={12} />
+                                                </div>
+                                                <span className="font-black text-sm text-[var(--text-dark)] tracking-tighter tabular-nums">
+                                                    +₹{Number(item.amount).toLocaleString()}
                                                 </span>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
+                                            </div>
+                                        </td>
+                                        <td className="text-[10px] font-black text-[var(--text-muted)] tracking-tighter opacity-70">
+                                            {new Date(item.created_at).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </td>
+                                        <td className="text-right px-8">
+                                            <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all ${
+                                                item.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                                item.status === 'REQUESTED' ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20 animate-pulse' :
+                                                item.status === 'PENDING'   ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                                'bg-red-500/10 text-red-500 border-red-500/20'
+                                            }`}>
+                                                <div className={`w-1 h-1 rounded-full ${item.status === 'COMPLETED' ? 'bg-emerald-500' : (item.status === 'PENDING' || item.status === 'REQUESTED') ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`}></div>
+                                                {item.status === 'FAILED' ? 'REJECTED' : item.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination Controls — only shown when there are multiple pages */}
+                    {!loading && pagination.pages > 1 && (
+                        <div className="flex items-center justify-between px-8 py-5 border-t border-[var(--border-color)]/40">
+                            <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                                Page {pagination.page} of {pagination.pages} &nbsp;·&nbsp; {pagination.total} records
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage <= 1}
+                                    className="w-8 h-8 rounded-xl border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:border-indigo-500 hover:text-indigo-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                    <ChevronLeft size={14} />
+                                </button>
+
+                                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                                    let pageNum;
+                                    if (pagination.pages <= 5)          pageNum = i + 1;
+                                    else if (currentPage <= 3)          pageNum = i + 1;
+                                    else if (currentPage >= pagination.pages - 2) pageNum = pagination.pages - 4 + i;
+                                    else                                 pageNum = currentPage - 2 + i;
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => handlePageChange(pageNum)}
+                                            className={`w-8 h-8 rounded-xl text-[10px] font-black transition-all ${
+                                                currentPage === pageNum
+                                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+                                                    : 'border border-[var(--border-color)] text-[var(--text-muted)] hover:border-indigo-500 hover:text-indigo-500'
+                                            }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+
+                                <button
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage >= pagination.pages}
+                                    className="w-8 h-8 rounded-xl border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:border-indigo-500 hover:text-indigo-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                    <ChevronRight size={14} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

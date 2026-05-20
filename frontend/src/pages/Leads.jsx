@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreVertical, Edit2, Trash2, X, Search, Plus, MapPin, Phone, Mail, FileText, CheckCircle, AlertCircle, RefreshCcw, Layers, Filter } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, X, Search, Plus, MapPin, Phone, Mail, FileText, CheckCircle, AlertCircle, RefreshCcw, Layers, Filter, Upload, Download } from 'lucide-react';
 import api from '../utils/api';
 import CustomSelect from '../components/CustomSelect';
 import { useConfirm } from '../context/ConfirmContext';
@@ -15,11 +15,19 @@ const Leads = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [entries, setEntries] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [paginationProps, setPaginationProps] = useState({ total: 0, pages: 1 });
 
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [currentEditLead, setCurrentEditLead] = useState(null);
     const [saving, setSaving] = useState(false);
+
+    // Import Excel/CSV State
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [importFile, setImportFile] = useState(null);
+    const [importing, setImporting] = useState(false);
+    const [importErrors, setImportErrors] = useState(null);
 
     const [formData, setFormData] = useState({
         lead_id: '',
@@ -37,9 +45,14 @@ const Leads = () => {
     const fetchLeads = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/admin/leads');
+            const { data } = await api.get('/admin/leads', {
+                params: { page: currentPage, limit: entries, search: debouncedSearch }
+            });
             if (data.success && data.data) {
                 setLeads(data.data);
+                if (data.pagination) {
+                    setPaginationProps({ total: data.pagination.total, pages: data.pagination.pages });
+                }
             } else {
                 setLeads([]);
             }
@@ -52,8 +65,19 @@ const Leads = () => {
     };
 
     useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [debouncedSearch, entries]);
+
+    useEffect(() => {
         fetchLeads();
-    }, []);
+    }, [currentPage, entries, debouncedSearch]);
 
     const toggleMenu = (id) => {
         setOpenMenuId(openMenuId === id ? null : id);
@@ -141,15 +165,61 @@ const Leads = () => {
         }
     };
 
-    const filteredLeads = leads.filter(l =>
-        (l.customer_name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (l.customer_phone?.includes(searchTerm)) ||
-        (l.lead_id?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (l.city?.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const handleDownloadTemplate = () => {
+        const headers = ['Lead ID', 'Customer Name', 'Customer Phone', 'Customer Email', 'Category', 'City', 'State', 'Pincode', 'Lead Value', 'Expiry Date'];
+        const sampleRow = ['L-1001', 'John Doe', '9876543210', 'john@example.com', 'Real Estate', 'Mumbai', 'Maharashtra', '400001', '15000', '2026-12-31'];
+        const csvContent = "\ufeff" + [
+            headers.map(h => `"${h}"`).join(','),
+            sampleRow.map(r => `"${r}"`).join(',')
+        ].join('\r\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "leads_import_template.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
-    const totalPages = Math.ceil(filteredLeads.length / entries) || 1;
-    const paginatedLeads = filteredLeads.slice((currentPage - 1) * entries, currentPage * entries);
+    const handleImportSubmit = async (e) => {
+        e.preventDefault();
+        if (!importFile) return;
+
+        setImporting(true);
+        setImportErrors(null);
+
+        const formDataObj = new FormData();
+        formDataObj.append('file', importFile);
+
+        try {
+            const { data } = await api.post('/admin/leads/import', formDataObj, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            if (data.success) {
+                toast.success(data.message || 'Leads imported successfully!');
+                setIsImportModalOpen(false);
+                setImportFile(null);
+                fetchLeads();
+            } else {
+                setImportErrors(data.errors || [data.message || 'Failed to import leads.']);
+                toast.error(data.message || 'Import completed with errors.');
+            }
+        } catch (err) {
+            console.error("Import leads error:", err);
+            const errMsg = err.response?.data?.message || 'Failed to import leads. Please check file format.';
+            const errs = err.response?.data?.errors || [errMsg];
+            setImportErrors(errs);
+            toast.error(errMsg);
+        } finally {
+            setImporting(false);
+        }
+    };
+
 
     return (
         <div className="page-content animate-fade-in text-[var(--text-dark)]">
@@ -162,7 +232,13 @@ const Leads = () => {
                     </h2>
                     <p>Manage and track all customer leads in the database</p>
                 </div>
-                <div className="pageHeaderActions">
+                <div className="pageHeaderActions flex items-center gap-3">
+                    <button 
+                        className="btn bg-[var(--surface-color)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-indigo-600 hover:bg-indigo-600/10 flex items-center gap-2 font-black uppercase text-[10px] tracking-widest px-6 py-4 rounded-2xl transition-all shadow-sm active:scale-95 cursor-pointer"
+                        onClick={() => setIsImportModalOpen(true)}
+                    >
+                         <Upload size={16} /> Import Excel
+                    </button>
                     <button className="btn btn-primary shadow-lg shadow-indigo-500/20 px-6 py-4 rounded-2xl flex items-center gap-2 font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all" onClick={() => navigate('/leads/create')}>
                         <Plus size={16} /> Create New Lead
                     </button>
@@ -174,7 +250,7 @@ const Leads = () => {
                 <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-[var(--bg-color)]/30 border-b border-[var(--border-color)]">
                     <div className="flex items-center gap-3">
                         <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">
-                            Total Count: <span className="text-[var(--text-dark)] font-black">{filteredLeads.length} Leads</span>
+                            Total Count: <span className="text-[var(--text-dark)] font-black">{paginationProps.total} Leads</span>
                         </span>
                         <div className="h-4 w-px bg-[var(--border-color)]"></div>
                         <div className="flex items-center gap-2">
@@ -229,7 +305,7 @@ const Leads = () => {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : paginatedLeads.length === 0 ? (
+                            ) : leads.length === 0 ? (
                                 <tr>
                                     <td colSpan="8" className="text-center py-24">
                                         <div className="flex flex-col items-center gap-4 opacity-30 text-[var(--text-muted)]">
@@ -238,7 +314,7 @@ const Leads = () => {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : paginatedLeads.map((lead, idx) => (
+                            ) : leads.map((lead, idx) => (
                                 <tr key={lead.id} className="transition-all hover:bg-[var(--primary)]/[0.02] group border-b border-[var(--border-color)] last:border-0 text-xs text-[var(--text-dark)]">
                                     <td className="text-center font-black text-[var(--text-muted)]/40 text-[10px]">
                                         #{((currentPage - 1) * entries + idx + 1).toString().padStart(3, '0')}
@@ -323,32 +399,24 @@ const Leads = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-4 p-5 border-t border-[var(--border-color)] bg-[var(--bg-color)]/30">
-                    <div className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest italic">
-                        Viewing: <span className="text-[var(--text-dark)] not-italic font-black">{(currentPage - 1) * entries + 1} - {Math.min(currentPage * entries, filteredLeads.length)}</span> of {filteredLeads.length} Total
+                    <div className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">
+                        Showing <span className="text-[var(--text-dark)] font-black">{leads.length > 0 ? (currentPage - 1) * entries + 1 : 0} - {Math.min(currentPage * entries, paginationProps.total)}</span> of {paginationProps.total}
                     </div>
                     <div className="flex items-center gap-1.5">
                         <button
                             className={`px-4 py-2 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentPage === 1 ? 'opacity-30 cursor-not-allowed text-[var(--text-muted)]' : 'hover:bg-[var(--bg-color)] active:scale-95 cursor-pointer shadow-sm text-indigo-500'}`}
                             disabled={currentPage === 1}
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         >
                             Previous
                         </button>
-                        <div className="flex items-center gap-1">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                <button
-                                    key={page}
-                                    onClick={() => setCurrentPage(page)}
-                                    className={`w-9 h-9 flex items-center justify-center rounded-xl text-[11px] font-black transition-all border-none cursor-pointer ${currentPage === page ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 scale-105' : 'bg-[var(--surface-color)] text-[var(--text-muted)] border border-[var(--border-color)] hover:border-indigo-500/50 hover:text-indigo-500 shadow-sm'}`}
-                                >
-                                    {page}
-                                </button>
-                            ))}
+                        <div className="w-10 h-10 flex items-center justify-center bg-indigo-600 text-white rounded-xl font-black shadow-lg shadow-indigo-100">
+                            {currentPage}
                         </div>
                         <button
-                            className={`px-4 py-2 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed text-[var(--text-muted)]' : 'hover:bg-[var(--bg-color)] active:scale-95 cursor-pointer shadow-sm text-indigo-600'}`}
-                            disabled={currentPage === totalPages}
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            className={`px-4 py-2 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentPage >= paginationProps.pages ? 'opacity-30 cursor-not-allowed text-[var(--text-muted)]' : 'hover:bg-[var(--bg-color)] active:scale-95 cursor-pointer shadow-sm text-indigo-500'}`}
+                            disabled={currentPage >= paginationProps.pages}
+                            onClick={() => setCurrentPage(prev => Math.min(paginationProps.pages, prev + 1))}
                         >
                             Next
                         </button>
@@ -434,6 +502,118 @@ const Leads = () => {
                                 <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-8 bg-[var(--bg-color)] text-[var(--text-muted)] hover:text-[var(--text-dark)] font-black uppercase text-[11px] tracking-widest rounded-2xl transition-all border-none bg-transparent cursor-pointer">Cancel</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Import Leads Excel Modal */}
+            {isImportModalOpen && (
+                <div className="fixed inset-0 bg-[var(--bg-color)]/70 backdrop-blur-md z-[9000] flex items-center justify-center p-4">
+                    <div className="bg-[var(--surface-color)] rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden animate-zoom-in border border-[var(--border-color)]">
+                        <div className="p-8 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-color)]/30">
+                            <div>
+                                <h3 className="text-2xl font-black text-[var(--text-dark)] tracking-tight uppercase flex items-center gap-3">
+                                    Import Leads
+                                    <Upload className="text-indigo-500" size={24} />
+                                </h3>
+                                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mt-1">Integrate bulk Excel/CSV records instantly</p>
+                            </div>
+                            <button onClick={() => { setIsImportModalOpen(false); setImportFile(null); setImportErrors(null); }} className="w-12 h-12 rounded-2xl bg-[var(--surface-color)] shadow-sm border border-[var(--border-color)] flex items-center justify-center hover:bg-red-500/10 text-[var(--text-muted)] hover:text-red-500 transition-all cursor-pointer outline-none border-none">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-8 space-y-6">
+                            {/* Drag and Drop Zone */}
+                            {!importFile ? (
+                                <div 
+                                    className="border-2 border-dashed border-[var(--border-color)] rounded-3xl p-10 text-center hover:border-indigo-500 transition-all cursor-pointer bg-[var(--bg-color)]/20 relative group"
+                                    onClick={() => document.getElementById('excelFileInput').click()}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                            setImportFile(e.dataTransfer.files[0]);
+                                        }
+                                    }}
+                                >
+                                    <input 
+                                        type="file" 
+                                        id="excelFileInput" 
+                                        accept=".xlsx, .xls, .csv" 
+                                        className="hidden" 
+                                        onChange={(e) => {
+                                            if (e.target.files && e.target.files[0]) {
+                                                setImportFile(e.target.files[0]);
+                                            }
+                                        }}
+                                    />
+                                    <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                        <Upload size={28} />
+                                    </div>
+                                    <p className="text-sm font-black text-[var(--text-dark)] uppercase tracking-tight">Drag & Drop your Excel sheet here</p>
+                                    <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-2">Supports .xlsx, .xls, and .csv files (max 10MB)</p>
+                                </div>
+                            ) : (
+                                <div className="border border-[var(--border-color)] rounded-3xl p-6 bg-indigo-500/[0.02] flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 rounded-2xl bg-indigo-600/10 text-indigo-600 flex items-center justify-center">
+                                            <FileText size={24} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-[var(--text-dark)] uppercase tracking-tight line-clamp-1 max-w-[280px]">{importFile.name}</p>
+                                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">{(importFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setImportFile(null)}
+                                        className="p-3 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl text-red-500 hover:bg-red-500/10 transition-all outline-none"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Download Template Section */}
+                            <div className="flex items-center justify-between p-5 rounded-2xl bg-[var(--bg-color)]/30 border border-[var(--border-color)]">
+                                <div>
+                                    <p className="text-[11px] font-black text-[var(--text-dark)] uppercase tracking-tight">Need a starting layout?</p>
+                                    <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-0.5">Download our pre-structured template</p>
+                                </div>
+                                <button 
+                                    onClick={handleDownloadTemplate}
+                                    className="btn bg-[var(--surface-color)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-indigo-600 hover:bg-indigo-600/10 flex items-center gap-2 font-black uppercase text-[9px] tracking-widest px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer"
+                                >
+                                    <Download size={12} /> Template
+                                </button>
+                            </div>
+
+                            {/* Error Scroll List */}
+                            {importErrors && importErrors.length > 0 && (
+                                <div className="space-y-2">
+                                    <p className="text-[10px] font-black text-red-500 uppercase tracking-widest ml-1">Import Warnings / Errors:</p>
+                                    <div className="max-h-40 overflow-y-auto border border-red-100 bg-red-500/[0.02] rounded-2xl p-4 space-y-1.5 text-[10px] font-bold text-red-600">
+                                        {importErrors.map((err, idx) => (
+                                            <div key={idx} className="flex items-start gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1 flex-shrink-0" />
+                                                <span>{err}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex gap-4 pt-4">
+                                <button 
+                                    onClick={handleImportSubmit}
+                                    className="btn btn-primary flex-1 py-4 flex items-center justify-center gap-3 font-black uppercase text-[11px] tracking-widest shadow-xl shadow-indigo-500/10 disabled:opacity-50"
+                                    disabled={!importFile || importing}
+                                >
+                                    {importing ? <RefreshCcw size={16} className="animate-spin" /> : <Layers size={16} />}
+                                    {importing ? 'Processing File...' : 'Upload & Integrate'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

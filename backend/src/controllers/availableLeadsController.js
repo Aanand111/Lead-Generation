@@ -2,8 +2,22 @@ const availableLeadsDb = require('../models/availableLeadsModel');
 
 const getAvailableLeads = async (req, res, next) => {
     try {
-        const data = await availableLeadsDb.getAvailableLeads();
-        res.status(200).json({ success: true, data });
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
+        const search = typeof req.query.search === 'string' ? req.query.search : '';
+        
+        const data = await availableLeadsDb.getAvailableLeads(page, limit, search);
+        
+        res.status(200).json({ 
+            success: true, 
+            data: data.leads,
+            pagination: {
+                total: data.total,
+                page,
+                limit,
+                pages: Math.ceil(data.total / limit)
+            }
+        });
     } catch (error) {
         next(error);
     }

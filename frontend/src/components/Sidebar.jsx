@@ -9,22 +9,89 @@ import {
 
 import { useTheme } from '../utils/ThemeContext';
 
-const Sidebar = ({ isOpen }) => {
-    console.log("Sidebar Reander");
+const menuItems = [
+    { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    { path: '/customers', label: 'Customers', icon: <Users size={20} /> },
+    { path: '/vendors', label: 'Vendors', icon: <Briefcase size={20} /> },
+    { path: '/commissions/approval', label: 'Commission Approval', icon: <UserCheck size={20} /> },
+    { path: '/payouts', label: 'Payout Requests', icon: <Wallet size={20} /> },
+    { path: '/analytics', label: 'Reporting & Analytics', icon: <BarChart3 size={20} /> },
+    { path: '/sub-vendors', label: 'SubVendors', icon: <UserPlus size={20} /> },
+    { path: '/notifications/send', label: 'Push Notifications', icon: <Bell size={20} /> },
+    {
+        label: 'Leads',
+        icon: <Layers size={20} />,
+        subItems: [
+            { path: '/leads/categories', label: 'Leads Category' },
+            { path: '/leads/approval', label: 'Lead Approvals' },
+            { path: '/leads', label: 'Leads' },
+            { path: '/leads/purchased', label: 'Purchased Leads' },
+            { path: '/leads/available', label: 'Available Leads' },
+            { path: '/leads/facebook', label: 'Facebook Leads' },
+        ]
+    },
+    { path: '/banners', label: 'Banners', icon: <ImageIcon size={20} /> },
+    {
+        label: 'News',
+        icon: <Newspaper size={20} />,
+        subItems: [
+            { path: '/news/category', label: 'News Category' },
+            { path: '/news', label: 'News' },
+        ]
+    },
+    {
+        label: "Poster's",
+        icon: <ImageIcon size={20} />,
+        subItems: [
+            { path: '/posters/category', label: 'Poster Category' },
+            { path: '/posters', label: 'Poster' },
+        ]
+    },
+    {
+        label: 'Subscription Package',
+        icon: <CreditCard size={20} />,
+        subItems: [
+            { path: '/subscriptions', label: 'Subscriptions' },
+            { path: '/subscriptions/plan', label: 'Subscriptions plan' },
+            { path: '/subscriptions/transaction', label: 'Transactions' },
+        ]
+    },
+    {
+        label: 'Contact Us',
+        icon: <MessageSquare size={20} />,
+        subItems: [
+            { path: '/contact', label: 'Contact Form' },
+            { path: '/contact-messages', label: 'Messages Inbox' },
+        ]
+    },
+    { path: '/settings', label: 'Settings', icon: <Settings size={20} /> },
+];
+
+const Sidebar = React.memo(({ isOpen }) => {
     const location = useLocation();
-    const [openDropdowns, setOpenDropdowns] = useState({});
     const { theme } = useTheme();
-
-
-
-
-    // Check if a path is active
-    const isActive = (path) => location.pathname === path;
 
     // Check if a dropdown contains the active path
     const isDropdownActive = (subItems) => {
         return subItems.some(item => location.pathname === item.path || location.pathname.startsWith(item.path + '/'));
     };
+
+    const isActive = (path) => location.pathname === path;
+
+    // Initialize dropdowns based on current path to avoid extra render cycle
+    const [openDropdowns, setOpenDropdowns] = useState(() => {
+        const initialState = {};
+        if (isOpen) {
+            menuItems.forEach(item => {
+                if (item.subItems && item.subItems.some(sub => location.pathname === sub.path || location.pathname.startsWith(sub.path + '/'))) {
+                    initialState[item.label] = true;
+                }
+            });
+        }
+        return initialState;
+    });
+
+    console.log("Sidebar Rendered | Path:", location.pathname);
 
     const toggleDropdown = (label) => {
         if (!isOpen) return;
@@ -34,79 +101,25 @@ const Sidebar = ({ isOpen }) => {
         }));
     };
 
-    // Auto-open dropdown if it contains active route
+    // Update only when path changes, but do it intelligently
     useEffect(() => {
         if (!isOpen) {
-            setOpenDropdowns({}); // Close all dropdowns when sidebar collapses
+            setOpenDropdowns({});
             return;
         }
-
-        const newOpenState = { ...openDropdowns };
+        
+        const newOpenState = {};
         menuItems.forEach(item => {
             if (item.subItems && isDropdownActive(item.subItems)) {
                 newOpenState[item.label] = true;
             }
         });
-        setOpenDropdowns(newOpenState);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [location.pathname, isOpen]);
 
-    const menuItems = [
-        { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-        { path: '/customers', label: 'Customers', icon: <Users size={20} /> },
-        { path: '/vendors', label: 'Vendors', icon: <Briefcase size={20} /> },
-        { path: '/commissions/approval', label: 'Commission Approval', icon: <UserCheck size={20} /> },
-        { path: '/analytics', label: 'Reporting & Analytics', icon: <BarChart3 size={20} /> },
-        { path: '/sub-vendors', label: 'SubVendors', icon: <UserPlus size={20} /> },
-        { path: '/notifications/send', label: 'Push Notifications', icon: <Bell size={20} /> },
-        {
-            label: 'Leads',
-            icon: <Layers size={20} />,
-            subItems: [
-                { path: '/leads/categories', label: 'Leads Category' },
-                { path: '/leads/approval', label: 'Lead Approvals' },
-                { path: '/leads', label: 'Leads' },
-                { path: '/leads/purchased', label: 'Purchased Leads' },
-                { path: '/leads/available', label: 'Available Leads' },
-                { path: '/leads/facebook', label: 'Facebook Leads' },
-            ]
-        },
-        { path: '/banners', label: 'Banners', icon: <ImageIcon size={20} /> },
-        {
-            label: 'News',
-            icon: <Newspaper size={20} />,
-            subItems: [
-                { path: '/news/category', label: 'News Category' },
-                { path: '/news', label: 'News' },
-            ]
-        },
-        {
-            label: "Poster's",
-            icon: <ImageIcon size={20} />,
-            subItems: [
-                { path: '/posters/category', label: 'Poster Category' },
-                { path: '/posters', label: 'Poster' },
-            ]
-        },
-        {
-            label: 'Subscription Package',
-            icon: <CreditCard size={20} />,
-            subItems: [
-                { path: '/subscriptions', label: 'Subscriptions' },
-                { path: '/subscriptions/plan', label: 'Subscriptions plan' },
-                { path: '/subscriptions/transaction', label: 'Transactions' },
-            ]
-        },
-        {
-            label: 'Contact Us',
-            icon: <MessageSquare size={20} />,
-            subItems: [
-                { path: '/contact', label: 'Contact Form' },
-                { path: '/contact-messages', label: 'Messages Inbox' },
-            ]
-        },
-        { path: '/settings', label: 'Settings', icon: <Settings size={20} /> },
-    ];
+        setOpenDropdowns(prev => {
+            const isDifferent = JSON.stringify(prev) !== JSON.stringify(newOpenState);
+            return isDifferent ? { ...prev, ...newOpenState } : prev;
+        });
+    }, [location.pathname, isOpen]);
 
     return (
         <aside className={`custom-sidebar fixed left-0 top-0 h-screen z-[1000] overflow-y-auto overflow-x-hidden flex flex-col transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] bg-[var(--surface-color)] text-[var(--text-dark)] border-r border-[var(--border-color)] ${isOpen ? 'w-[var(--sidebar-width)]' : 'w-[var(--sidebar-collapsed-width)]'}`}>
@@ -167,7 +180,6 @@ const Sidebar = ({ isOpen }) => {
                                     </Link>
                                 )}
 
-                                {/* Submenu */}
                                 {hasSubItems && isOpn && isOpen && (
                                     <ul className="list-none py-2 pl-[30px] pr-0 m-0">
                                         {item.subItems.map((subItem) => {
@@ -179,7 +191,6 @@ const Sidebar = ({ isOpen }) => {
                                                         className={`flex items-center px-3 py-2 text-[13.5px] no-underline transition-all duration-200 ease-in rounded-lg
                                                             ${isSubActive ? 'text-[var(--primary)] font-semibold' : 'text-[var(--text-muted)] font-medium hover:text-[var(--primary)] hover:bg-[var(--active-menu-bg)]'}`}
                                                     >
-                                                        {/* Small circle representing bullet point in sub menus */}
                                                         <span className={`rounded-full mr-3 transition-all duration-200 bg-[var(--border-color)] ${isSubActive ? 'w-1.5 h-1.5 bg-[var(--primary)]' : 'w-1 h-1 group-hover:bg-[var(--primary)]'}`}></span>
                                                         {subItem.label}
                                                     </Link>
@@ -195,6 +206,6 @@ const Sidebar = ({ isOpen }) => {
             </div>
         </aside>
     );
-};
+});
 
 export default Sidebar;

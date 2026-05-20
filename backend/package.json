@@ -11,10 +11,11 @@
     "start:scheduler": "npm run redis:ensure && node src/scheduler-entry.js",
     "start:pm2": "pm2 start ecosystem.config.js --env production",
     "start:prod": "pm2 start ecosystem.config.js --env production",
-    "dev": "npm run redis:ensure && nodemon",
+    "dev": "npx kill-port 5000 && npm run redis:ensure && nodemon",
     "db:migrate": "node src/database/migrate.js",
     "db:setup": "npm run db:migrate",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test \"tests/**/*.test.js\"",
+    "test:watch": "node --test --watch \"tests/**/*.test.js\""
   },
   "keywords": [],
   "author": "",
@@ -25,7 +26,7 @@
     "bullmq": "^5.71.1",
     "cloudinary": "^1.41.3",
     "compression": "^1.8.1",
-    "cors": "^2.8.6",
+    "cors": "^2.8.6", 
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.3.1",
@@ -38,6 +39,7 @@
     "multer": "^2.1.1",
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^8.0.5",
+    "pdfkit": "^0.18.0",
     "pg": "^8.19.0",
     "rate-limit-redis": "^4.3.1",
     "razorpay": "^2.9.6",
@@ -51,5 +53,10 @@
   "devDependencies": {
     "@types/node": "^25.5.2",
     "nodemon": "^3.1.14"
+  },
+  "nodemonConfig": {
+    "events": {
+      "restart": "npx kill-port 5000"
+    }
   }
 }

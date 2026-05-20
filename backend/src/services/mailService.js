@@ -26,8 +26,9 @@ class MailService {
      * @param {string} subject - Email subject
      * @param {string} text - Plain text body
      * @param {string} html - HTML body (optional)
+     * @param {Array} attachments - Optional attachments array
      */
-    async sendEmail(to, subject, text, html = null) {
+    async sendEmail(to, subject, text, html = null, attachments = []) {
         try {
             const mailOptions = {
                 from: `"Lead Generation App" <${process.env.SMTP_USER}>`,
@@ -35,6 +36,7 @@ class MailService {
                 subject,
                 text,
                 html: html || text,
+                attachments: attachments
             };
 
             const info = await this.transporter.sendMail(mailOptions);

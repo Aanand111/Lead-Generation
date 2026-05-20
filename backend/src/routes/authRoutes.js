@@ -1,6 +1,6 @@
 const express = require('express');
 const { registerUser, loginUser } = require('../controllers/authController');
-const { sendOTP, resetPassword } = require('../controllers/passwordResetController');
+const { sendOTP, resetPassword, resetPasswordConfirm } = require('../controllers/passwordResetController');
 const validate = require('../middlewares/validate');
 const { registerSchema, loginSchema } = require('../utils/validators');
 
@@ -12,5 +12,6 @@ router.post('/login', validate(loginSchema), loginUser);
 // Password Reset via OTP (OTP is printed in backend terminal)
 router.post('/forgot-password', sendOTP);
 router.post('/reset-password', resetPassword);
+router.post('/reset-password-confirm', resetPasswordConfirm);
 
 module.exports = router;

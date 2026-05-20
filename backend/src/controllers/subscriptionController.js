@@ -1,10 +1,15 @@
 const db = require('../config/db');
-const { processCommission } = require('../services/commissionService');
+const { processCommissionAsync } = require('../services/commissionService');
 
 // ── GET all subscriptions (with plan name & user info) ────────────
 const getSubscriptions = async (req, res, next) => {
     try {
         const { status, user_id, plan_id } = req.query;
+
+        // Pagination parameters
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
+        const offset = (page - 1) * limit;
 
         let query = `
             SELECT
@@ -45,14 +50,30 @@ const getSubscriptions = async (req, res, next) => {
             conditions.push(`s.plan_id = $${params.length}`);
         }
 
+        let whereClause = '';
         if (conditions.length > 0) {
-            query += ` WHERE ` + conditions.join(' AND ');
+            whereClause = ` WHERE ` + conditions.join(' AND ');
+            query += whereClause;
         }
 
-        query += ` ORDER BY s.created_at DESC`;
+        // Count query for pagination meta
+        const countQuery = `SELECT COUNT(*) FROM subscriptions s ${whereClause}`;
+        const countResult = await db.query(countQuery, params);
+        const total = parseInt(countResult.rows[0].count, 10);
 
-        const result = await db.query(query, params);
-        res.status(200).json({ success: true, data: result.rows });
+        query += ` ORDER BY s.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        const result = await db.query(query, [...params, limit, offset]);
+
+        res.status(200).json({ 
+            success: true, 
+            data: result.rows,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit)
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -131,11 +152,15 @@ const addSubscription = async (req, res, next) => {
 
         const subscription = result.rows[0];
 
-        // --- ASYNC COMMISSION PROCESSING ---
-        // We trigger it but don't strictly await it if it takes too long, 
-        // though in this setup it's small enough to just process.
+        // --- ASYNC COMMISSION PROCESSING (non-blocking) ---
+        // Commission runs in the background; subscription creation response
+        // is returned immediately. A failure here does NOT affect the subscription.
         if (plan.price > 0 && status !== 'Inactive') {
-            await processCommission(user_id, parseFloat(plan.price), `Plan Purchase: ${plan.name}`);
+            processCommissionAsync(
+                user_id,
+                parseFloat(plan.price),
+                `Plan Purchase: ${plan.name}`
+            );
         }
 
         res.status(201).json({

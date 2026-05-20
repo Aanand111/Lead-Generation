@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {  
-    LayoutDashboard, Users, CreditCard, Layers, ArrowUpRight, 
-    ArrowDownRight, Star, Clock, Trophy, Share2, Wallet, 
+import {
+    LayoutDashboard, Users, CreditCard, Layers, ArrowUpRight,
+    ArrowDownRight, Star, Clock, Trophy, Share2, Wallet,
     Zap, Gem, Target, TrendingUp, History as HistoryIcon, Image as ImageIcon,
-    ShieldCheck, Sparkles, ArrowRight, ChevronRight, Bell, Calendar
- } from 'lucide-react';
+    ShieldCheck, Sparkles, ArrowRight, ChevronRight, Bell, Calendar,
+    Package, Activity
+} from 'lucide-react';
 import api from '../../utils/api';
 import LeadAdModal from '../../components/LeadAdModal';
 
@@ -15,13 +16,13 @@ const CustomerDashboard = () => {
         creditBalance: 0,
         totalPurchasedLeads: 0,
         totalReferrals: 0,
-        todaysPosters: 1, 
+        todaysPosters: 1,
         recentPurchases: [],
         recentTransactions: []
     });
-    const [banners, setBanners] = useState([]);
+    const [, setBanners] = useState([]);
     const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
-    const [selectedBanner, setSelectedBanner] = useState(null);
+    const selectedBanner = null;
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -31,7 +32,7 @@ const CustomerDashboard = () => {
                     api.get('/user/dashboard-stats'),
                     api.get('/user/banners')
                 ]);
-                
+
                 if (statsRes.data.success) {
                     setStats(statsRes.data.data);
                 }
@@ -47,7 +48,7 @@ const CustomerDashboard = () => {
 
         fetchStats();
 
-        const handleWalletUpdate = (e) => {
+        const handleWalletUpdate = () => {
             fetchStats();
         };
 
@@ -56,31 +57,6 @@ const CustomerDashboard = () => {
             window.removeEventListener('wallet_updated', handleWalletUpdate);
         };
     }, []);
-
-    const handleBannerClick = async (banner) => {
-        if (!banner) return;
-        try {
-            await api.post(`/user/banners/${banner.id}/interaction?type=click`);
-            if (banner.type === 'LEAD_GENERATION' || banner.link === '#LEAD_GEN') {
-                setSelectedBanner(banner);
-                setIsLeadModalOpen(true);
-                return;
-            }
-            if (banner.link) {
-                window.open(banner.link, '_blank');
-            }
-        } catch (error) {
-            console.error('Error tracking banner click:', error);
-            if (banner.link) window.open(banner.link, '_blank');
-        }
-    };
-
-    const userStats = [
-        { label: 'Available Credits', value: stats.creditBalance, icon: <Wallet size={22} />, color: 'text-indigo-500', bg: 'bg-indigo-500/10', glow: 'shadow-indigo-500/20' },
-        { label: 'Unlocked Leads', value: stats.totalPurchasedLeads, icon: <Target size={22} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10', glow: 'shadow-emerald-500/20' },
-        { label: 'Friends Referred', value: stats.totalReferrals, icon: <Users size={22} />, color: 'text-amber-500', bg: 'bg-amber-500/10', glow: 'shadow-amber-500/20' },
-        { label: 'Free Posters', value: `${stats.todaysPosters}/1`, icon: <ImageIcon size={22} />, color: 'text-rose-500', bg: 'bg-rose-500/10', glow: 'shadow-rose-500/20' }
-    ];
 
     if (loading) {
         return (
@@ -98,29 +74,36 @@ const CustomerDashboard = () => {
     return (
         <div className="page-content animate-fade-in space-y-8 pb-10">
             {/* --- Premium Welcome Section --- */}
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#1e293b] via-[#0f172a] to-black p-8 md:p-12 shadow-2xl border border-white/5">
+            <div className={`relative overflow-hidden rounded-[2.5rem] p-8 md:p-12 shadow-2xl border transition-all duration-700 ${
+                stats.isPremium 
+                ? 'bg-gradient-to-br from-[#1a1a1a] via-[#2c2c2c] to-[#000000] border-amber-500/30 shadow-[0_50px_100px_-20px_rgba(245,158,11,0.25)]' 
+                : 'bg-gradient-to-br from-[#1e293b] via-[#0f172a] to-black border-white/5'
+            }`}>
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"></div>
                 <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/3"></div>
-                
+
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
                     <div className="max-w-xl text-center md:text-left">
                         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] mb-6 backdrop-blur-md">
                             <Sparkles size={12} fill="currentColor" /> Welcome Back, Partner
                         </div>
                         <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase mb-4 leading-tight">
-                            Master Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400">Lead Pipeline</span>
+                            {stats.isPremium ? 'ELITE ' : 'Master Your '} 
+                            <span className={`text-transparent bg-clip-text ${stats.isPremium ? 'bg-gradient-to-r from-amber-200 via-amber-500 to-amber-200 animate-shine' : 'bg-gradient-to-r from-indigo-400 to-emerald-400'}`}>
+                                {stats.isPremium ? 'COMMAND CENTER' : 'Lead Pipeline'}
+                            </span>
                         </h1>
                         <p className="text-white/50 text-sm md:text-base font-medium leading-relaxed mb-8 max-w-lg">
                             Track your business growth, manage lead acquisitions, and monitor your referral network all in one powerful control center.
                         </p>
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                            <button 
+                            <button
                                 onClick={() => navigate('/user/leads/available')}
                                 className="px-8 py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                             >
                                 Get Leads <ArrowRight size={14} />
                             </button>
-                            <button 
+                            <button
                                 onClick={() => navigate('/user/subscriptions')}
                                 className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-2xl font-black uppercase tracking-widest text-[11px] backdrop-blur-md transition-all flex items-center gap-2"
                             >
@@ -128,7 +111,7 @@ const CustomerDashboard = () => {
                             </button>
                         </div>
                     </div>
-                    
+
                     <div className="hidden lg:block">
                         <div className="w-64 h-64 relative">
                             <div className="absolute inset-0 bg-indigo-500/20 rounded-full animate-pulse blur-3xl"></div>
@@ -144,25 +127,28 @@ const CustomerDashboard = () => {
                 </div>
             </div>
 
-            {/* --- Stats Grid --- */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {userStats.map((stat, idx) => (
-                    <div key={idx} className="group relative">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-transparent via-indigo-500/5 to-transparent rounded-[2.2rem] blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
-                        <div className="relative card p-6 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[2rem] hover:border-indigo-500/30 transition-all shadow-sm">
-                            <div className="flex items-center gap-4">
-                                <div className={`w-14 h-14 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center shadow-lg ${stat.glow}`}>
-                                    {stat.icon}
-                                </div>
-                                <div>
-                                    <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5 opacity-70">
-                                        {stat.label}
-                                    </div>
-                                    <div className="text-2xl font-black text-[var(--text-dark)] tracking-tighter tabular-nums">
-                                        {stat.value}
-                                    </div>
-                                </div>
+            {/* --- Core Statistics Engine --- */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                    { label: 'Asset Credits', value: `₹${stats.creditBalance}`, icon: <Wallet size={24} />, color: stats.isPremium ? 'text-amber-500' : 'text-emerald-500', bg: stats.isPremium ? 'bg-amber-500/10' : 'bg-emerald-500/10' },
+                    { label: 'Leads Secured', value: stats.totalPurchasedLeads, icon: <Package size={24} />, color: stats.isPremium ? 'text-amber-400' : 'text-indigo-500', bg: stats.isPremium ? 'bg-amber-400/10' : 'bg-indigo-500/10' },
+                    { label: 'Available Inventory', value: stats.availableLeads, icon: <Activity size={24} />, color: stats.isPremium ? 'text-amber-500' : 'text-amber-500', bg: stats.isPremium ? 'bg-amber-500/10' : 'bg-amber-500/10' },
+                    { label: 'Referral Force', value: stats.totalReferrals, icon: <TrendingUp size={24} />, color: stats.isPremium ? 'text-amber-400' : 'text-royal-blue', bg: stats.isPremium ? 'bg-amber-400/10' : 'bg-royal-blue/10' }
+                ].map((stat, i) => (
+                    <div key={i} className={`card p-8 rounded-[2rem] border transition-all duration-500 hover:scale-[1.02] ${
+                        stats.isPremium 
+                        ? 'bg-[var(--surface-color)] border-amber-500/20 shadow-xl' 
+                        : 'bg-[var(--surface-color)] border-[var(--border-color)] shadow-lg'
+                    }`}>
+                        <div className="flex justify-between items-start mb-6">
+                            <div className={`p-4 rounded-2xl ${stat.bg} ${stat.color} shadow-sm`}>
+                                {stat.icon}
                             </div>
+                            {stats.isPremium && <Gem size={16} className="text-amber-500/30 animate-pulse" />}
+                        </div>
+                        <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 italic opacity-70">{stat.label}</div>
+                        <div className={`text-3xl font-black italic tracking-tighter uppercase leading-none ${stats.isPremium ? 'text-amber-500' : 'text-[var(--text-dark)]'}`}>
+                            {stat.value}
                         </div>
                     </div>
                 ))}
@@ -183,7 +169,7 @@ const CustomerDashboard = () => {
                             </div>
                         </div>
                     </div>
-                    <button 
+                    <button
                         onClick={() => {
                             navigator.clipboard.writeText(stats.referralCode);
                             // Custom toast logic could go here
@@ -203,7 +189,7 @@ const CustomerDashboard = () => {
                             Connected To Node
                         </div>
                         <div className="text-lg font-black text-[var(--text-dark)] uppercase tracking-tight flex items-center gap-2">
-                            {stats.parentName || 'ORGANIC NODE'} 
+                            {stats.parentName || 'ORGANIC NODE'}
                             <ChevronRight size={14} className="text-amber-500" />
                         </div>
                         <div className="text-[10px] font-bold text-amber-500/80 italic uppercase flex items-center gap-2">
@@ -228,7 +214,7 @@ const CustomerDashboard = () => {
                                     <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">Last 5 activities</p>
                                 </div>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => navigate('/user/leads/my')}
                                 className="text-[10px] font-black text-indigo-500 hover:text-white uppercase tracking-widest bg-indigo-500/5 hover:bg-indigo-500 px-5 py-2.5 rounded-xl border border-indigo-500/10 transition-all active:scale-95"
                             >
@@ -310,7 +296,7 @@ const CustomerDashboard = () => {
                                         +12
                                     </div>
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => navigate('/user/referrals')}
                                     className="bg-white text-black px-10 py-4 rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] shadow-2xl hover:bg-emerald-400 transition-all active:scale-95"
                                 >
@@ -385,7 +371,7 @@ const CustomerDashboard = () => {
                                 <div className="flex items-center gap-3 mb-8 text-[11px] font-black uppercase tracking-widest text-emerald-500 italic bg-emerald-500/5 w-fit px-4 py-2 rounded-full border border-emerald-500/10">
                                     <Star size={14} fill="currentColor" className="animate-pulse" /> Daily Free Credit
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => navigate('/user/posters')}
                                     className="w-full py-5 bg-black text-white hover:bg-indigo-600 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-black/10 transition-all flex items-center justify-center gap-3 active:scale-95"
                                 >
@@ -397,9 +383,9 @@ const CustomerDashboard = () => {
                 </div>
             </div>
 
-            <LeadAdModal 
-                isOpen={isLeadModalOpen} 
-                onClose={() => setIsLeadModalOpen(false)} 
+            <LeadAdModal
+                isOpen={isLeadModalOpen}
+                onClose={() => setIsLeadModalOpen(false)}
                 banner={selectedBanner}
             />
         </div>

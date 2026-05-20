@@ -126,6 +126,24 @@ class UserController {
             next(error);
         }
     }
+
+    async changePassword(req, res, next) {
+        try {
+            await userService.changePassword(req.user.id, req.body);
+            res.status(200).json({ success: true, message: 'Password updated successfully.' });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async requestPasswordReset(req, res, next) {
+        try {
+            const result = await userService.requestPasswordReset(req.user.id);
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new UserController();

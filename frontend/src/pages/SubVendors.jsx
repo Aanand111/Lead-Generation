@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MoreVertical, User, Phone, Mail, Award, CheckCircle, XCircle, Search, Plus, Edit2, Trash2, Power, Layers, RefreshCcw, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
@@ -17,9 +17,10 @@ const SubVendors = () => {
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [paginationProps, setPaginationProps] = useState({ total: 0, pages: 1 });
 
-    const fetchSubVendors = async (currentPage = page, currentLimit = limit, currentSearch = searchQuery) => {
+    const fetchSubVendors = useCallback(async (currentPage, currentLimit, currentSearch) => {
         setLoading(true);
         try {
             const { data } = await api.get('/admin/subvendors', {
@@ -39,22 +40,23 @@ const SubVendors = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    // Debounce search
     useEffect(() => {
         const handler = setTimeout(() => {
-            setPage(1);
-            fetchSubVendors(1, limit, searchQuery);
+            setDebouncedSearchQuery(searchQuery);
         }, 500);
 
         return () => clearTimeout(handler);
-    }, [searchQuery, limit]);
+    }, [searchQuery]);
 
-    // Regular fetch on page change
     useEffect(() => {
-        fetchSubVendors(page, limit, searchQuery);
-    }, [page]);
+        setPage(1);
+    }, [debouncedSearchQuery, limit]);
+
+    useEffect(() => {
+        fetchSubVendors(page, limit, debouncedSearchQuery);
+    }, [debouncedSearchQuery, fetchSubVendors, limit, page]);
 
     const handleStatusToggle = async (id, currentStatus) => {
         const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';

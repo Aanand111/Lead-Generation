@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Users,
@@ -37,6 +37,7 @@ const Customers = () => {
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [paginationProps, setPaginationProps] = useState({ total: 0, pages: 1 });
 
     // Edit Modal State
@@ -59,7 +60,7 @@ const Customers = () => {
     const [rechargeCustomer, setRechargeCustomer] = useState(null);
 
     // Fetch customer records from the database
-    const fetchCustomers = async (currentPage = page, currentLimit = limit, currentSearch = searchQuery) => {
+    const fetchCustomers = useCallback(async (currentPage, currentLimit, currentSearch) => {
         setLoading(true);
         try {
             const { data } = await api.get('/admin/customers', {
@@ -75,6 +76,7 @@ const Customers = () => {
                     phone: user.phone || '000-000-0000',
                     whatsapp: user.whatsapp || '',
                     referral: user.referral || 'NONE',
+                    referrer_pincode: user.referrer_pincode || '',
                     pincode: user.pincode || '',
                     city: user.city || '',
                     state: user.state || '',
@@ -94,21 +96,22 @@ const Customers = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    // Debounce search input to reduce API load
     useEffect(() => {
         const handler = setTimeout(() => {
-            setPage(1);
-            fetchCustomers(1, limit, searchQuery);
+            setDebouncedSearchQuery(searchQuery);
         }, 500);
         return () => clearTimeout(handler);
-    }, [searchQuery, limit]);
+    }, [searchQuery]);
 
-    // Refresh list on page navigation
     useEffect(() => {
-        fetchCustomers(page, limit, searchQuery);
-    }, [page]);
+        setPage(1);
+    }, [debouncedSearchQuery, limit]);
+
+    useEffect(() => {
+        fetchCustomers(page, limit, debouncedSearchQuery);
+    }, [debouncedSearchQuery, fetchCustomers, limit, page]);
 
     const toggleAction = (id) => {
         setOpenActionId(openActionId === id ? null : id);
@@ -151,7 +154,7 @@ const Customers = () => {
             const { data } = await api.put(`/admin/customers/${currentEditCustomer.id}`, formData);
             if (data.success || data.message === "Customer updated successfully") {
                 setIsEditModalOpen(false);
-                fetchCustomers();
+                fetchCustomers(page, limit, debouncedSearchQuery);
                 toast.success('Customer profile metadata updated.');
             } else {
                 toast.error(data.message || 'Update rejected.');
@@ -281,9 +284,9 @@ const Customers = () => {
                                 <th className="w-16 text-center text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest">#</th>
                                 <th className="px-6 py-5 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] italic">Member Label</th>
                                 <th className="px-6 py-5 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] italic">Contact Details</th>
-                                <th className="px-6 py-5 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] italic">Regional Hub</th>
-                                <th className="px-6 py-5 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] italic">Status</th>
-                                <th className="px-6 py-5 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] italic">Synchronization</th>
+                                <th className="px-6 py-5 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] italic">Referrer Hub</th>
+                                <th className="px-6 py-5 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] italic">Customer Pincode</th>
+                                <th className="px-6 py-5 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] italic">Account Status</th>
                                 <th className="px-6 py-5 text-right px-10 py-5 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] italic">Protocol Actions</th>
                             </tr>
                         </thead>
@@ -326,7 +329,7 @@ const Customers = () => {
                                         </td>
                                         <td>
                                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/5 text-indigo-500 text-[10px] font-black uppercase tracking-tight border border-indigo-500/10">
-                                                <Share2 size={10} /> {customer.referral || 'ORGANIC'}
+                                                <Share2 size={10} /> {customer.referral || 'ORGANIC'} {customer.referrer_pincode ? `(${customer.referrer_pincode})` : ''}
                                             </div>
                                         </td>
                                         <td>

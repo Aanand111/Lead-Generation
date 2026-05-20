@@ -6,17 +6,26 @@ const { findUserByPhone, findUserByEmail, createUser, findUserByReferralCode, fi
 const mailService = require('../services/mailService');
 const NotificationService = require('../services/notificationService');
 
-
 // --- Helper functions ---
+const getJwtSecret = () => {
+    if (!process.env.JWT_SECRET) {
+        const error = new Error('JWT_SECRET is not configured.');
+        error.status = 500;
+        throw error;
+    }
+
+    return process.env.JWT_SECRET;
+};
+
 const generateToken = (id, role) => {
-    return jwt.sign({ id, role }, process.env.JWT_SECRET || 'secretkey123', {
+    return jwt.sign({ id, role }, getJwtSecret(), {
         expiresIn: '7d',
     });
 };
 
 const registerUser = async (req, res, next) => {
     try {
-        const { password, role, referral_code } = req.body;
+        const { password, role, referral_code, city, state, pincode } = req.body;
         const name = req.body.name || req.body.full_name || 'New Member';
         const email = req.body.email?.trim().toLowerCase();
         const phone = req.body.phone?.trim() || null;
@@ -107,17 +116,15 @@ const registerUser = async (req, res, next) => {
             status: referredById ? 'PENDING' : 'ACTIVE' // Everyone referred needs approval, organic signups are ACTIVE
         });
 
-        // --- SYNCHRONIZATION: Add to vendors table for Admin visibility ---
-        if (role === 'vendor') {
-            try {
-                const { pool } = require('../config/db');
-                await pool.query(
-                    'INSERT INTO vendors (name, phone, email, referral_code, referred_by_vendor_id, status) VALUES ($1, $2, $3, $4, $5, $6)',
-                    [name, phone, email, generatedReferralCode, referredById, 'Active']
-                );
-            } catch (vErr) {
-                console.error('[VENDOR SYNC ERROR] Failed to create vendor metadata:', vErr.message);
-            }
+        // Initialize user profile row with geographic details if provided
+        try {
+            const { pool } = require('../config/db');
+            await pool.query(
+                'INSERT INTO user_profiles (user_id, city, state, pincode) VALUES ($1, $2, $3, $4)',
+                [user.id, city || null, state || null, pincode || null]
+            );
+        } catch (pErr) {
+            console.error('[PROFILE CREATION ERROR] Failed to create user profile:', pErr.message);
         }
 
         // Send Welcome Email (non-blocking)
@@ -160,6 +167,7 @@ const registerUser = async (req, res, next) => {
         // Record standard referral for "Refer & Earn" tracking
         if (referredById && role === 'user') {
             try {
+                const { pool } = require('../config/db');
                 await pool.query(
                     'INSERT INTO referrals (referrer_id, referred_user_id, commission_earned, created_at) VALUES ($1, $2, $3, NOW())',
                     [referredById, user.id, 0]
@@ -170,7 +178,6 @@ const registerUser = async (req, res, next) => {
         }
 
         res.status(201).json({
-
             success: true,
             message: role === 'vendor' 
                 ? 'Registration successful. Please wait for admin approval.' 

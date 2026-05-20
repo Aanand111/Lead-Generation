@@ -3,7 +3,6 @@ import { X, User, Smartphone, Mail, MapPin, Target, Send, Activity, CheckCircle,
 import api from '../utils/api';
 
 const LeadAdModal = ({ isOpen, onClose, banner }) => {
-    const [profile, setProfile] = useState(null);
     const [formData, setFormData] = useState({
         customer_name: '',
         customer_phone: '',
@@ -31,7 +30,6 @@ const LeadAdModal = ({ isOpen, onClose, banner }) => {
         try {
             const { data } = await api.get('/user/profile');
             if (data.success) {
-                setProfile(data.data);
                 setFormData(prev => ({
                     ...prev,
                     customer_name: data.data.name || '',

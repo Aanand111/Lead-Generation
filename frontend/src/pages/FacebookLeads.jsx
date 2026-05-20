@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Download, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Facebook, Search, Filter, RefreshCcw, Activity, Layers, ExternalLink } from 'lucide-react';
 import api from '../utils/api';
 
@@ -7,11 +7,11 @@ const FacebookLeads = () => {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
 
-    const fetchFacebookLeads = async () => {
+    const fetchFacebookLeads = useCallback(async (query) => {
         setLoading(true);
         try {
             // We'll search for leads with prefix 'L-' (from our submitLead) or matching search
-            const response = await api.get(`/admin/leads?search=${search || 'L-'}`);
+            const response = await api.get(`/admin/leads?search=${query || 'L-'}`);
             if (response.data.success) {
                 setLeads(response.data.data);
             }
@@ -20,11 +20,11 @@ const FacebookLeads = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        fetchFacebookLeads();
-    }, [search]);
+        fetchFacebookLeads(search);
+    }, [fetchFacebookLeads, search]);
 
     return (
         <div className="page-content animate-fade-in text-[var(--text-dark)]">

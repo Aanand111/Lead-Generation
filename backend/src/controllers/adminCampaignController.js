@@ -81,16 +81,16 @@ const processBroadcast = async (campaignId, { title, body, role }) => {
             useBatchHandler: true // Custom flag to pass whole batch to handler
         });
 
-        // Final count update
+        // Final count update and mark as COMPLETED
         await pool.query(
-          'UPDATE broadcast_campaigns SET total_users = $1 WHERE id = $2', 
-          [totalEnqueued, campaignId]
+          'UPDATE broadcast_campaigns SET total_users = $1, status = $2, finished_at = NOW() WHERE id = $3', 
+          [totalEnqueued, 'COMPLETED', campaignId]
         );
 
-        // BullMQ workers across all cores will handle the rest!
+        console.log(`[CAMPAIGN_SUCCESS] Campaign ${campaignId} enqueued ${totalEnqueued} users.`);
     } catch (error) {
         console.error('[ENQUEUE ERROR]', error);
-        await pool.query('UPDATE broadcast_campaigns SET status = $1 WHERE id = $2', ['FAILED', campaignId]);
+        await pool.query('UPDATE broadcast_campaigns SET status = $1, error_log = $2 WHERE id = $3', ['FAILED', error.message, campaignId]);
     }
 };
 

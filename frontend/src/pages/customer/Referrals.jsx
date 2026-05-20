@@ -111,9 +111,6 @@ const UserReferrals = () => {
                                         {copied ? <CheckCircle size={20} /> : <Copy size={20} />}
                                     </button>
                                 </div>
-                                <button className="bg-black text-white px-12 py-5 rounded-[2rem] font-black uppercase tracking-[0.3em] text-[11px] shadow-2xl hover:bg-indigo-600 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
-                                    <Share2 size={20} /> Distribute
-                                </button>
                             </div>
                         </div>
                     </div>

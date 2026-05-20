@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    User, Smartphone, Mail, ShieldCheck, 
-    Lock, CheckCircle, Activity, Camera, 
+import {
+    User, Smartphone, Mail, ShieldCheck,
+    Lock, CheckCircle, Activity, Camera,
     Save, Key, Globe, LogOut, ChevronRight,
     RefreshCcw, XCircle
 } from 'lucide-react';
 import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const VendorSettings = () => {
     const [profile, setProfile] = useState({
@@ -21,6 +22,18 @@ const VendorSettings = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
     const navigate = useNavigate();
+
+    const handleRequestPasswordReset = async () => {
+        const toastId = toast.loading('Initiating secure password reset link...');
+        try {
+            const { data } = await api.post('/user/request-password-reset');
+            if (data.success) {
+                toast.success(data.message || 'Password reset link sent to your registered Gmail address!', { id: toastId, duration: 6000 });
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to dispatch password reset link. Please try again.', { id: toastId, duration: 6000 });
+        }
+    };
 
     const fetchProfile = async () => {
         setLoading(true);
@@ -87,8 +100,8 @@ const VendorSettings = () => {
                     <h1 className="text-4xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-none mb-2">My Settings</h1>
                     <p className="text-xs font-bold text-[var(--text-muted)] italic">Manage your partner credentials and global preferences.</p>
                 </div>
-                
-                <button 
+
+                <button
                     onClick={handleLogout}
                     className="px-8 py-4 bg-rose-600/10 text-rose-500 border border-rose-500/20 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest shadow-xl shadow-rose-500/5 active:scale-95 transition-all flex items-center gap-3 hover:bg-rose-600 hover:text-white"
                 >
@@ -97,20 +110,19 @@ const VendorSettings = () => {
             </div>
 
             {message.text && (
-                <div className={`mx-2 p-5 rounded-[2rem] flex items-center gap-4 animate-slide-up border ${
-                    message.type === 'error' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-lg shadow-emerald-500/5'
-                }`}>
+                <div className={`mx-2 p-5 rounded-[2rem] flex items-center gap-4 animate-slide-up border ${message.type === 'error' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-lg shadow-emerald-500/5'
+                    }`}>
                     {message.type === 'error' ? <XCircle size={20} /> : <CheckCircle size={20} />}
                     <span className="text-[11px] font-black uppercase tracking-widest">{message.text}</span>
                 </div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                
+
                 {/* Identity Card */}
                 <div className="card shadow-2xl border border-[var(--border-color)] bg-[var(--surface-color)] rounded-[2.5rem] overflow-hidden">
                     <div className="h-32 bg-indigo-500/5 border-b border-[var(--border-color)] relative overflow-hidden">
-                         <div className="absolute top-0 right-0 p-8 opacity-10 text-indigo-500 rotate-12">
+                        <div className="absolute top-0 right-0 p-8 opacity-10 text-indigo-500 rotate-12">
                             <ShieldCheck size={120} strokeWidth={1} />
                         </div>
                     </div>
@@ -120,7 +132,7 @@ const VendorSettings = () => {
                                 <User size={56} strokeWidth={1.5} />
                             </div>
                         </div>
-                        
+
                         <div className="mt-6">
                             <h3 className="text-2xl font-black text-[var(--text-dark)] uppercase tracking-tight leading-none mb-2">{profile.full_name || profile.phone || 'Partner Profile'}</h3>
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-500 text-[9px] font-black uppercase tracking-[0.2em] border border-indigo-500/20">
@@ -129,21 +141,21 @@ const VendorSettings = () => {
                         </div>
 
                         <div className="w-full mt-10 grid grid-cols-2 gap-3">
-                             <div className="p-4 rounded-2xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
+                            <div className="p-4 rounded-2xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
                                 <div className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 opacity-60">Status</div>
                                 <div className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter">{profile.status || 'ACTIVE'}</div>
-                             </div>
-                             <div className="p-4 rounded-2xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
+                            </div>
+                            <div className="p-4 rounded-2xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
                                 <div className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 opacity-60">Partner ID</div>
                                 <div className="text-[10px] font-black text-indigo-500 uppercase tracking-tighter">{profile.referral_code || 'VND-XXXX'}</div>
-                             </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Identity Configuration */}
                 <div className="lg:col-span-2 space-y-8">
-                    
+
                     <div className="card shadow-2xl border border-[var(--border-color)] bg-[var(--surface-color)] rounded-[2.5rem] overflow-hidden">
                         <div className="p-8 border-b border-[var(--border-color)] bg-gradient-to-r from-indigo-500/5 to-transparent flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -158,7 +170,7 @@ const VendorSettings = () => {
                         </div>
 
                         <form onSubmit={handleProfileUpdate} className="p-8 lg:p-10 space-y-8">
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Full Legal Name</label>
                                     <div className="relative">
@@ -166,7 +178,7 @@ const VendorSettings = () => {
                                             type="text"
                                             className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl px-6 py-4 text-sm font-black text-[var(--text-dark)] uppercase tracking-tight focus:border-indigo-500 focus:shadow-lg focus:shadow-indigo-500/5 transition-all outline-none"
                                             value={profile.full_name}
-                                            onChange={(e) => setProfile({...profile, full_name: e.target.value})}
+                                            onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
                                             placeholder="John Doe"
                                         />
                                         <Edit3 size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] opacity-30" />
@@ -188,15 +200,15 @@ const VendorSettings = () => {
                                             type="email"
                                             className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl px-6 py-4 text-sm font-black text-[var(--text-dark)] lowercase tracking-tight focus:border-indigo-500 focus:shadow-lg focus:shadow-indigo-500/5 transition-all outline-none"
                                             value={profile.email}
-                                            onChange={(e) => setProfile({...profile, email: e.target.value})}
+                                            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
                                             placeholder="vendor@geega.com"
                                         />
                                         <Mail size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] opacity-30" />
                                     </div>
                                 </div>
-                             </div>
+                            </div>
 
-                             <button
+                            <button
                                 type="submit"
                                 disabled={isSaving || loading}
                                 className="w-full md:w-auto px-10 py-4 bg-indigo-600 text-white rounded-[1.5rem] text-[11px] font-black uppercase tracking-widest shadow-2xl shadow-indigo-600/20 active:scale-95 transition-all flex items-center justify-center gap-3 border-none cursor-pointer disabled:opacity-50"
@@ -209,7 +221,7 @@ const VendorSettings = () => {
 
                     {/* Security Management */}
                     <div className="card shadow-2xl border border-[var(--border-color)] bg-[var(--surface-color)] rounded-[2.5rem] overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
-                         <div className="p-8 border-b border-[var(--border-color)] flex items-center justify-between">
+                        <div className="p-8 border-b border-[var(--border-color)] flex items-center justify-between">
                             <div className="flex items-center gap-4 text-rose-500">
                                 <div className="w-10 h-10 rounded-2xl bg-rose-500/10 flex items-center justify-center border border-rose-500/20">
                                     <Lock size={20} />
@@ -221,7 +233,10 @@ const VendorSettings = () => {
                             <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest italic opacity-70 max-w-[300px]">
                                 Your account is protected by industry-standard encryption. We suggest updating your password every 90 days.
                             </p>
-                            <button className="px-6 py-3 rounded-xl bg-[var(--bg-color)] border border-[var(--border-color)] text-[10px] font-black uppercase tracking-widest text-[var(--text-dark)] hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all flex items-center gap-3">
+                            <button 
+                                onClick={handleRequestPasswordReset}
+                                className="px-6 py-3 rounded-xl bg-[var(--bg-color)] border border-[var(--border-color)] text-[10px] font-black uppercase tracking-widest text-[var(--text-dark)] hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all flex items-center gap-3 border-none cursor-pointer"
+                            >
                                 <Key size={14} /> Change Password
                             </button>
                         </div>
@@ -235,19 +250,19 @@ const VendorSettings = () => {
 
 // Internal icon for editing
 const Edit3 = ({ size, className }) => (
-    <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        width={size} 
-        height={size} 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="2" 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
         className={className}
     >
-        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
     </svg>
 );
 

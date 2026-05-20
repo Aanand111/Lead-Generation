@@ -53,7 +53,7 @@ const Dashboard = () => {
         return 'Good evening';
     }, []);
 
-    const renderIcon = (iconName, color = 'indigo') => {
+    const renderIcon = (iconName) => {
         const icons = { Users, Briefcase, FileDigit, Calendar };
         const IconComponent = icons[iconName] || Activity;
         return <IconComponent size={24} />;

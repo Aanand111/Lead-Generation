@@ -54,5 +54,7 @@ router.get('/news', cache(900), (req, res, next) => userController.getNews(req, 
 router.get('/banners', cache(900), (req, res, next) => userController.getBanners(req, res, next));
 router.get('/profile', (req, res, next) => userController.getProfile(req, res, next));
 router.put('/profile', (req, res, next) => userController.updateProfile(req, res, next));
+router.post('/change-password', (req, res, next) => userController.changePassword(req, res, next));
+router.post('/request-password-reset', (req, res, next) => userController.requestPasswordReset(req, res, next));
 
 module.exports = router;

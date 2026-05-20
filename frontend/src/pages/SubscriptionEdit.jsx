@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, ArrowLeft, Save, Sparkles, User, Package, Calendar, Zap, Activity, AlertCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../utils/api';
@@ -13,8 +13,6 @@ const STATUSES = [
 const SubscriptionEdit = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [plans, setPlans] = useState([]);
-    const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
@@ -31,22 +29,12 @@ const SubscriptionEdit = () => {
         status: 'Active',
     });
 
-    useEffect(() => {
-        fetchInitialData();
-    }, [id]);
-
-    const fetchInitialData = async () => {
+    const fetchInitialData = useCallback(async () => {
         setLoading(true);
         try {
-            const [planRes, userRes, subRes] = await Promise.all([
-                api.get('/admin/subscription-plans'),
-                api.get('/admin/customers'),
-                api.get(`/admin/subscriptions/${id}`)
-            ]);
-            if (planRes.data.success) setPlans(planRes.data.data);
-            if (userRes.data.success) setUsers(userRes.data.data);
-            if (subRes.data.success) {
-                const sub = subRes.data.data;
+            const { data: subData } = await api.get(`/admin/subscriptions/${id}`);
+            if (subData.success) {
+                const sub = subData.data;
                 setFormData({
                     user_id: sub.user_id,
                     plan_id: sub.plan_id,
@@ -65,25 +53,11 @@ const SubscriptionEdit = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
 
-    const handlePlanChange = (planId) => {
-        const selectedPlan = plans.find(p => p.id == planId);
-        if (selectedPlan) {
-            setFormData(prev => ({
-                ...prev,
-                plan_id: planId,
-                total_leads: selectedPlan.leads_limit,
-                total_posters: selectedPlan.poster_limit,
-                used_leads: 0,
-                used_posters: 0,
-                start_date: new Date().toISOString().split('T')[0],
-                end_date: new Date(Date.now() + selectedPlan.duration * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-            }));
-        } else {
-            setFormData(prev => ({ ...prev, plan_id: planId }));
-        }
-    };
+    useEffect(() => {
+        fetchInitialData();
+    }, [fetchInitialData]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;

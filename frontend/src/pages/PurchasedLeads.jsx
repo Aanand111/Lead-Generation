@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ShoppingCart, Search, Filter, ArrowLeft, RefreshCcw, Download, Calendar, Tag, User, Package, Layers, Sparkles, Activity, ShieldCheck, Plus, TrendingUp } from 'lucide-react';
 import api from '../utils/api';
 import CustomSelect from '../components/CustomSelect';
 
 const PurchasedLeads = () => {
-    const navigate = useNavigate();
     const [leads, setLeads] = useState([]);
     const [stats, setStats] = useState({ leads: 0, total_remaining_leads: 0 });
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [entries, setEntries] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
+    const [paginationProps, setPaginationProps] = useState({ total: 0, pages: 1 });
 
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         try {
             const { data } = await api.get('/admin/stats');
             console.log("Stats API Response:", data);
@@ -23,13 +23,15 @@ const PurchasedLeads = () => {
         } catch (err) {
             console.error("Error fetching stats:", err);
         }
-    };
+    }, []);
 
-    const fetchPurchasedLeads = async () => {
+    const fetchPurchasedLeads = useCallback(async () => {
         setLoading(true);
         fetchStats();
         try {
-            const { data } = await api.get('/admin/leads-purchased');
+            const { data } = await api.get('/admin/leads-purchased', {
+                params: { page: currentPage, limit: entries, search: debouncedSearch }
+            });
             console.log("Purchased Leads API Response:", data);
 
             if (data.success && data.data && data.data.length > 0) {
@@ -47,6 +49,9 @@ const PurchasedLeads = () => {
                     endDate: lead.end_date ? new Date(lead.end_date).toLocaleDateString('en-GB') : 'N/A'
                 }));
                 setLeads(mappedData);
+                if (data.pagination) {
+                    setPaginationProps({ total: data.pagination.total, pages: data.pagination.pages });
+                }
              } else {
                 setLeads([]);
             }
@@ -56,18 +61,22 @@ const PurchasedLeads = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [fetchStats]);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [debouncedSearch, entries]);
 
     useEffect(() => {
         fetchPurchasedLeads();
-    }, []);
-
-    const filteredLeads = leads.filter(l => 
-        l.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        l.leadName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        l.leadId.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
+    }, [fetchPurchasedLeads, currentPage, entries, debouncedSearch]);
     return (
         <div className="page-content animate-fade-in text-[var(--text-dark)] pb-20">
             {/* Page Header */}
@@ -193,16 +202,16 @@ const PurchasedLeads = () => {
                                         <span className="text-[11px] font-black uppercase tracking-widest animate-pulse text-indigo-600/60">Fetching Purchase History...</span>
                                     </div>
                                 </td></tr>
-                             ) : filteredLeads.length === 0 ? (
+                             ) : leads.length === 0 ? (
                                 <tr><td colSpan="8" className="text-center py-40 text-[var(--text-muted)]">
                                      <div className="flex flex-col items-center gap-5 opacity-20">
                                          <ShoppingCart size={80} strokeWidth={1} />
                                          <p className="font-black uppercase tracking-widest text-[10px]">No purchase records found</p>
                                      </div>
                                 </td></tr>
-                             ) : filteredLeads.map((lead) => (
+                             ) : leads.map((lead, idx) => (
                                 <tr key={lead.id} className="transition-all hover:bg-indigo-600/[0.02] group border-b border-[var(--border-color)] last:border-0 text-xs text-[var(--text-dark)]">
-                                    <td className="text-center font-black text-[var(--text-muted)]/40 text-[10px]">#{lead.id.toString().padStart(3, '0')}</td>
+                                    <td className="text-center font-black text-[var(--text-muted)]/40 text-[10px]">#{((currentPage - 1) * entries + idx + 1).toString().padStart(3, '0')}</td>
                                     <td>
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-xl bg-indigo-600/10 text-indigo-600 flex items-center justify-center font-black text-sm shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-all transform group-hover:rotate-6">
@@ -267,18 +276,29 @@ const PurchasedLeads = () => {
                     </table>
                 </div>
 
-                <div className="p-10 flex flex-wrap items-center justify-between border-t border-[var(--border-color)] bg-[var(--bg-color)]/20 shadow-inner">
-                     <div className="flex items-center gap-4">
-                         <div className="p-3 rounded-[1.5rem] bg-white border border-gray-100 shadow-xl group">
-                              <ShieldCheck className="text-indigo-600 group-hover:rotate-180 transition-transform duration-1000" size={24} />
-                         </div>
-                         <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">
-                              Lead Purchase Monitoring: <span className="text-indigo-600 font-black ml-1">{leads.length} Active Records</span>
-                         </div>
-                     </div>
-                      <div className="flex items-center gap-2">
-                         <button className="px-6 py-4 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-xl shadow-indigo-100/10">Refresh Leads</button>
-                      </div>
+                <div className="flex flex-wrap items-center justify-between gap-4 p-5 border-t border-[var(--border-color)] bg-[var(--bg-color)]/30">
+                    <div className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">
+                        Showing <span className="text-[var(--text-dark)] font-black">{leads.length > 0 ? (currentPage - 1) * entries + 1 : 0} - {Math.min(currentPage * entries, paginationProps.total)}</span> of {paginationProps.total}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            className={`px-4 py-2 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentPage === 1 ? 'opacity-30 cursor-not-allowed text-[var(--text-muted)]' : 'hover:bg-[var(--bg-color)] active:scale-95 cursor-pointer shadow-sm text-indigo-500'}`}
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        >
+                            Previous
+                        </button>
+                        <div className="w-10 h-10 flex items-center justify-center bg-indigo-600 text-white rounded-xl font-black shadow-lg shadow-indigo-100">
+                            {currentPage}
+                        </div>
+                        <button
+                            className={`px-4 py-2 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentPage >= paginationProps.pages ? 'opacity-30 cursor-not-allowed text-[var(--text-muted)]' : 'hover:bg-[var(--bg-color)] active:scale-95 cursor-pointer shadow-sm text-indigo-500'}`}
+                            disabled={currentPage >= paginationProps.pages}
+                            onClick={() => setCurrentPage(prev => Math.min(paginationProps.pages, prev + 1))}
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

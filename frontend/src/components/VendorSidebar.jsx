@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import InsureeLogo from '../assets/insuree.png';
 import {
     LayoutDashboard, Users, UserPlus, Wallet, Settings, ChevronDown, ChevronRight, Activity, Bell
@@ -8,8 +8,44 @@ import { useTheme } from '../utils/ThemeContext';
 
 const VendorSidebar = ({ isOpen }) => {
     const location = useLocation();
+    const navigate = useNavigate();
     const [openDropdowns, setOpenDropdowns] = useState({});
     const { theme } = useTheme();
+    const [user, setUser] = useState(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            try {
+                const parsedUser = JSON.parse(storedUser);
+                return {
+                    name: parsedUser.name || parsedUser.full_name || 'Vendor',
+                    profilePic: parsedUser.profilePic || parsedUser.profile_pic || parsedUser.avatar || parsedUser.image || ''
+                };
+            } catch (e) {
+                console.error("Sidebar user parse error", e);
+            }
+        }
+        return { name: 'Vendor', profilePic: '' };
+    });
+
+    useEffect(() => {
+        const handleUpdate = () => {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                try {
+                    const parsedUser = JSON.parse(storedUser);
+                    setUser({
+                        name: parsedUser.name || parsedUser.full_name || 'Vendor',
+                        profilePic: parsedUser.profilePic || parsedUser.profile_pic || parsedUser.avatar || parsedUser.image || ''
+                    });
+                } catch {
+                    /* Ignore malformed cached user payload. */
+                }
+            }
+        };
+
+        window.addEventListener('userProfileUpdated', handleUpdate);
+        return () => window.removeEventListener('userProfileUpdated', handleUpdate);
+    }, []);
 
     const isActive = (path) => location.pathname === path;
 
@@ -87,11 +123,17 @@ const VendorSidebar = ({ isOpen }) => {
                 </ul>
             </div>
             <div className="sidebar-footer p-4 border-t border-[var(--border-color)]">
-               <div className="flex items-center gap-3 bg-indigo-500/5 p-3 rounded-2xl border border-indigo-500/10 overflow-hidden">
-                   <div className="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-black text-xs">V</div>
-                   {isOpen && <div>
-                       <div className="text-[10px] font-black text-[var(--text-dark)] uppercase leading-none">Vendor Node</div>
-                       <div className="text-[9px] font-bold text-[var(--text-muted)] italic leading-none mt-1 uppercase tracking-tighter">Production Live</div>
+               <div className="flex items-center gap-3 bg-indigo-500/5 p-3 rounded-2xl border border-indigo-500/10 overflow-hidden group cursor-pointer hover:bg-indigo-500/10 transition-all" onClick={() => navigate('/vendor/settings')}>
+                   <div className="w-9 h-9 rounded-full bg-indigo-500 text-white flex items-center justify-center font-black text-[10px] overflow-hidden border border-white shrink-0 shadow-sm">
+                       {user.profilePic ? (
+                           <img src={user.profilePic} alt="P" className="w-full h-full object-cover" />
+                       ) : (
+                           user.name?.[0] || 'V'
+                       )}
+                   </div>
+                   {isOpen && <div className="min-w-0">
+                       <div className="text-[10px] font-black text-[var(--text-dark)] uppercase leading-none truncate">{user.name}</div>
+                       <div className="text-[9px] font-bold text-[var(--text-muted)] italic leading-none mt-1 uppercase tracking-tighter opacity-70">Production Node</div>
                    </div>}
                </div>
             </div>

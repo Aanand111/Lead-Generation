@@ -16,7 +16,15 @@ class UserRepository {
                        ELSE p.role
                    END as parent_role,
                    p.referral_code as parent_code,
-                   (SELECT COUNT(*) FROM referrals r WHERE r.referred_user_id = u.id) as is_referral
+                   (SELECT COUNT(*) FROM referrals r WHERE r.referred_user_id = u.id) as is_referral,
+                   EXISTS (
+                       SELECT 1 FROM subscriptions s
+                       JOIN subscription_plans sp ON s.plan_id = sp.id
+                       WHERE s.user_id = u.id
+                       AND sp.category = 'PREMIUM'
+                       AND s.status = 'Active'
+                       AND s.end_date > NOW()
+                   ) as is_premium
             FROM users u
             LEFT JOIN mv_user_stats mv ON u.id = mv.user_id
             LEFT JOIN users p ON u.referred_by = p.id
@@ -42,7 +50,15 @@ class UserRepository {
                        ELSE p.role
                    END as parent_role,
                    p.referral_code as parent_code,
-                   (SELECT COUNT(*) FROM referrals r WHERE r.referred_user_id = u.id) as is_referral
+                   (SELECT COUNT(*) FROM referrals r WHERE r.referred_user_id = u.id) as is_referral,
+                   EXISTS (
+                       SELECT 1 FROM subscriptions s
+                       JOIN subscription_plans sp ON s.plan_id = sp.id
+                       WHERE s.user_id = u.id
+                       AND sp.category = 'PREMIUM'
+                       AND s.status = 'Active'
+                       AND s.end_date > NOW()
+                   ) as is_premium
             FROM users u
             LEFT JOIN users p ON u.referred_by = p.id
             LEFT JOIN vendors v ON p.phone = v.phone
@@ -122,7 +138,15 @@ class UserRepository {
                     ELSE COALESCE(u.full_name, v.name)
                 END as full_name,
                 u.email, up.address, up.city, up.state, up.pincode, up.pan_number, up.profile_image as profile_pic,
-                u.status, u.referral_code, u.referred_by, p.full_name as parent_name
+                u.status, u.referral_code, u.referred_by, p.full_name as parent_name,
+                EXISTS (
+                    SELECT 1 FROM subscriptions s
+                    JOIN subscription_plans sp ON s.plan_id = sp.id
+                    WHERE s.user_id = u.id
+                    AND sp.category = 'PREMIUM'
+                    AND s.status = 'Active'
+                    AND s.end_date > NOW()
+                ) as is_premium
             FROM users u
             LEFT JOIN user_profiles up ON u.id = up.user_id
             LEFT JOIN vendors v ON u.phone = v.phone
@@ -259,7 +283,7 @@ class UserRepository {
              FROM subscriptions s
              JOIN subscription_plans p ON s.plan_id = p.id
              WHERE s.user_id = $1
-             AND p.category IN ('POSTER', 'BOTH')
+             AND p.category IN ('POSTER', 'BOTH', 'PREMIUM')
              AND s.status = 'Active'
              AND s.end_date >= CURRENT_DATE
              ORDER BY s.end_date DESC
@@ -334,6 +358,15 @@ class UserRepository {
             [userId, leadId, vendorId, rating, comment]
         );
         return result.rows[0];
+    }
+
+    async getPasswordHash(userId, client = pool) {
+        const result = await client.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+        return result.rows[0]?.password_hash || null;
+    }
+
+    async updatePassword(userId, passwordHash, client = pool) {
+        await client.query('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, userId]);
     }
 }
 

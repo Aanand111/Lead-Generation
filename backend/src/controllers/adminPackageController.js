@@ -12,7 +12,7 @@ const addPackage = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Invalid package type' });
         }
 
-        const validCategories = ['LEADS', 'POSTER', 'BOTH'];
+        const validCategories = ['LEADS', 'POSTER', 'BOTH', 'PREMIUM'];
         const normalizedCategory = category.toUpperCase();
 
         if (!validCategories.includes(normalizedCategory)) {
@@ -41,7 +41,7 @@ const editPackage = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Invalid package type' });
         }
 
-        const validCategories = ['LEADS', 'POSTER', 'BOTH'];
+        const validCategories = ['LEADS', 'POSTER', 'BOTH', 'PREMIUM'];
         const normalizedCategory = category.toUpperCase();
 
         if (!validCategories.includes(normalizedCategory)) {

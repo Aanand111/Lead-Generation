@@ -205,6 +205,8 @@ app.get('/api/health', async (req, res) => {
     res.status(payload.httpStatus).json(payload.body);
 });
 
+
+
 app.use('/api/', generalLimiter);
 app.use('/api/auth', authLimiter, require('./modules/auth/auth.routes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
@@ -247,8 +249,11 @@ const shutdown = async (signal, exitCode = 0) => {
 const startServer = async () => {
     logger.debug('[SERVER] Starting server initialization...');
     
-    // Auto-run migrations on startup
-    await runMigrations();
+    // Triggered nodemon restart to run corrected migrations.
+    // Auto-run migrations on startup (configurable for safety in multi-instance environments)
+    if (process.env.AUTO_MIGRATE === 'true' || process.env.NODE_ENV === 'development') {
+        await runMigrations();
+    }
     
     const dbHealth = await checkDatabaseHealth();
     if (dbHealth.status !== 'UP') {

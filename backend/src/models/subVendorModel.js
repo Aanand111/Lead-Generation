@@ -4,18 +4,6 @@ const bcrypt = require('bcryptjs');
 const getAllSubVendors = async (page = 1, limit = 10, search = '') => {
     const offset = (page - 1) * limit;
 
-    // ── AUTO-REPAIR DISCREPANCY ──────────────────────────────────────
-    // Ensure that any user with role 'vendor' and a referrer exists in the 'vendors' table.
-    // This fixes cases where users register via referral codes but aren't added to metadata table.
-    await pool.query(`
-        INSERT INTO vendors (name, phone, email, referral_code, referred_by_vendor_id, status)
-        SELECT u.full_name, u.phone, u.email, u.referral_code, u.referred_by, 
-               CASE WHEN u.status = 'ACTIVE' THEN 'Active' ELSE 'Inactive' END
-        FROM users u
-        WHERE u.role = 'vendor' AND u.referred_by IS NOT NULL
-        AND NOT EXISTS (SELECT 1 FROM vendors v WHERE v.phone = u.phone OR v.email = u.email)
-    `);
-
     let totalQuery = `
         SELECT COUNT(*) 
         FROM users u 
@@ -34,16 +22,15 @@ const getAllSubVendors = async (page = 1, limit = 10, search = '') => {
     let queryStr = `
         SELECT 
             u.id, 
-            COALESCE(NULLIF(v.name, ''), NULLIF(u.full_name, ''), 'Sub-Vendor') as name, 
-            COALESCE(NULLIF(v.phone, ''), NULLIF(u.phone, ''), '0000000000') as phone, 
-            COALESCE(NULLIF(v.email, ''), NULLIF(u.email, ''), 'no-email@example.com') as email, 
-            COALESCE(NULLIF(v.referral_code, ''), NULLIF(u.referral_code, ''), '') as referral_code, 
+            COALESCE(NULLIF(u.full_name, ''), 'Sub-Vendor') as name, 
+            COALESCE(NULLIF(u.phone, ''), '0000000000') as phone, 
+            COALESCE(NULLIF(u.email, ''), 'no-email@example.com') as email, 
+            COALESCE(NULLIF(u.referral_code, ''), '') as referral_code, 
             u.status, 
             u.created_at,
             parent.full_name as vendor_name
         FROM users u
         LEFT JOIN users parent ON u.referred_by = parent.id
-        LEFT JOIN vendors v ON (u.phone = v.phone OR u.email = v.email)
         WHERE u.role = 'vendor' AND u.referred_by IS NOT NULL
     `;
     let queryParams = [];
@@ -61,50 +48,56 @@ const getAllSubVendors = async (page = 1, limit = 10, search = '') => {
     // Standardize status for frontend (ACTIVE -> Active, etc.)
     const subVendors = result.rows.map(row => ({
         ...row,
-        status: row.status === 'ACTIVE' ? 'Active' : (row.status === 'PENDING' ? 'Active' : 'Inactive')
+        status: (row.status === 'ACTIVE' || row.status === 'Active') ? 'Active' : 'Inactive'
     }));
 
     return { subVendors, total };
 };
 
 const createSubVendor = async (data) => {
-    const { name, phone, email, password, referral_code, referred_by_vendor_id, status, gender } = data;
+    const { name, phone, email, password, referral_code, referred_by_vendor_id, status } = data;
     const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+    const mappedStatus = (status && status.toLowerCase() === 'inactive') ? 'BLOCKED' : 'ACTIVE';
+    
     const query = `
-        INSERT INTO vendors (name, phone, email, password, referral_code, referred_by_vendor_id, status, gender)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING *
+        INSERT INTO users (full_name, phone, email, password_hash, referral_code, referred_by, status, role)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'vendor')
+        RETURNING id, full_name as name, phone, email, referral_code, referred_by as referred_by_vendor_id, status, created_at
     `;
-    const values = [name, phone, email, hashedPassword, referral_code, referred_by_vendor_id, status || 'Active', gender];
+    const values = [name, phone, email, hashedPassword, referral_code, referred_by_vendor_id, mappedStatus];
     const result = await pool.query(query, values);
-    return result.rows[0];
+    const row = result.rows[0];
+    return { ...row, status: row.status === 'ACTIVE' ? 'Active' : 'Inactive' };
 };
 
 const updateSubVendor = async (id, data) => {
-    const { name, phone, email, password, referral_code, referred_by_vendor_id, status, gender } = data;
+    const { name, phone, email, password, referral_code, referred_by_vendor_id, status } = data;
     const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+    const mappedStatus = status ? ((status.toLowerCase() === 'inactive') ? 'BLOCKED' : 'ACTIVE') : null;
+    
     const query = `
-        UPDATE vendors 
+        UPDATE users 
         SET 
-            name = COALESCE(NULLIF($1, ''), name),
+            full_name = COALESCE(NULLIF($1, ''), full_name),
             phone = COALESCE(NULLIF($2, ''), phone),
             email = COALESCE(NULLIF($3, ''), email),
-            password = COALESCE(NULLIF($4, ''), password),
+            password_hash = COALESCE(NULLIF($4, ''), password_hash),
             referral_code = COALESCE(NULLIF($5, ''), referral_code),
-            referred_by_vendor_id = COALESCE($6, referred_by_vendor_id),
+            referred_by = COALESCE($6, referred_by),
             status = COALESCE(NULLIF($7, ''), status),
-            gender = COALESCE(NULLIF($8, ''), gender),
             updated_at = NOW()
-        WHERE id = $9 AND referred_by_vendor_id IS NOT NULL
-        RETURNING *
+        WHERE id = $8 AND role = 'vendor' AND referred_by IS NOT NULL
+        RETURNING id, full_name as name, phone, email, referral_code, referred_by as referred_by_vendor_id, status
     `;
-    const values = [name, phone, email, hashedPassword, referral_code, referred_by_vendor_id, status, gender, id];
+    const values = [name, phone, email, hashedPassword, referral_code, referred_by_vendor_id, mappedStatus, id];
     const result = await pool.query(query, values);
-    return result.rows[0];
+    if (!result.rows[0]) return null;
+    const row = result.rows[0];
+    return { ...row, status: row.status === 'ACTIVE' ? 'Active' : 'Inactive' };
 };
 
 const deleteSubVendor = async (id) => {
-    const query = `DELETE FROM vendors WHERE id=$1 AND referred_by_vendor_id IS NOT NULL RETURNING id`;
+    const query = `DELETE FROM users WHERE id=$1 AND role = 'vendor' AND referred_by IS NOT NULL RETURNING id`;
     const result = await pool.query(query, [id]);
     return result.rows[0];
 };
@@ -113,16 +106,15 @@ const getSubVendorById = async (id) => {
     const query = `
         SELECT 
             u.id, 
-            COALESCE(NULLIF(v.name, ''), NULLIF(u.full_name, ''), 'Sub-Vendor') as name, 
-            COALESCE(NULLIF(v.phone, ''), NULLIF(u.phone, ''), '0000000000') as phone, 
-            COALESCE(NULLIF(v.email, ''), NULLIF(u.email, ''), 'no-email@example.com') as email, 
-            COALESCE(NULLIF(v.referral_code, ''), NULLIF(u.referral_code, ''), '') as referral_code, 
+            COALESCE(NULLIF(u.full_name, ''), 'Sub-Vendor') as name, 
+            COALESCE(NULLIF(u.phone, ''), '0000000000') as phone, 
+            COALESCE(NULLIF(u.email, ''), 'no-email@example.com') as email, 
+            COALESCE(NULLIF(u.referral_code, ''), '') as referral_code, 
             u.status, 
             u.referred_by as referred_by_vendor_id,
-            v.gender
+            'Unknown' as gender
         FROM users u
-        LEFT JOIN vendors v ON (v.phone = u.phone AND u.phone != '')
-        WHERE u.id = $1
+        WHERE u.id = $1 AND u.role = 'vendor' AND u.referred_by IS NOT NULL
         LIMIT 1
     `;
     const result = await pool.query(query, [id]);

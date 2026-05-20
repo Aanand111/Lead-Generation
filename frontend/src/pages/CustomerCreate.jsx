@@ -203,7 +203,7 @@ const CustomerCreate = () => {
                                     <input 
                                         type="password" name="password" value={formData.password} onChange={handleChange} 
                                         className="w-full pl-12 pr-4 py-4 rounded-2xl font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none"
-                                        placeholder="MIN 6 CHARACTERS" minLength={6} 
+                                        placeholder="MIN 6 CHARACTERS" minLength={6} required
                                     />
                                 </div>
                             </div>

@@ -45,6 +45,7 @@ class UserService {
             parentRole: userData?.parent_role || '',
             parentCode: userData?.parent_code || '',
             isReferral: parseInt(userData?.is_referral || 0, 10) > 0,
+            isPremium: Boolean(userData?.is_premium),
             todaysPosters: Math.max(0, 1 - todaysPosters),
             recentPurchases,
             recentTransactions
@@ -95,9 +96,9 @@ class UserService {
         await withTransaction(async (client) => {
             // Get the old phone number to correctly update the vendor table
             const oldPhone = await userRepository.getUserPhone(userId, client);
-            
+
             await userRepository.updateUserIdentity(userId, name, email, reqPhone, client);
-            
+
             const newPhone = reqPhone || oldPhone;
 
             if (oldPhone && newPhone && oldPhone !== newPhone) {
@@ -316,6 +317,85 @@ class UserService {
 
         const prefix = role === 'vendor' ? 'VND' : 'USR';
         return `${prefix}-${code}${Date.now().toString(36).slice(-2).toUpperCase()}`;
+    }
+
+    async changePassword(userId, { currentPassword, newPassword }) {
+        const bcrypt = require('bcrypt');
+        if (!currentPassword || !newPassword) {
+            throw new AppError('Current password and new password are required.', 400);
+        }
+        if (newPassword.length < 6) {
+            throw new AppError('New password must be at least 6 characters long.', 400);
+        }
+
+        const passwordHash = await userRepository.getPasswordHash(userId);
+        if (!passwordHash) {
+            throw new AppError('User security profile not found.', 404);
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, passwordHash);
+        if (!isMatch) {
+            throw new AppError('Current password is incorrect.', 401);
+        }
+
+        const newHash = await bcrypt.hash(newPassword, 10);
+        await userRepository.updatePassword(userId, newHash);
+    }
+
+    async requestPasswordReset(userId) {
+        const crypto = require('crypto');
+        const mailService = require('../../services/mailService');
+        const { redisConnection } = require('../../config/redis');
+
+        // Fetch user profile to get registered email
+        const user = await userRepository.getProfile(userId);
+        if (!user) {
+            throw new AppError('User profile not found.', 404);
+        }
+        if (!user.email) {
+            throw new AppError('No registered email found for this profile. Please update your profile with an email address first.', 400);
+        }
+
+        // Generate 32-byte secure hexadecimal token
+        const token = crypto.randomBytes(32).toString('hex');
+
+        // Store reset token inside Redis pointing to the user's ID
+        // TTL: 15 minutes (900 seconds)
+        await redisConnection.setex(`pwd_reset_link:${token}`, 15 * 60, userId.toString());
+
+        // Construct password reset link
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+
+        // Send email via Gmail SMTP using mailService
+        const subject = 'Secure Password Reset Link - Lead Generation App';
+        const text = `Hi ${user.full_name || 'Partner'},\n\nWe received a request to update your account password. Click the secure link below to reset your credentials:\n\n${resetLink}\n\nThis link will expire in 15 minutes. If you did not request this, please secure your account immediately.\n\nBest Regards,\nThe LeadGen Team`;
+        
+        const html = `
+            <div style="font-family: Arial, sans-serif; background-color: #f4f6fa; padding: 40px 20px; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
+                    <h2 style="color: #4f46e5; margin: 0 0 10px 0; font-size: 24px; font-weight: 800; text-transform: uppercase;">Security Core Reset</h2>
+                    <p style="font-size: 16px; line-height: 1.6; color: #334155; margin-bottom: 20px;">Hi <strong>${user.full_name || 'Partner'}</strong>,</p>
+                    <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 30px;">We received a request to update your account password. Click the secure button below to initialize the credential reset process:</p>
+                    <div style="text-align: center; margin: 35px 0;">
+                        <a href="${resetLink}" style="background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 16px 36px; border-radius: 12px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; text-transform: uppercase; box-shadow: 0 10px 20px rgba(79, 70, 229, 0.15); display: inline-block;">Reset My Password</a>
+                    </div>
+                    <p style="font-size: 11px; line-height: 1.6; color: #94a3b8; margin-bottom: 5px; text-align: center; font-style: italic;">
+                        This link is valid for 15 minutes. If you did not request a password change, please ignore this email.
+                    </p>
+                </div>
+            </div>
+        `;
+
+        const mailResult = await mailService.sendEmail(user.email, subject, text, html);
+        if (!mailResult.success) {
+            throw new AppError(`SMTP Transmission Failed: ${mailResult.error}`, 500);
+        }
+
+        return {
+            success: true,
+            message: 'A secure password reset link has been dispatched to your registered email endpoint.'
+        };
     }
 }
 

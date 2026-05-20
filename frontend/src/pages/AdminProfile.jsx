@@ -1,8 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Camera, Save, Lock, User, Shield, Key, CheckCircle, XCircle, RefreshCcw } from 'lucide-react';
 import api from '../utils/api';
+import toast from 'react-hot-toast';
 
 const AdminProfile = () => {
+    const navigate = useNavigate();
+
+    const handleRequestPasswordReset = async () => {
+        const toastId = toast.loading('Initiating secure password reset link...');
+        try {
+            const { data } = await api.post('/user/request-password-reset');
+            if (data.success) {
+                toast.success(data.message || 'Password reset link sent to your registered Gmail address!', { id: toastId, duration: 6000 });
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to dispatch password reset link. Please try again.', { id: toastId, duration: 6000 });
+        }
+    };
     // We get the current user from localStorage
     const [user, setUser] = useState(() => {
         const storedUser = JSON.parse(localStorage.getItem('user')) || {};
@@ -16,12 +31,6 @@ const AdminProfile = () => {
 
     const [previewImage, setPreviewImage] = useState(user.profilePic);
     const fileInputRef = useRef(null);
-
-    const [passwordData, setPasswordData] = useState({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-    });
 
     const [message, setMessage] = useState({ type: '', text: '' });
     const [isUploading, setIsUploading] = useState(false);
@@ -94,25 +103,25 @@ const AdminProfile = () => {
         e.preventDefault();
         setIsSaving(true);
         setMessage({ type: '', text: '' });
-        
+
         try {
-            const { data } = await api.put('/admin/profile', { 
+            const { data } = await api.put('/admin/profile', {
                 name: user.name,
                 email: user.email,
-                designation: user.designation 
+                designation: user.designation
             });
-            
+
             if (data.success) {
                 // Update localStorage with new data
                 const existingUser = JSON.parse(localStorage.getItem('user') || '{}');
-                const updatedUser = { 
-                    ...existingUser, 
+                const updatedUser = {
+                    ...existingUser,
                     name: user.name,
                     email: user.email,
                     designation: user.designation
                 };
                 localStorage.setItem('user', JSON.stringify(updatedUser));
-                
+
                 window.dispatchEvent(new Event('userProfileUpdated'));
                 setMessage({ type: 'success', text: 'Profile information updated successfully.' });
             }
@@ -120,31 +129,6 @@ const AdminProfile = () => {
             console.error("Profile Update Error:", err.response?.data || err.message);
             const errorMsg = err.response?.data?.message || 'Failed to update profile. Verification failed.';
             setMessage({ type: 'error', text: errorMsg });
-        } finally {
-            setIsSaving(false);
-            setTimeout(() => setMessage({ type: '', text: '' }), 3000);
-        }
-    };
-
-    const handlePasswordChange = async (e) => {
-        e.preventDefault();
-        if (passwordData.newPassword !== passwordData.confirmPassword) {
-            setMessage({ type: 'error', text: 'Passwords do not match.' });
-            return;
-        }
-        if (passwordData.newPassword.length < 6) {
-            setMessage({ type: 'error', text: 'Password must be at least 6 characters long.' });
-            return;
-        }
-
-        setIsSaving(true);
-        try {
-            // Placeholder for password update API call
-            // await api.put('/admin/change-password', passwordData);
-            setMessage({ type: 'success', text: 'Password changed successfully.' });
-            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        } catch (err) {
-            setMessage({ type: 'error', text: 'Failed to update password. Authentication failed.' });
         } finally {
             setIsSaving(false);
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -161,18 +145,17 @@ const AdminProfile = () => {
             </div>
 
             {message.text && (
-                <div className={`mb-8 p-4 rounded-2xl flex items-center gap-4 transition-all animate-slide-up border ${
-                    message.type === 'error' 
-                    ? 'bg-red-500/10 text-red-500 border-red-500/20' 
-                    : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                }`}>
+                <div className={`mb-8 p-4 rounded-2xl flex items-center gap-4 transition-all animate-slide-up border ${message.type === 'error'
+                        ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                        : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                    }`}>
                     {message.type === 'error' ? <XCircle size={20} /> : <CheckCircle size={20} />}
                     <span className="text-xs font-black uppercase tracking-widest">{message.text}</span>
                 </div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                
+
                 {/* Profile Avatar Card */}
                 <div className="card shadow-sm border border-[var(--border-color)] bg-[var(--surface-color)] lg:col-span-1 overflow-hidden group relative">
                     <div className="h-32 bg-indigo-500/5 absolute top-0 left-0 right-0 z-0 border-b border-[var(--border-color)]"></div>
@@ -185,7 +168,7 @@ const AdminProfile = () => {
                                     <User size={64} className="text-[var(--text-muted)] opacity-20" />
                                 )}
                             </div>
-                            
+
                             <button
                                 onClick={() => !isUploading && fileInputRef.current.click()}
                                 disabled={isUploading}
@@ -229,23 +212,23 @@ const AdminProfile = () => {
 
                 {/* Security & Access Protocols */}
                 <div className="lg:col-span-2 space-y-8">
-                    
+
                     {/* General Settings */}
                     {/* Profile Information */}
                     <div className="card shadow-sm border border-[var(--border-color)] bg-[var(--surface-color)] p-8">
-                         <div className="flex items-center gap-4 mb-8">
+                        <div className="flex items-center gap-4 mb-8">
                             <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
                                 <User size={20} />
                             </div>
-                             <div>
+                            <div>
                                 <h3 className="text-lg font-black text-[var(--text-dark)] uppercase tracking-tight">Profile Details</h3>
                                 <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase">Update your basic account information</p>
                             </div>
                         </div>
 
-                         <form onSubmit={handleProfileUpdate} className="space-y-6">
+                        <form onSubmit={handleProfileUpdate} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                 <div className="space-y-2">
+                                <div className="space-y-2">
                                     <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Full Name</label>
                                     <input
                                         type="text"
@@ -254,7 +237,7 @@ const AdminProfile = () => {
                                         onChange={(e) => setUser({ ...user, name: e.target.value })}
                                         placeholder="Full Name"
                                     />
-                                 </div>
+                                </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Designation</label>
                                     <input
@@ -265,7 +248,7 @@ const AdminProfile = () => {
                                         placeholder="Administrator"
                                     />
                                 </div>
-                                 <div className="space-y-2">
+                                <div className="space-y-2">
                                     <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Email Address</label>
                                     <input
                                         type="email"
@@ -276,75 +259,36 @@ const AdminProfile = () => {
                                     />
                                 </div>
                             </div>
-                                <button
-                                    type="submit"
-                                    disabled={isSaving}
-                                    className="btn btn-primary px-10 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-widest flex items-center gap-3 shadow-2xl shadow-indigo-600/30 active:scale-95 transition-all w-full md:w-auto"
-                                >
-                                    {isSaving ? <RefreshCcw size={18} className="animate-spin" /> : <Save size={18} />}
-                                    {isSaving ? 'Updating...' : 'Save Profile Changes'}
-                                </button>
+                            <button
+                                type="submit"
+                                disabled={isSaving}
+                                className="btn btn-primary px-10 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-widest flex items-center gap-3 shadow-2xl shadow-indigo-600/30 active:scale-95 transition-all w-full md:w-auto"
+                            >
+                                {isSaving ? <RefreshCcw size={18} className="animate-spin" /> : <Save size={18} />}
+                                {isSaving ? 'Updating...' : 'Save Profile Changes'}
+                            </button>
                         </form>
                     </div>
 
                     {/* Security Settings */}
                     <div className="card shadow-sm border border-[var(--border-color)] bg-[var(--surface-color)] p-8">
-                         <div className="flex items-center gap-4 mb-8">
-                            <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
-                                <Lock size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-black text-[var(--text-dark)] uppercase tracking-tight text-rose-500">Security Settings</h3>
-                                <p className="text-[10px] font-medium text-rose-400 uppercase italic">We recommend changing your password regularly</p>
-                            </div>
-                        </div>
-
-                        <form onSubmit={handlePasswordChange} className="space-y-6">
-                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Current Password</label>
-                                <input
-                                    type="password"
-                                    className="form-control !py-3 font-bold border-[var(--border-color)] bg-[var(--bg-color)] focus:ring-4 focus:ring-rose-500/10 transition-all text-sm shadow-inner text-[var(--text-dark)]"
-                                    placeholder="Enter current password"
-                                    value={passwordData.currentPassword}
-                                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">New Password</label>
-                                    <input
-                                        type="password"
-                                        className="form-control !py-3 font-bold border-[var(--border-color)] bg-[var(--bg-color)] focus:ring-4 focus:ring-rose-500/10 transition-all text-sm shadow-inner text-[var(--text-dark)]"
-                                        placeholder="Enter new password"
-                                        value={passwordData.newPassword}
-                                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                                        required
-                                    />
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
+                                    <Lock size={20} />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Confirm New Password</label>
-                                    <input
-                                        type="password"
-                                        className="form-control !py-3 font-bold border-[var(--border-color)] bg-[var(--bg-color)] focus:ring-4 focus:ring-rose-500/10 transition-all text-sm shadow-inner text-[var(--text-dark)]"
-                                        placeholder="Confirm new password"
-                                        value={passwordData.confirmPassword}
-                                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                                        required
-                                    />
+                                <div>
+                                    <h3 className="text-lg font-black text-[var(--text-dark)] uppercase tracking-tight text-rose-500">Security Settings</h3>
+                                    <p className="text-[10px] font-medium text-rose-400 uppercase italic">We recommend changing your password regularly to protect your admin privileges.</p>
                                 </div>
                             </div>
-                            
-                            <button 
-                                type="submit" 
-                                disabled={isSaving || isUploading}
-                                className="btn w-full md:w-auto px-8 bg-rose-600 text-white hover:bg-rose-700 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/10 py-3 rounded-xl transition-all flex items-center justify-center gap-3 border-none cursor-pointer"
+                            <button
+                                onClick={handleRequestPasswordReset}
+                                className="btn px-8 bg-rose-600 hover:bg-rose-700 text-white font-black uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/10 py-4 rounded-2xl transition-all flex items-center justify-center gap-3 border-none cursor-pointer"
                             >
-                                <Lock size={16} /> Update Password
+                                <Key size={16} /> Update Password
                             </button>
-                        </form>
+                        </div>
                     </div>
 
                 </div>

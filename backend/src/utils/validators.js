@@ -160,7 +160,10 @@ const registerSchema = Joi.object({
     }),
     password: Joi.string().min(6).required(),
     role: Joi.string().valid('user', 'vendor').required(),
-    referral_code: Joi.string().optional().allow('')
+    referral_code: Joi.string().optional().allow(''),
+    city: Joi.string().optional().allow('', null),
+    state: Joi.string().optional().allow('', null),
+    pincode: Joi.string().optional().allow('', null)
 }).unknown(true);
 
 const loginSchema = Joi.object({

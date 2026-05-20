@@ -2,15 +2,10 @@ const { pool } = require('../config/db');
 
 const SCALAR_NUMERIC_TYPES = new Set(['int2', 'int4', 'int8', 'numeric', 'float4', 'float8']);
 const TEXT_TYPES = new Set(['text', 'varchar', 'bpchar']);
-const CACHE_TTL_MS = 60 * 1000;
-
 let cachedColumns = null;
-let cachedAt = 0;
 
 const loadLeadPurchaseColumns = async (queryable = pool) => {
-    const now = Date.now();
-
-    if (cachedColumns && now - cachedAt < CACHE_TTL_MS) {
+    if (cachedColumns) {
         return cachedColumns;
     }
 
@@ -21,7 +16,6 @@ const loadLeadPurchaseColumns = async (queryable = pool) => {
     `);
 
     cachedColumns = new Map(result.rows.map((row) => [row.column_name, row]));
-    cachedAt = now;
 
     return cachedColumns;
 };

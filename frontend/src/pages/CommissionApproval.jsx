@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, XCircle, Clock, IndianRupee, User, Calendar, Search, RefreshCcw, AlertCircle } from 'lucide-react';
 import api from '../utils/api';
 import { useConfirm } from '../context/ConfirmContext';
@@ -13,7 +13,7 @@ const CommissionApproval = () => {
     const [processingId, setProcessingId] = useState(null);
     const [selectedRole, setSelectedRole] = useState('vendor'); // 'vendor' or 'sub-vendor'
 
-    const fetchCommissions = async (status = filterStatus) => {
+    const fetchCommissions = useCallback(async (status) => {
         setLoading(true);
         try {
             const { data } = await api.get('/admin/commissions', {
@@ -38,11 +38,11 @@ const CommissionApproval = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        fetchCommissions();
-    }, [filterStatus]);
+        fetchCommissions(filterStatus);
+    }, [fetchCommissions, filterStatus]);
 
     const handleApprove = async (id) => {
         const confirmed = await confirm(
@@ -177,7 +177,7 @@ const CommissionApproval = () => {
                                     </td>
                                 </tr>
                             ) : commissions.filter(c => {
-                                const isSub = !!c.referred_by;
+                                const isSub = c.referred_by;
                                 return selectedRole === 'sub-vendor' ? isSub : !isSub;
                             }).length === 0 ? (
                                 <tr>
@@ -190,20 +190,20 @@ const CommissionApproval = () => {
                                 </tr>
                             ) : (
                                 commissions.filter(c => {
-                                    const isSub = !!c.referred_by;
+                                    const isSub = c.referred_by;
                                     return selectedRole === 'sub-vendor' ? isSub : !isSub;
                                 }).map(commission => (
                                     <tr key={commission.id} className="border-b border-[var(--border-color)] last:border-0 hover:bg-indigo-500/5 transition-colors group">
                                         <td className="p-5">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-2xl ${!!commission.referred_by ? 'bg-amber-500/10 text-amber-500' : 'bg-indigo-500/10 text-indigo-500'} flex items-center justify-center`}>
+                                                <div className={`w-10 h-10 rounded-2xl ${commission.referred_by ? 'bg-amber-500/10 text-amber-500' : 'bg-indigo-500/10 text-indigo-500'} flex items-center justify-center`}>
                                                     <User size={18} />
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
                                                         <div className="text-[11px] font-black uppercase text-[var(--text-dark)]">{commission.vendor_name}</div>
-                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${!!commission.referred_by ? 'bg-amber-500/10 text-amber-500' : 'bg-indigo-500/10 text-indigo-500'}`}>
-                                                            {!!commission.referred_by ? 'SUB' : 'MAIN'}
+                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${commission.referred_by ? 'bg-amber-500/10 text-amber-500' : 'bg-indigo-500/10 text-indigo-500'}`}>
+                                                            {commission.referred_by ? 'SUB' : 'MAIN'}
                                                         </span>
                                                     </div>
                                                     <div className="text-[10px] font-bold text-[var(--text-muted)] italic">{commission.vendor_phone}</div>

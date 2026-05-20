@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Tag, User, Mail, Phone, Lock, UserPlus, Briefcase, Users, Zap, ShieldCheck, Activity } from 'lucide-react';
+import { Eye, EyeOff, Tag, User, Mail, Phone, Lock, UserPlus, Briefcase, Users, Zap, ShieldCheck, Activity, MapPin } from 'lucide-react';
 import api from '../utils/api';
 import InsureBg from '../assets/Insure.png';
 import InsureeLogo from '../assets/insuree.png';
@@ -15,7 +15,10 @@ const Register = () => {
         password: '',
         confirmPassword: '',
         role: 'user',
-        referral_code: searchParams.get('ref') || ''
+        referral_code: searchParams.get('ref') || '',
+        city: '',
+        state: '',
+        pincode: ''
     });
 
     useEffect(() => {
@@ -169,6 +172,58 @@ const Register = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Customer Address Group (Conditional) */}
+                    {formData.role === 'user' && (
+                        <div className="mb-24 animate-fade-in text-left">
+                            <div className="flex items-center gap-2 mb-12 border-b border-indigo-500/10 pb-2">
+                                <MapPin size={14} className="text-indigo-500" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500/60">Geographic Location</span>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+                                <div className="form-group text-left mb-0">
+                                    <label className="form-label font-bold-600">City <span className="text-red">*</span></label>
+                                    <input
+                                        type="text"
+                                        className="form-control text-[11px] font-bold uppercase tracking-wider"
+                                        placeholder="EX: MUMBAI"
+                                        value={formData.city}
+                                        onChange={(e) => setFormData({ ...formData, city: e.target.value.toUpperCase() })}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group text-left mb-0">
+                                    <label className="form-label font-bold-600">State <span className="text-red">*</span></label>
+                                    <input
+                                        type="text"
+                                        className="form-control text-[11px] font-bold uppercase tracking-wider"
+                                        placeholder="EX: MAHARASHTRA"
+                                        value={formData.state}
+                                        onChange={(e) => setFormData({ ...formData, state: e.target.value.toUpperCase() })}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group text-left mb-0">
+                                    <label className="form-label font-bold-600">Pin Code <span className="text-red">*</span></label>
+                                    <input
+                                        type="text"
+                                        className="form-control text-[11px] font-bold tracking-widest"
+                                        placeholder="400001"
+                                        value={formData.pincode}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/\D/g, '');
+                                            if (val.length <= 6) {
+                                                setFormData({ ...formData, pincode: val });
+                                            }
+                                        }}
+                                        maxLength="6"
+                                        pattern="[0-9]{6}"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Role Selection Group - Premium Style */}
                     <div className="form-group text-left mb-24">

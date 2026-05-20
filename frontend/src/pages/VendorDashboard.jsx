@@ -3,7 +3,7 @@ import {
     Users, UserCheck,Clock,TrendingUp, Wallet, ArrowRight,
     Sparkles, ShieldCheck, Activity, Bell, Zap, Layers, Plus, Briefcase
 } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { getApiBaseUrl } from '../utils/urls';
 
@@ -15,7 +15,6 @@ const VendorDashboard = () => {
         pending_earnings: 0 
     });
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
     useEffect(() => {

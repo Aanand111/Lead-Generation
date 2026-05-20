@@ -1,7 +1,7 @@
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const { pool } = require('../config/db');
-const { processCommission } = require('../services/commissionService');
+const { processCommissionAsync } = require('../services/commissionService');
 
 // @desc    Initialize Razorpay Instance
 // @note    Using dynamic initialization to ensure .env changes are picked up
@@ -182,14 +182,71 @@ const verifySubscriptionPayment = async (req, res, next) => {
             console.error('[SOCKET ERROR] Failed to send balance update:', sErr.message);
         }
         
-        // --- ASYNC COMMISSION PROCESSING ---
-        // We trigger it after commit to ensure the core payment process is finalized.
-        try {
-            if (plan.price > 0) {
-                await processCommission(userId, parseFloat(plan.price), `Package Purchase: ${plan.name} (via Razorpay)`);
-            }
-        } catch (commErr) {
-            console.error('[CRITICAL] Commission trigger failed after successful payment:', commErr);
+        // --- NON-BLOCKING: Commission + Invoice Email ---
+        // These run after the payment commit. Failures are logged but do not
+        // affect the user's subscription status.
+        if (plan.price > 0) {
+            // 1. Commission (fire-and-forget, transaction-safe)
+            processCommissionAsync(
+                userId,
+                parseFloat(plan.price),
+                `Package Purchase: ${plan.name} (via Razorpay)`
+            );
+
+            // 2. Invoice Email (async, does not block response)
+            (async () => {
+                try {
+                    const invoiceService = require('../services/invoiceService');
+                    const mailService = require('../services/mailService');
+
+                    const invoicePath = await invoiceService.generateSubscriptionInvoice({
+                        user: { name, email, phone: transRes.rows[0].phone },
+                        plan: plan,
+                        transactionId: razorpay_payment_id,
+                        date: new Date()
+                    });
+
+                    const subject = `Subscription Activated: ${plan.name}`;
+                    const html = `
+                        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; color: #1e293b; background-color: #f8fafc;">
+                            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                                <div style="background-color: #6366f1; padding: 40px; text-align: center;">
+                                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px;">Payment Successful</h1>
+                                </div>
+                                <div style="padding: 40px;">
+                                    <p style="font-size: 16px; line-height: 1.6;">Hello <strong>${name}</strong>,</p>
+                                    <p style="font-size: 16px; line-height: 1.6;">Your subscription to the <strong>${plan.name}</strong> plan has been successfully activated. We have received your payment of <strong>INR ${plan.price}</strong>.</p>
+                                    
+                                    <div style="margin: 30px 0; padding: 20px; background-color: #f1f5f9; border-radius: 12px;">
+                                        <h3 style="margin-top: 0; color: #475569; font-size: 14px; text-transform: uppercase;">Plan Details</h3>
+                                        <ul style="list-style: none; padding: 0; margin: 0; font-size: 14px;">
+                                            <li style="margin-bottom: 8px;"><strong>Credits:</strong> ${plan.credits} Leads</li>
+                                            <li style="margin-bottom: 8px;"><strong>Validity:</strong> ${plan.duration} Days</li>
+                                            <li style="margin-bottom: 8px;"><strong>Status:</strong> Active</li>
+                                        </ul>
+                                    </div>
+
+                                    <p style="font-size: 14px; color: #64748b;">Please find your official invoice attached to this email for your records.</p>
+                                    
+                                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
+                                        <p style="font-size: 12px; color: #94a3b8;">&copy; 2026 LeadGen Network Protocol. All rights reserved.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    await mailService.sendEmail(
+                        email,
+                        subject,
+                        `Your subscription for ${plan.name} is active. Invoice attached.`,
+                        html,
+                        [{ filename: `Invoice_${plan.name}.pdf`, path: invoicePath }]
+                    );
+                } catch (invoiceErr) {
+                    console.error('[ASYNC ERROR] Invoice email flow failed:', invoiceErr.message);
+                }
+            })();
         }
 
         res.status(200).json({

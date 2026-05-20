@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
     Search, MapPin, Filter, Layers, CreditCard, ChevronRight, 
     Download, Activity, CheckCircle, Smartphone, Mail, Briefcase, 
@@ -25,12 +25,12 @@ const UserAvailableLeads = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
-    const fetchLeads = async (isQuiet = false) => {
+    const fetchLeads = useCallback(async (isQuiet = false, nextFilters = filters, nextPage = page) => {
         if (!isQuiet) setLoading(true);
         setError(null);
         try {
             const { data } = await api.get('/user/available-leads', { 
-                params: { ...filters, page } 
+                params: { ...nextFilters, page: nextPage } 
             });
             if (data.success) {
                 setLeads(data.leads || data.data || []);
@@ -48,15 +48,11 @@ const UserAvailableLeads = () => {
         } finally {
             if (!isQuiet) setLoading(false);
         }
-    };
-
-    useEffect(() => {
-        setPage(1);
-    }, [filters]);
+    }, [filters, page]);
 
     useEffect(() => {
         fetchLeads();
-    }, [filters, page]);
+    }, [fetchLeads]);
 
     useEffect(() => {
         let interval;
@@ -79,7 +75,12 @@ const UserAvailableLeads = () => {
             clearInterval(interval);
             window.removeEventListener('wallet_updated', handleWalletUpdate);
         };
-    }, [autoRefresh, filters]);
+    }, [autoRefresh, fetchLeads]);
+
+    const updateFilter = (key, value) => {
+        setPage(1);
+        setFilters(prev => ({ ...prev, [key]: value }));
+    };
 
     const handlePurchase = async (leadId, cost = 10) => {
         if (userCredits < cost) {
@@ -178,7 +179,7 @@ const UserAvailableLeads = () => {
                             <input 
                                 type="text" placeholder="Filter by City" 
                                 value={filters.city}
-                                onChange={(e) => setFilters({...filters, city: e.target.value})}
+                                onChange={(e) => updateFilter('city', e.target.value)}
                                 className="w-full pl-16 pr-6 py-5 bg-[var(--bg-color)]/30 border border-transparent focus:border-indigo-500/20 rounded-3xl text-xs font-black uppercase tracking-widest focus:ring-0 transition-all placeholder:text-[var(--text-muted)]/50"
                             />
                         </div>
@@ -189,7 +190,7 @@ const UserAvailableLeads = () => {
                             <input 
                                 type="text" placeholder="Postal Code" 
                                 value={filters.pincode}
-                                onChange={(e) => setFilters({...filters, pincode: e.target.value})}
+                                onChange={(e) => updateFilter('pincode', e.target.value)}
                                 className="w-full pl-16 pr-6 py-5 bg-[var(--bg-color)]/30 border border-transparent focus:border-indigo-500/20 rounded-3xl text-xs font-black uppercase tracking-widest focus:ring-0 transition-all placeholder:text-[var(--text-muted)]/50"
                             />
                         </div>
@@ -200,7 +201,7 @@ const UserAvailableLeads = () => {
                             <input 
                                 type="text" placeholder="Industry Type" 
                                 value={filters.category}
-                                onChange={(e) => setFilters({...filters, category: e.target.value})}
+                                onChange={(e) => updateFilter('category', e.target.value)}
                                 className="w-full pl-16 pr-6 py-5 bg-[var(--bg-color)]/30 border border-transparent focus:border-indigo-500/20 rounded-3xl text-xs font-black uppercase tracking-widest focus:ring-0 transition-all placeholder:text-[var(--text-muted)]/50"
                             />
                         </div>

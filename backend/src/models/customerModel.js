@@ -47,10 +47,12 @@ const getAllCustomers = async (page = 1, limit = 10, search = '') => {
                 up.city,
                 up.state,
                 referrer.full_name as referral,
+                up_ref.pincode as referrer_pincode,
                 'USER' as type
             FROM users u
             LEFT JOIN user_profiles up ON u.id = up.user_id
             LEFT JOIN users referrer ON u.referred_by = referrer.id
+            LEFT JOIN user_profiles up_ref ON referrer.id = up_ref.user_id
             WHERE u.role = 'user'
             UNION ALL
             SELECT 
@@ -64,9 +66,11 @@ const getAllCustomers = async (page = 1, limit = 10, search = '') => {
                 l.city,
                 l.state,
                 creator.full_name as referral,
+                creator_up.pincode as referrer_pincode,
                 'LEAD' as type
             FROM leads l
             LEFT JOIN users creator ON l.created_by = creator.id
+            LEFT JOIN user_profiles creator_up ON creator.id = creator_up.user_id
             WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.phone = l.customer_phone AND u.role = 'user')
         )
         SELECT * FROM combined_customers
@@ -92,9 +96,9 @@ const createCustomer = async (data) => {
 
     // Create a new customer record
     // Adds a user and initializes their profile entry
-    // Use provided password if available, otherwise fallback to default '123456'
+    // Password is explicitly required by the controller for security.
     const salt = await bcrypt.genSalt(8);
-    const password_hash = await bcrypt.hash(password || '123456', salt);
+    const password_hash = await bcrypt.hash(password, salt);
 
     const query = `
         INSERT INTO users (full_name, email, phone, role, status, password_hash)
@@ -194,12 +198,12 @@ const updateCustomerStatus = async (id, status) => {
 const deleteCustomer = async (id) => {
     // Remove customer from the system
     // First try deleting from users
-    const userResult = await pool.query(`DELETE FROM users WHERE id = $1 AND role = 'user' RETURNING id`);
+    const userResult = await pool.query(`DELETE FROM users WHERE id = $1 AND role = 'user' RETURNING id`, [id]);
     if (userResult.rows.length > 0) return userResult.rows[0];
 
     // Then try deleting from leads (using the complex lead deletion logic if possible, 
     // but here we do a direct delete for simplicity as this is a customer-focused view)
-    const leadResult = await pool.query(`DELETE FROM leads WHERE id = $1 RETURNING id`);
+    const leadResult = await pool.query(`DELETE FROM leads WHERE id = $1 RETURNING id`, [id]);
     return leadResult.rows[0];
 };
 
@@ -231,17 +235,17 @@ const getCustomerById = async (id) => {
     // Check leads table
     const leadQuery = `
         SELECT 
-            id, 
-            customer_name as name, 
-            customer_phone as phone, 
-            customer_email as email, 
+            l.id, 
+            l.customer_name as name, 
+            l.customer_phone as phone, 
+            l.customer_email as email, 
             'ACTIVE' as status, 
-            pincode,
-            city,
-            state,
+            l.pincode,
+            l.city,
+            l.state,
             'LEAD' as type
-        FROM leads 
-        WHERE id = $1
+        FROM leads l
+        WHERE l.id = $1
     `;
     const leadResult = await pool.query(leadQuery, [id]);
     return leadResult.rows[0];

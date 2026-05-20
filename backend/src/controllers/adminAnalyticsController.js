@@ -1,12 +1,145 @@
 const XLSX = require('xlsx');
 const adminAnalyticsModel = require('../models/adminAnalyticsModel');
+const { parseNumber } = require('../config/env');
+
+const MAX_XLSX_EXPORT_ROWS = parseNumber(process.env.MAX_XLSX_EXPORT_ROWS, 5000);
+const CSV_EXPORT_BATCH_SIZE = parseNumber(process.env.CSV_EXPORT_BATCH_SIZE, 1000);
+
+const LEAD_EXPORT_HEADERS = [
+    'Lead ID',
+    'Customer Name',
+    'City',
+    'State',
+    'Category',
+    'Value (INR)',
+    'Vendor (Uploader)',
+    'Status',
+    'Upload Date',
+    'Purchase Date',
+    'Buyer Name',
+    'Credits Used'
+];
+
+const VENDOR_EXPORT_HEADERS = [
+    'Vendor Name',
+    'Phone',
+    'Leads Uploaded',
+    'Leads Purchased',
+    'Conversion Rate (%)',
+    'Negative Reports'
+];
+
+const csvEscape = (value) => {
+    if (value === null || value === undefined) {
+        return '';
+    }
+
+    const stringValue = String(value);
+    if (/[",\n]/.test(stringValue)) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+
+    return stringValue;
+};
+
+const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '');
+
+const mapLeadExportRow = (item) => ({
+    'Lead ID': item.lead_id,
+    'Customer Name': item.customer_name,
+    'City': item.city,
+    'State': item.state,
+    'Category': item.category,
+    'Value (INR)': item.lead_value,
+    'Vendor (Uploader)': item.created_by_vendor,
+    'Status': item.current_status,
+    'Upload Date': formatDate(item.upload_date),
+    'Purchase Date': item.purchase_date ? formatDate(item.purchase_date) : 'Unsold',
+    'Buyer Name': item.buyer_name || 'N/A',
+    'Credits Used': item.credits_used || 0
+});
+
+const mapVendorExportRow = (item) => ({
+    'Vendor Name': item.vendor_name,
+    'Phone': item.phone,
+    'Leads Uploaded': item.leads_uploaded,
+    'Leads Purchased': item.leads_purchased,
+    'Conversion Rate (%)': parseFloat(item.conversion_rate).toFixed(2),
+    'Negative Reports': item.reports_count || 0
+});
+
+const writeCsvHeader = (res, headers) => {
+    res.write(`${headers.join(',')}\n`);
+};
+
+const writeCsvRows = (res, rows, headers) => {
+    for (const row of rows) {
+        const line = headers.map((header) => csvEscape(row[header])).join(',');
+        res.write(`${line}\n`);
+    }
+};
+
+const buildExportFilename = (type) => (
+    type === 'vendors'
+        ? `VendorPerformance_${Date.now()}`
+        : `LeadActivity_${Date.now()}`
+);
+
+const sendOversizedXlsxResponse = (res, type, totalRows) => {
+    const label = type === 'vendors' ? 'vendor' : 'lead';
+    return res.status(413).json({
+        success: false,
+        message: `XLSX export is limited to ${MAX_XLSX_EXPORT_ROWS} rows. Current ${label} export matches ${totalRows} rows. Use CSV export or apply tighter filters.`
+    });
+};
+
+const streamLeadCsv = async (res, filters) => {
+    let cursorCreatedAt = null;
+    let cursorId = null;
+
+    while (true) {
+        const batch = await adminAnalyticsModel.getDetailedLeadReportBatch(filters, {
+            limit: CSV_EXPORT_BATCH_SIZE,
+            cursorCreatedAt,
+            cursorId
+        });
+
+        if (batch.length === 0) {
+            break;
+        }
+
+        writeCsvRows(res, batch.map(mapLeadExportRow), LEAD_EXPORT_HEADERS);
+
+        const lastRow = batch[batch.length - 1];
+        cursorCreatedAt = lastRow.upload_date;
+        cursorId = lastRow._cursor_id;
+    }
+};
+
+const streamVendorCsv = async (res) => {
+    let offset = 0;
+
+    while (true) {
+        const batch = await adminAnalyticsModel.getVendorProductivity({
+            limit: CSV_EXPORT_BATCH_SIZE,
+            offset
+        });
+
+        if (batch.length === 0) {
+            break;
+        }
+
+        writeCsvRows(res, batch.map(mapVendorExportRow), VENDOR_EXPORT_HEADERS);
+        offset += batch.length;
+    }
+};
 
 const fetchGranularAnalytics = async (req, res, next) => {
     try {
         const [
-            vendorProductivity, 
-            feedbackTrends, 
-            bannerPerformance, 
+            vendorProductivity,
+            feedbackTrends,
+            bannerPerformance,
             subscriptionStats,
             leadLifecycle,
             vendorTrends
@@ -19,8 +152,8 @@ const fetchGranularAnalytics = async (req, res, next) => {
             adminAnalyticsModel.getVendorPerformanceTrends()
         ]);
 
-        res.status(200).json({ 
-            success: true, 
+        res.status(200).json({
+            success: true,
             data: {
                 vendorProductivity,
                 feedbackTrends,
@@ -28,7 +161,7 @@ const fetchGranularAnalytics = async (req, res, next) => {
                 subscriptionStats,
                 leadLifecycle,
                 vendorTrends
-            } 
+            }
         });
     } catch (error) {
         next(error);
@@ -46,58 +179,62 @@ const getLeadReports = async (req, res, next) => {
 
 const exportDetailedReports = async (req, res, next) => {
     try {
-        const { format = 'xlsx', type = 'leads' } = req.query;
-        let data, worksheetData, sheetName, filename;
+        const requestedFormat = String(req.query.format || 'xlsx').toLowerCase();
+        const format = requestedFormat === 'csv' ? 'csv' : 'xlsx';
+        const type = req.query.type === 'vendors' ? 'vendors' : 'leads';
+        const filename = buildExportFilename(type);
 
-        if (type === 'vendors') {
-            data = await adminAnalyticsModel.getVendorProductivity();
-            worksheetData = data.map(item => ({
-                'Vendor Name': item.vendor_name,
-                'Phone': item.phone,
-                'Leads Uploaded': item.leads_uploaded,
-                'Leads Purchased': item.leads_purchased,
-                'Conversion Rate (%)': parseFloat(item.conversion_rate).toFixed(2),
-                'Negative Reports': item.reports_count || 0
-            }));
-            sheetName = 'Vendor Productivity';
-            filename = `VendorPerformance_${Date.now()}`;
-        } else {
-            // Default: Leads
-            data = await adminAnalyticsModel.getDetailedLeadReports(req.query);
-            worksheetData = data.map(item => ({
-                'Lead ID': item.lead_id,
-                'Customer Name': item.customer_name,
-                'City': item.city,
-                'State': item.state,
-                'Category': item.category,
-                'Value (₹)': item.lead_value,
-                'Vendor (Uploader)': item.created_by_vendor,
-                'Status': item.current_status,
-                'Upload Date': new Date(item.upload_date).toLocaleDateString(),
-                'Purchase Date': item.purchase_date ? new Date(item.purchase_date).toLocaleDateString() : 'Unsold',
-                'Buyer Name': item.buyer_name || 'N/A',
-                'Credits Used': item.credits_used || 0
-            }));
-            sheetName = 'Lead Activity';
-            filename = `LeadActivity_${Date.now()}`;
-        }
+        if (format === 'xlsx') {
+            if (type === 'vendors') {
+                const totalRows = await adminAnalyticsModel.countVendorProductivity();
+                if (totalRows > MAX_XLSX_EXPORT_ROWS) {
+                    return sendOversizedXlsxResponse(res, type, totalRows);
+                }
 
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(worksheetData);
-        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                const data = await adminAnalyticsModel.getVendorProductivity({ limit: MAX_XLSX_EXPORT_ROWS });
+                const worksheetData = data.map(mapVendorExportRow);
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(worksheetData);
+                XLSX.utils.book_append_sheet(wb, ws, 'Vendor Productivity');
+                const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
-        if (format === 'csv') {
-            const csv = XLSX.utils.sheet_to_csv(ws);
-            res.setHeader('Content-Type', 'text/csv');
-            res.setHeader('Content-Disposition', `attachment; filename=${filename}.csv`);
-            return res.send(csv);
-        } else {
+                res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                res.setHeader('Content-Disposition', `attachment; filename=${filename}.xlsx`);
+                return res.send(buf);
+            }
+
+            const totalRows = await adminAnalyticsModel.countDetailedLeadReports(req.query);
+            if (totalRows > MAX_XLSX_EXPORT_ROWS) {
+                return sendOversizedXlsxResponse(res, type, totalRows);
+            }
+
+            const data = await adminAnalyticsModel.getDetailedLeadReports({
+                ...req.query,
+                limit: MAX_XLSX_EXPORT_ROWS
+            });
+            const worksheetData = data.map(mapLeadExportRow);
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(worksheetData);
+            XLSX.utils.book_append_sheet(wb, ws, 'Lead Activity');
             const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             res.setHeader('Content-Disposition', `attachment; filename=${filename}.xlsx`);
             return res.send(buf);
         }
 
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}.csv`);
+
+        if (type === 'vendors') {
+            writeCsvHeader(res, VENDOR_EXPORT_HEADERS);
+            await streamVendorCsv(res);
+            return res.end();
+        }
+
+        writeCsvHeader(res, LEAD_EXPORT_HEADERS);
+        await streamLeadCsv(res, req.query);
+        return res.end();
     } catch (error) {
         next(error);
     }
@@ -109,7 +246,7 @@ const exportDetailedReports = async (req, res, next) => {
 const recordBannerInteraction = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { type } = req.query; // 'view' or 'click'
+        const { type } = req.query;
         const { pool } = require('../config/db');
 
         if (type === 'click') {

@@ -31,7 +31,7 @@ const getAllUsers = async (page = 1, limit = 10, search = '', roleFilter = '') =
     let countQueryStr = `SELECT COUNT(*) FROM users u WHERE u.role IN ('vendor', 'user')`;
     const countParams = [];
     if (search) {
-        countQueryStr += ` AND (u.phone ILIKE $$1 OR u.full_name ILIKE $1)`;
+        countQueryStr += ` AND (u.phone ILIKE $1 OR u.full_name ILIKE $1)`;
         countParams.push(`%${search}%`);
     }
     if (roleFilter) {
@@ -97,9 +97,10 @@ const adjustWalletBalance = async (userId, amount, transactionType, remarks) => 
 const getUserReferralTree = async (userId) => {
     // This query gets direct referrals only as per BRD
     const result = await pool.query(`
-        SELECT u.id, u.full_name, u.phone, u.role, u.created_at, r.commission_earned, r.status
+        SELECT u.id, u.full_name, u.phone, u.role, u.created_at, r.commission_earned, r.status, p.pincode, p.city, p.state
         FROM users u
         LEFT JOIN referrals r ON u.id = r.referred_user_id
+        LEFT JOIN user_profiles p ON u.id = p.user_id
         WHERE u.referred_by = $1
         ORDER BY u.created_at DESC
     `, [userId]);

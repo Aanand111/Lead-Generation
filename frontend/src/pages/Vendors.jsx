@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MoreVertical, X, UserPlus, Search, Check, AlertCircle, Trash2, Edit2, Activity, User, Mail, Phone, RefreshCcw, Layers, CheckCircle, Award, CreditCard, TrendingUp, Target } from 'lucide-react';
 import api from '../utils/api';
@@ -17,6 +17,7 @@ const Vendors = () => {
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [paginationProps, setPaginationProps] = useState({ total: 0, pages: 1 });
     const [globalStats, setGlobalStats] = useState({ totalVendors: 0, totalReferrals: 0, totalEarnings: 0 });
 
@@ -38,7 +39,7 @@ const Vendors = () => {
     const [vendorStats, setVendorStats] = useState(null);
     const [loadingStats, setLoadingStats] = useState(false);
 
-    const fetchVendors = async (currentPage = page, currentLimit = limit, currentSearch = searchQuery) => {
+    const fetchVendors = useCallback(async (currentPage, currentLimit, currentSearch) => {
         setLoading(true);
         try {
             const { data } = await api.get('/admin/vendors', {
@@ -71,21 +72,22 @@ const Vendors = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    // Debounce search
     useEffect(() => {
         const handler = setTimeout(() => {
-            setPage(1);
-            fetchVendors(1, limit, searchQuery);
+            setDebouncedSearchQuery(searchQuery);
         }, 500);
         return () => clearTimeout(handler);
-    }, [searchQuery, limit]);
+    }, [searchQuery]);
 
-    // Fetch on page change
     useEffect(() => {
-        fetchVendors(page, limit, searchQuery);
-    }, [page]);
+        setPage(1);
+    }, [debouncedSearchQuery, limit]);
+
+    useEffect(() => {
+        fetchVendors(page, limit, debouncedSearchQuery);
+    }, [debouncedSearchQuery, fetchVendors, limit, page]);
 
     const toggleAction = (id) => {
         setOpenActionId(openActionId === id ? null : id);
@@ -123,7 +125,7 @@ const Vendors = () => {
             const { data } = await api.put(`/admin/vendors/${currentEditVendor.id}`, formData);
             if (data.success || data.message === "Vendor updated successfully") {
                 setIsEditModalOpen(false);
-                fetchVendors();
+                fetchVendors(page, limit, debouncedSearchQuery);
                 toast.success('Vendor updated successfully.');
             } else {
                 toast.error(data.message || 'Error updating vendor.');

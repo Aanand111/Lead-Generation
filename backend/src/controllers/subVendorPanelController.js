@@ -106,54 +106,89 @@ const getSubVendorEarnings = async (req, res, next) => {
  * Request Commission Payout (Submit to Admin)
  */
 const requestSettlement = async (req, res, next) => {
+    const client = await pool.connect();
+    let transactionOpen = false;
+
     try {
         const subVendorId = req.user.id;
 
-        // Check if there are any pending commissions to request
-        const checkPending = await pool.query(
-            "SELECT COUNT(*), COALESCE(SUM(amount), 0) as total_amount FROM commission_transactions WHERE vendor_id = $1 AND status = 'PENDING'",
-            [subVendorId]
-        );
+        let amount = 0;
+        let subVendorName = 'A Sub-Vendor';
+        let adminIds = [];
 
-        if (parseInt(checkPending.rows[0].count) === 0) {
-            return res.status(400).json({ 
-                message: 'You have no pending commissions to request at this time.' 
+        await client.query('BEGIN');
+        transactionOpen = true;
+
+        const result = await client.query(`
+            WITH locked_rows AS (
+                SELECT id, amount
+                FROM commission_transactions
+                WHERE vendor_id = $1 AND status = 'PENDING'
+                FOR UPDATE
+            ),
+            updated_rows AS (
+                UPDATE commission_transactions ct
+                SET status = 'REQUESTED'
+                FROM locked_rows lr
+                WHERE ct.id = lr.id
+                RETURNING lr.amount
+            )
+            SELECT COUNT(*)::int AS updated_count, COALESCE(SUM(amount), 0)::numeric AS total_amount
+            FROM updated_rows
+        `, [subVendorId]);
+
+        const rowCount = parseInt(result.rows[0].updated_count, 10);
+
+        if (rowCount === 0) {
+            const existingRequestRes = await client.query(
+                "SELECT COALESCE(SUM(amount), 0)::numeric AS total_amount FROM commission_transactions WHERE vendor_id = $1 AND status = 'REQUESTED'",
+                [subVendorId]
+            );
+            const existingRequestedAmount = parseFloat(existingRequestRes.rows[0]?.total_amount || 0);
+
+            await client.query('ROLLBACK');
+            transactionOpen = false;
+
+            if (existingRequestedAmount > 0) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'A payout request is already pending review.',
+                    requested_amount: existingRequestedAmount
+                });
+            }
+
+            return res.status(400).json({
+                success: false,
+                message: 'You have no pending commissions to request at this time.'
             });
         }
 
-        const amount = parseFloat(checkPending.rows[0].total_amount);
+        amount = parseFloat(result.rows[0].total_amount);
 
-        // Update all PENDING to REQUESTED
-        await pool.query(
-            "UPDATE commission_transactions SET status = 'REQUESTED' WHERE vendor_id = $1 AND status = 'PENDING'",
-            [subVendorId]
-        );
+        const metadataRes = await client.query(`
+            SELECT
+                COALESCE(MAX(CASE WHEN id = $1 THEN full_name END), 'A Sub-Vendor') AS vendor_name,
+                ARRAY(SELECT id::text FROM users WHERE role = 'admin') AS admin_ids
+            FROM users
+            WHERE id = $1 OR role = 'admin'
+        `, [subVendorId]);
 
-        // Get sub-vendor info for notification
-        let subVendorName = 'A Sub-Vendor';
-        try {
-            const vendorRes = await pool.query('SELECT full_name FROM users WHERE id = $1', [subVendorId]);
-            if (vendorRes.rows.length > 0) {
-                subVendorName = vendorRes.rows[0].full_name;
-            }
-        } catch (err) {
-            console.error('[SUB_VENDOR_INFO_ERROR] Failed to fetch sub-vendor name:', err.message);
-        }
+        subVendorName = metadataRes.rows[0]?.vendor_name || subVendorName;
+        adminIds = metadataRes.rows[0]?.admin_ids || [];
+
+        await client.query('COMMIT');
+        transactionOpen = false;
 
         // Add socket notification exclusively to Admins
         try {
             const { sendToUser } = require('../utils/socket');
             
-            // Get all admin users
-            const adminsRes = await pool.query("SELECT id FROM users WHERE role = 'admin'");
-            const adminIds = adminsRes.rows.map(row => row.id.toString());
-            
-            adminIds.forEach(adminId => {
+            for (const adminId of adminIds) {
                 sendToUser(adminId, 'notification', {
                     title: 'Sub-Vendor Payout',
                     body: `${subVendorName} (Sub-Vendor) requested ₹${amount.toFixed(2)}.`
                 });
-            });
+            }
         } catch (sErr) {
             console.error('[SOCKET_ERROR] Failed to emit sub-vendor request notification:', sErr.message);
         }
@@ -163,7 +198,14 @@ const requestSettlement = async (req, res, next) => {
             message: 'Payout request submitted to administration successfully.' 
         });
     } catch (error) {
+        if (transactionOpen) {
+            try {
+                await client.query('ROLLBACK');
+            } catch (rollbackError) {}
+        }
         next(error);
+    } finally {
+        client.release();
     }
 };
 

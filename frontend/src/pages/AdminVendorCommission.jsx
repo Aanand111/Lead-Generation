@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
     Users, Percent, Save, Search, RefreshCcw, 
     CheckCircle, AlertCircle, ArrowLeft, Zap, ShieldCheck
@@ -15,25 +15,20 @@ const AdminVendorCommission = () => {
     const [globalRate, setGlobalRate] = useState(0);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchGlobalRate();
-        fetchVendors();
-    }, []);
-
-    const fetchGlobalRate = async () => {
+    const fetchGlobalRate = useCallback(async () => {
         try {
             const { data } = await api.get('/admin/settings/referral_vendor_commission_rate');
             if (data.success) {
                 setGlobalRate(data.data.setting_value);
             }
         } catch (err) { console.error(err); }
-    };
+    }, []);
 
-    const fetchVendors = async () => {
+    const fetchVendors = useCallback(async (query = search) => {
         setLoading(true);
         try {
             // Fetch all users with role 'vendor'
-            const { data } = await api.get(`/admin/users?role=vendor&search=${search}&limit=100`);
+            const { data } = await api.get(`/admin/users?role=vendor&search=${query}&limit=100`);
             if (data.success) {
                 setVendors(data.data);
             }
@@ -42,7 +37,12 @@ const AdminVendorCommission = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [search]);
+
+    useEffect(() => {
+        fetchGlobalRate();
+        fetchVendors('');
+    }, [fetchGlobalRate, fetchVendors]);
 
     const handleUpdateRate = async (vendorId, rate) => {
         setSaving(vendorId);

@@ -3,7 +3,7 @@ const walletRepository = require('../wallet/wallet.repository');
 const walletService = require('../wallet/wallet.service');
 const AppError = require('../../utils/AppError');
 const { withTransaction } = require('../../utils/transaction');
-const { processCommission } = require('../../services/commissionService');
+const { processCommissionAsync } = require('../../services/commissionService');
 
 class SubscriptionsService {
     async getAllPlans(filters) {
@@ -49,8 +49,11 @@ class SubscriptionsService {
             return { subscription, plan, creditsToAward };
         });
 
+        // --- ASYNC COMMISSION PROCESSING (non-blocking) ---
+        // processCommission runs after the main transaction is committed.
+        // Any failure here is logged but does NOT roll back or affect the purchase.
         if ((result.plan.price || 0) > 0) {
-            await processCommission(
+            processCommissionAsync(
                 userId,
                 parseFloat(result.plan.price),
                 `Package Purchase: ${result.plan.name} (Direct Activation)`

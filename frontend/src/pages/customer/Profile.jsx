@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
     User, Smartphone, Mail, MapPin, ShieldCheck,
     Lock, CheckCircle, Activity, Camera, Edit3,
@@ -10,6 +12,19 @@ import api from '../../utils/api';
 
 const UserProfile = () => {
     const fileInputRef = useRef(null);
+    const navigate = useNavigate();
+
+    const handleRequestPasswordReset = async () => {
+        const toastId = toast.loading('Initiating secure password reset link...');
+        try {
+            const { data } = await api.post('/user/request-password-reset');
+            if (data.success) {
+                toast.success(data.message || 'Password reset link sent to your registered Gmail address!', { id: toastId, duration: 6000 });
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to dispatch password reset link. Please try again.', { id: toastId, duration: 6000 });
+        }
+    };
     const [profile, setProfile] = useState({
         name: '',
         phone: '',
@@ -44,10 +59,16 @@ const UserProfile = () => {
                 // Sync local storage so Header reflects DB changes immediately
                 const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
                 if (storedUser.id) {
-                    storedUser.name = data.data.full_name || data.data.name || storedUser.name;
-                    storedUser.full_name = data.data.full_name || data.data.name || storedUser.full_name;
-                    storedUser.phone = data.data.phone || storedUser.phone;
-                    localStorage.setItem('user', JSON.stringify(storedUser));
+                    const updatedUser = {
+                        ...storedUser,
+                        name: data.data.full_name || data.data.name || storedUser.name,
+                        full_name: data.data.full_name || data.data.name || storedUser.full_name,
+                        phone: data.data.phone || storedUser.phone,
+                        email: data.data.email || storedUser.email,
+                        profile_pic: data.data.profile_pic || storedUser.profile_pic
+                    };
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                    window.dispatchEvent(new Event('userProfileUpdated'));
                 }
             }
         } catch (err) {
@@ -73,10 +94,15 @@ const UserProfile = () => {
             if (data.success) {
                 // Update local storage so Header reflects the new name and number
                 const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-                storedUser.name = profile.name;
-                storedUser.full_name = profile.name;
-                storedUser.phone = profile.phone;
-                localStorage.setItem('user', JSON.stringify(storedUser));
+                const updatedUser = {
+                    ...storedUser,
+                    name: profile.name,
+                    full_name: profile.name,
+                    phone: profile.phone,
+                    email: profile.email
+                };
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+                window.dispatchEvent(new Event('userProfileUpdated'));
 
                 setMessage({ type: 'success', text: 'Profile Vault Updated.' });
 
@@ -210,7 +236,10 @@ const UserProfile = () => {
                         </div>
                     </div>
 
-                    <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[2.5rem] shadow-sm hover:shadow-xl hover:border-indigo-500/20 transition-all group cursor-pointer flex items-center justify-between overflow-hidden">
+                    <div 
+                        onClick={handleRequestPasswordReset}
+                        className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[2.5rem] shadow-sm hover:shadow-xl hover:border-indigo-500/20 transition-all group cursor-pointer flex items-center justify-between overflow-hidden"
+                    >
                         <div className="absolute top-0 right-0 p-6 opacity-[0.02] text-indigo-500 group-hover:scale-110 transition-transform">
                             <Lock size={120} strokeWidth={1} />
                         </div>

@@ -5,14 +5,17 @@ const getTransactions = async (req, res, next) => {
     try {
         const { status, type, user_id } = req.query;
 
+        // Pagination parameters
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
+        const offset = (page - 1) * limit;
+
         let query = `
             SELECT 
                 t.*,
-                COALESCE(u.full_name, v.name, c.name, u.phone, v.phone, c.phone, c.email, 'User') AS display_name,
+                COALESCE(u.full_name, c.name, u.phone, c.phone, c.email, 'User') AS display_name,
                 u.full_name AS user_name,
                 u.phone     AS user_phone,
-                v.name      AS vendor_name,
-                v.phone     AS vendor_phone,
                 c.name      AS customer_name,
                 c.phone     AS customer_phone,
                 c.email     AS customer_email,
@@ -20,7 +23,6 @@ const getTransactions = async (req, res, next) => {
                 p.name      AS package_name
             FROM transactions t
             LEFT JOIN users u ON u.id::text = t.user_id::text
-            LEFT JOIN vendors v ON v.id::text = t.user_id::text
             LEFT JOIN customers c ON c.id::text = t.user_id::text
             LEFT JOIN subscription_plans sp ON sp.id::text = t.reference_id
             LEFT JOIN packages p ON p.id::text = t.reference_id
@@ -42,19 +44,33 @@ const getTransactions = async (req, res, next) => {
             conditions.push(`t.user_id = $${params.length}`);
         }
 
+        let whereClause = ` WHERE (t.amount > 0 OR t.type = 'PLAN_PURCHASE')`;
         if (conditions.length > 0) {
-            query += ` WHERE (` + conditions.join(' AND ') + `) AND (t.amount > 0 OR t.type = 'PLAN_PURCHASE')`;
-        } else {
-            query += ` WHERE (t.amount > 0 OR t.type = 'PLAN_PURCHASE')`;
+            whereClause = ` WHERE (` + conditions.join(' AND ') + `) AND (t.amount > 0 OR t.type = 'PLAN_PURCHASE')`;
         }
+        query += whereClause;
 
-        query += ` ORDER BY t.created_at DESC`;
+        // Count query for pagination meta
+        const countQuery = `SELECT COUNT(*) FROM transactions t ${whereClause}`;
+        const countResult = await db.query(countQuery, params);
+        const total = parseInt(countResult.rows[0].count, 10);
+
+        query += ` ORDER BY t.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
 
         // Auto-migration: Update legacy SUCCESS status to COMPLETED (Case-insensitive catch-all)
-        await db.query("UPDATE transactions SET status = 'COMPLETED' WHERE UPPER(status) = 'SUCCESS'");
+        // await db.query("UPDATE transactions SET status = 'COMPLETED' WHERE UPPER(status) = 'SUCCESS'");
 
-        const result = await db.query(query, params);
-        res.status(200).json({ success: true, data: result.rows });
+        const result = await db.query(query, [...params, limit, offset]);
+        res.status(200).json({ 
+            success: true, 
+            data: result.rows,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit)
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -122,12 +138,12 @@ const getPayouts = async (req, res, next) => {
         let query = `
             SELECT 
                 ct.*,
-                v.name as vendor_name,
+                v.full_name as vendor_name,
                 v.phone as vendor_phone,
                 v.email as vendor_email
             FROM commission_transactions ct
-            JOIN vendors v ON v.id = ct.vendor_id
-            WHERE ct.type = 'PAYOUT'
+            JOIN users v ON v.id = ct.vendor_id
+            WHERE 1=1
         `;
         const params = [];
         if (status) {
@@ -150,10 +166,10 @@ const updatePayoutStatus = async (req, res, next) => {
 
         const result = await db.query(
             `UPDATE commission_transactions 
-             SET status = $1, remarks = $2, payment_reference = $3, payment_date = CASE WHEN $1 = 'COMPLETED' THEN NOW() ELSE payment_date END, updated_at = NOW()
-             WHERE id = $4 AND type = 'PAYOUT'
+             SET status = $1, remarks = $2, payment_reference = $3, payment_date = CASE WHEN $4 = 'COMPLETED' THEN NOW() ELSE payment_date END
+             WHERE id = $5
              RETURNING *`,
-            [status, remarks, payment_reference, id]
+            [status, remarks, payment_reference, status, id]
         );
 
         if (result.rows.length === 0) {

@@ -2,6 +2,7 @@ const adminLeadDb = require('../models/leadModel');
 const NotificationService = require('../services/notificationService');
 const { pool } = require('../config/db');
 const { broadcast } = require('../utils/socket');
+const { enqueueLeadApprovalNotification } = require('../queues/notificationQueue');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -221,54 +222,25 @@ const approveLead = async (req, res, next) => {
         }
 
         if (status === 'ACTIVE') {
-            const NotificationService = require('../services/notificationService');
-            const { broadcast } = require('../utils/socket');
-
-            // 1. Fetch uploader details
+            // 1. Resolve uploader name for notification message
             let uploaderName = 'System';
-            let uploaderRole = 'admin';
             if (lead.created_by) {
-                const uploaderRes = await pool.query('SELECT full_name, role FROM users WHERE id = $1', [lead.created_by]);
-                if (uploaderRes.rows.length > 0) {
-                    uploaderName = uploaderRes.rows[0].full_name || 'A Partner';
-                    uploaderRole = uploaderRes.rows[0].role;
-                }
+                const uploaderRes = await pool.query(
+                    'SELECT full_name FROM users WHERE id = $1',
+                    [lead.created_by]
+                );
+                uploaderName = uploaderRes.rows[0]?.full_name || 'A Partner';
             }
 
-            // 2. Notify the uploader themselves
-            if (lead.created_by) {
-                await NotificationService.sendPushToUserId(lead.created_by, 'Lead Approved! 🎉', `Your lead "${lead.customer_name}" has been approved and is now live.`);
-            }
+            // 2. Enqueue ONE background job — worker handles all FCM pushes
+            //    This replaces the previous synchronous sendPushToCity +
+            //    sendPushToAllExceptCity calls that blocked the admin response.
+            await enqueueLeadApprovalNotification(lead, uploaderName);
 
-            // 3. SPECIAL Notification for users in the SAME CITY (Urgent)
-            const cityLabel = lead.city || 'your area';
-            const specialTitle = `Urgent: New Lead in ${cityLabel}! 🔥`;
-            const specialBody = `A fresh ${lead.category || 'General'} lead was just uploaded in ${cityLabel} (Pincode: ${lead.pincode || 'N/A'}). Grab it now before someone else does!`;
-            
-            await NotificationService.sendPushToCity(lead.city, specialTitle, specialBody, {
-                type: 'NEW_LEAD',
-                leadId: lead.id,
-                city: lead.city,
-                category: lead.category,
-                isSpecial: true
-            });
-
-            // 4. GENERAL Notification for ALL OTHER users
-            const generalTitle = 'New Lead Alert! 🚀';
-            const generalBody = `${uploaderName} uploaded a new ${lead.category || 'General'} lead in ${cityLabel}. Check it out now!`;
-
-            await NotificationService.sendPushToAllExceptCity(lead.city, generalTitle, generalBody, {
-                type: 'NEW_LEAD',
-                leadId: lead.id,
-                city: lead.city,
-                category: lead.category,
-                uploader: uploaderName,
-                isSpecial: false
-            });
-
-            // 5. Socket broadcast (Immediate toast for everyone)
+            // 3. Socket.io broadcast is a cheap in-memory emit — keep it inline
+            //    so the admin panel gets the real-time toast immediately.
             broadcast('new_lead_added', {
-                message: generalBody,
+                message: `${uploaderName} uploaded a new ${lead.category || 'General'} lead in ${lead.city || 'your area'}.`,
                 category: lead.category,
                 city: lead.city,
                 uploader: uploaderName,
@@ -304,6 +276,140 @@ const getLead = async (req, res, next) => {
     }
 };
 
+const xlsx = require('xlsx');
+
+const importLeads = async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'Please upload an Excel or CSV file.' });
+        }
+
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rawRows = xlsx.utils.sheet_to_json(sheet);
+
+        if (!rawRows || rawRows.length === 0) {
+            return res.status(400).json({ success: false, message: 'The uploaded file is empty.' });
+        }
+
+        const adminId = req.user.id;
+        const status = 'ACTIVE'; 
+        const leadsToInsert = [];
+        const errors = [];
+
+        rawRows.forEach((row, idx) => {
+            const normalizedRow = {};
+            Object.keys(row).forEach(key => {
+                const normKey = key.toLowerCase().trim().replace(/[\s_]+/g, '_');
+                normalizedRow[normKey] = row[key];
+            });
+
+            const customer_name = normalizedRow.customer_name || normalizedRow.name || normalizedRow.client_name || '';
+            const customer_phone = String(normalizedRow.customer_phone || normalizedRow.phone || normalizedRow.mobile || '').trim();
+            const customer_email = normalizedRow.customer_email || normalizedRow.email ? String(normalizedRow.customer_email || normalizedRow.email).trim().toLowerCase() : null;
+            const category = normalizedRow.category || normalizedRow.lead_category || normalizedRow.type || 'General';
+            const city = String(normalizedRow.city || '').trim();
+            const state = normalizedRow.state ? String(normalizedRow.state).trim() : null;
+            const pincode = normalizedRow.pincode || normalizedRow.pin || normalizedRow.zip ? String(normalizedRow.pincode || normalizedRow.pin || normalizedRow.zip).trim() : null;
+            
+            let lead_value = normalizedRow.lead_value || normalizedRow.value || normalizedRow.price || null;
+            if (lead_value !== null) {
+                lead_value = parseFloat(lead_value);
+                if (isNaN(lead_value)) lead_value = null;
+            }
+
+            let expiry_date = normalizedRow.expiry_date || normalizedRow.expiry || null;
+            if (expiry_date) {
+                const parsedDate = new Date(expiry_date);
+                if (!isNaN(parsedDate.getTime())) {
+                    expiry_date = parsedDate;
+                } else {
+                    expiry_date = new Date(new Date().setDate(new Date().getDate() + 30));
+                }
+            } else {
+                expiry_date = new Date(new Date().setDate(new Date().getDate() + 30));
+            }
+
+            const lead_id = normalizedRow.lead_id || normalizedRow.id ? String(normalizedRow.lead_id || normalizedRow.id).trim() : null;
+
+            if (!customer_phone) {
+                errors.push(`Row ${idx + 2}: Missing phone number.`);
+                return;
+            }
+            if (!city) {
+                errors.push(`Row ${idx + 2}: Missing city.`);
+                return;
+            }
+
+            leadsToInsert.push({
+                lead_id,
+                customer_name,
+                customer_phone,
+                customer_email,
+                category,
+                city,
+                state,
+                pincode,
+                lead_value,
+                expiry_date,
+                created_by: adminId,
+                status
+            });
+        });
+
+        if (leadsToInsert.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No valid leads found in the Excel sheet.',
+                errors
+            });
+        }
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            for (const lead of leadsToInsert) {
+                await client.query(
+                    `INSERT INTO leads (lead_id, customer_name, customer_phone, customer_email, category, city, state, pincode, lead_value, expiry_date, created_by, status)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+                    [
+                        lead.lead_id,
+                        lead.customer_name,
+                        lead.customer_phone,
+                        lead.customer_email,
+                        lead.category,
+                        lead.city,
+                        lead.state,
+                        lead.pincode,
+                        lead.lead_value,
+                        lead.expiry_date,
+                        lead.created_by,
+                        lead.status
+                    ]
+                );
+            }
+            await client.query('COMMIT');
+        } catch (dbErr) {
+            await client.query('ROLLBACK');
+            throw dbErr;
+        } finally {
+            client.release();
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully integrated ${leadsToInsert.length} leads into the system!`,
+            importedCount: leadsToInsert.length,
+            ignoredCount: errors.length,
+            errors: errors.length > 0 ? errors : null
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     uploadLead,
     editLead,
@@ -312,5 +418,6 @@ module.exports = {
     removeLead,
     getPurchasedLeads: getPurchasedLeadsBase,
     getPendingLeads,
-    approveLead
+    approveLead,
+    importLeads
 };

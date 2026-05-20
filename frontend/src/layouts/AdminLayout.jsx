@@ -4,12 +4,36 @@ import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { toast } from 'react-hot-toast';
 import { Bell, MapPin, Zap } from 'lucide-react';
+import api from '../utils/api';
 import { acquireSocket, releaseSocket } from '../utils/socketClient';
 
 const AdminLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const { data } = await api.get('/user/profile');
+                if (data.success) {
+                    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                    const updatedUser = {
+                        ...storedUser,
+                        name: data.data.full_name || data.data.name || storedUser.name,
+                        full_name: data.data.full_name || data.data.name || storedUser.full_name,
+                        email: data.data.email || storedUser.email,
+                        phone: data.data.phone || storedUser.phone,
+                        profile_pic: data.data.profile_pic || storedUser.profile_pic
+                    };
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                    window.dispatchEvent(new Event('userProfileUpdated'));
+                }
+            } catch (err) {
+                console.error("Failed to sync profile in AdminLayout", err);
+            }
+        };
+
+        fetchProfile();
+
         const token = localStorage.getItem('token');
         if (!token) {
             return undefined;

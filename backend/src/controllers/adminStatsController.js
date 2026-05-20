@@ -38,7 +38,11 @@ const getStats = async (req, res, next) => {
                 TO_CHAR(d.day_val, 'DD Mon') as day,
                 COALESCE(COUNT(l.id), 0) as leads
             FROM (
-                SELECT generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, '1 day'::interval)::date as day_val
+                SELECT generate_series(
+                    COALESCE((SELECT MAX(created_at)::date FROM leads), CURRENT_DATE) - INTERVAL '6 days',
+                    COALESCE((SELECT MAX(created_at)::date FROM leads), CURRENT_DATE),
+                    '1 day'::interval
+                )::date as day_val
             ) d
             LEFT JOIN leads l ON l.created_at::date = d.day_val
             GROUP BY d.day_val

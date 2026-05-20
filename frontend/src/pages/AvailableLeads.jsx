@@ -8,10 +8,17 @@ const AvailableLeads = () => {
     const { confirm } = useConfirm();
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [_error, setError] = useState(null);
     const [selectedLeads, setSelectedLeads] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
     const [openActionId, setOpenActionId] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(15);
+    const [paginationProps, setPaginationProps] = useState({ total: 0, pages: 1 });
 
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -26,11 +33,13 @@ const AvailableLeads = () => {
     const [autoRefresh, setAutoRefresh] = useState(false);
     const [lastSync, setLastSync] = useState(new Date());
 
-    const fetchLeads = async (isQuiet = false) => {
+    const fetchLeads = async (isQuiet = false, currentPage = page, currentLimit = limit, currentSearch = debouncedSearch) => {
         if (!isQuiet) setLoading(true);
         setError(null);
         try {
-            const { data } = await api.get('/admin/available-leads');
+            const { data } = await api.get('/admin/available-leads', {
+                params: { page: currentPage, limit: currentLimit, search: currentSearch }
+            });
             if (data.success && data.data) {
                 // Get user city from localStorage
                 const userStr = localStorage.getItem('user');
@@ -48,6 +57,9 @@ const AvailableLeads = () => {
                 });
 
                 setLeads(sortedLeads);
+                if (data.pagination) {
+                    setPaginationProps({ total: data.pagination.total, pages: data.pagination.pages });
+                }
                 setLastSync(new Date());
             } else {
                 setError(data.message || "Failed to fetch data");
@@ -62,8 +74,19 @@ const AvailableLeads = () => {
     };
 
     useEffect(() => {
-        fetchLeads();
-    }, []);
+        const handler = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedSearch]);
+
+    useEffect(() => {
+        fetchLeads(false, page, limit, debouncedSearch);
+    }, [page, limit, debouncedSearch]);
 
     useEffect(() => {
         let interval;
@@ -119,7 +142,7 @@ const AvailableLeads = () => {
             }
         };
         fetchAssigneeName();
-    }, [isEditModalOpen, currentEditLead]);
+    }, [editFormData.assignee_name, isEditModalOpen, currentEditLead]);
 
     const toggleAction = (id) => {
         setOpenActionId(openActionId === id ? null : id);
@@ -360,8 +383,26 @@ const AvailableLeads = () => {
                 <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-[var(--bg-color)]/30 border-b border-[var(--border-color)]">
                     <div className="flex items-center gap-3">
                         <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">
-                            Unassigned Leads: <span className="text-[var(--text-dark)] font-black">{leads.length} Remaining</span>
+                            Unassigned Leads: <span className="text-[var(--text-dark)] font-black">{paginationProps.total} Remaining</span>
                         </span>
+                        <div className="h-4 w-px bg-[var(--border-color)]"></div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest px-2">Show</span>
+                            <CustomSelect
+                                variant="compact"
+                                value={limit}
+                                onChange={(e) => {
+                                    setLimit(Number(e.target.value));
+                                    setPage(1);
+                                }}
+                                options={[
+                                    { value: 15, label: '15' },
+                                    { value: 30, label: '30' },
+                                    { value: 50, label: '50' }
+                                ]}
+                                className="min-w-[80px]"
+                            />
+                        </div>
                         <div className="h-4 w-px bg-[var(--border-color)]"></div>
                         <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">
                             {selectedLeads.length} Selected
@@ -374,6 +415,8 @@ const AvailableLeads = () => {
                             type="text" 
                             className="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium shadow-sm focus:border-indigo-500 outline-none transition-all placeholder:text-[var(--text-muted)]/50 text-[var(--text-dark)]" 
                             placeholder="Search leads..." 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                 </div>
@@ -422,7 +465,7 @@ const AvailableLeads = () => {
                                             />
                                         </td>
                                         <td className="text-center font-black text-[var(--text-muted)]/40 text-[10px]">
-                                            #{ (index + 1).toString().padStart(3, '0') }
+                                            #{ ((page - 1) * limit + index + 1).toString().padStart(3, '0') }
                                         </td>
                                         <td>
                                             <div className="flex items-center gap-3">
@@ -526,6 +569,31 @@ const AvailableLeads = () => {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-4 p-5 border-t border-[var(--border-color)] bg-[var(--bg-color)]/30">
+                    <div className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">
+                        Showing <span className="text-[var(--text-dark)] font-black">{leads.length > 0 ? (page - 1) * limit + 1 : 0} - {Math.min(page * limit, paginationProps.total)}</span> of {paginationProps.total}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            className={`px-4 py-2 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${page === 1 ? 'opacity-30 cursor-not-allowed text-[var(--text-muted)]' : 'hover:bg-[var(--bg-color)] active:scale-95 cursor-pointer shadow-sm text-indigo-500'}`}
+                            disabled={page === 1}
+                            onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                        >
+                            Previous
+                        </button>
+                        <div className="w-10 h-10 flex items-center justify-center bg-indigo-600 text-white rounded-xl font-black shadow-lg shadow-indigo-100">
+                            {page}
+                        </div>
+                        <button
+                            className={`px-4 py-2 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${page >= paginationProps.pages ? 'opacity-30 cursor-not-allowed text-[var(--text-muted)]' : 'hover:bg-[var(--bg-color)] active:scale-95 cursor-pointer shadow-sm text-indigo-500'}`}
+                            disabled={page >= paginationProps.pages}
+                            onClick={() => setPage(prev => Math.min(paginationProps.pages, prev + 1))}
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
             </div>
 

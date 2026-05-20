@@ -1,9 +1,11 @@
 import React, { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { acquireSocket, releaseSocket } from '../utils/socketClient';
 
 const NotificationHandler = () => {
     const socketRef = useRef(null);
+    const location = useLocation();
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -11,6 +13,14 @@ const NotificationHandler = () => {
         const user = userStr ? JSON.parse(userStr) : null;
 
         if (!token || !user?.id) {
+            if (socketRef.current) {
+                releaseSocket(socketRef.current);
+                socketRef.current = null;
+            }
+            return undefined;
+        }
+
+        if (socketRef.current) {
             return undefined;
         }
 
@@ -105,7 +115,7 @@ const NotificationHandler = () => {
             releaseSocket(socket);
             socketRef.current = null;
         };
-    }, []);
+    }, [location.pathname]);
 
     return null;
 };

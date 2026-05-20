@@ -3,18 +3,13 @@ import {
     UserPlus, ShieldCheck, Mail, Phone, Lock, ChevronRight, 
     Activity, Zap, Sparkles, Clock, Briefcase, Users, Search, Gem
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { getApiBaseUrl } from '../utils/urls';
 
 const VendorReferrals = () => {
     const [referrals, setReferrals] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('user'); // 'user' or 'vendor'
-    const [formData, setFormData] = useState({ phone: '', password: '', full_name: '' });
-    const [formLoading, setFormLoading] = useState(false);
-    const [msg, setMsg] = useState({ text: '', type: '' });
     const [actionLoading, setActionLoading] = useState(null);
-    const navigate = useNavigate();
 
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const isPrimaryVendor = !user.referred_by;
@@ -55,45 +50,12 @@ const VendorReferrals = () => {
             });
             const data = await res.json();
             if (data.success) {
-                setMsg({ text: `Sub-vendor ${action === 'APPROVE' ? 'approved' : 'rejected'} successfully!`, type: 'success' });
                 fetchReferrals();
-            } else {
-                setMsg({ text: data.message || 'Operation failed', type: 'error' });
             }
         } catch (err) {
-            setMsg({ text: 'Connection Error', type: 'error' });
+            console.error(err);
         } finally {
             setActionLoading(null);
-        }
-    };
-
-    const handleFormSubmit = async (e) => {
-        e.preventDefault();
-        setFormLoading(true);
-        setMsg({ text: '', type: '' });
-        try {
-            const token = localStorage.getItem('token');
-            const endpoint = activeTab === 'vendor' ? '/vendor/refer-vendor' : '/vendor/refer-user';
-            const res = await fetch(`${getApiBaseUrl()}${endpoint}`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                },
-                body: JSON.stringify(formData)
-            });
-            const data = await res.json();
-            if (data.success) {
-                setMsg({ text: `${activeTab.toUpperCase()} added successfully!`, type: 'success' });
-                setFormData({ phone: '', password: '', full_name: '' });
-                fetchReferrals();
-            } else {
-                setMsg({ text: data.message || 'Authorization failed', type: 'error' });
-            }
-        } catch (err) {
-            setMsg({ text: 'Connection Error', type: 'error' });
-        } finally {
-            setFormLoading(false);
         }
     };
 

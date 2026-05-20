@@ -1,10 +1,10 @@
 const express = require('express');
-const { uploadLead, getLeads, editLead, removeLead, getPurchasedLeads, getPendingLeads, approveLead, getLead } = require('../controllers/adminLeadController');
+const { uploadLead, getLeads, editLead, removeLead, getPurchasedLeads, getPendingLeads, approveLead, getLead, importLeads } = require('../controllers/adminLeadController');
 const { addPackage, editPackage, getPackages, removePackage } = require('../controllers/adminPackageController');
 const { addBanner, editBanner, getBanners, removeBanner, recordBannerClick } = require('../controllers/adminBannerController');
-// const { getVendors, addVendor, updateVendorStatus, removeVendor } = require('../controllers/vendorController');
 const { protect, adminOnly } = require('../middlewares/authMiddleware');
 const validate = require('../middlewares/validate');
+const cacheMiddleware = require('../middlewares/cacheMiddleware');
 const {
     vendorSchema,
     subVendorSchema,
@@ -21,7 +21,6 @@ const {
     walletUpdateSchema,
     blockUserSchema
 } = require('../utils/validators');
-
 
 const router = express.Router();
 
@@ -54,6 +53,14 @@ router.post('/upload-photo', fileUpload.single('file'), uploadProfilePhoto);
 
 // Lead Management Routes
 const { getAvailableLeads, assignLeads, suggestBestMatch } = require('../controllers/availableLeadsController');
+
+const multer = require('multer');
+const excelUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }
+});
+
+router.post('/leads/import', excelUpload.single('file'), importLeads);
 router.post('/leads', validate(leadSchema), uploadLead);
 router.get('/leads', getLeads);
 router.get('/leads/pending', getPendingLeads);
@@ -101,7 +108,6 @@ router.get('/poster-management', getPosters);
 router.put('/poster-management/:id', fileUpload.single('thumbnail'), validate(posterSchema), editPoster);
 router.delete('/poster-management/:id', removePoster);
 
-
 // Packages & Pricing Routes
 router.post('/packages', validate(packageSchema), addPackage);
 router.put('/packages/:id', validate(packageSchema), editPackage);
@@ -113,7 +119,7 @@ router.post('/banners', validate(bannerSchema), addBanner);
 router.put('/banners/:id', validate(bannerSchema), editBanner);
 router.get('/banners', getBanners);
 router.delete('/banners/:id', removeBanner);
-router.post('/banners/:id/click', recordBannerClick); // Can be moved to user routes later but keeping it here for admin verification too.
+router.post('/banners/:id/click', recordBannerClick);
 
 // Customer Management Routes (Isolated from Users)
 const { getCustomers, getCustomer, addCustomer, updateCustomer, updateCustomerStatus, removeCustomer } = require('../controllers/customerController');
@@ -175,17 +181,19 @@ router.put('/subscriptions/:id', validate(subscriptionSchema), updateSubscriptio
 router.delete('/subscriptions/:id', deleteSubscription);
 
 // Transaction Management Routes
-const { getTransactions, getTransactionById, createTransaction } = require('../controllers/adminTransactionController');
+const { getTransactions, getTransactionById, createTransaction, getPayouts, updatePayoutStatus } = require('../controllers/adminTransactionController');
 router.get('/transactions', getTransactions);
 router.get('/transactions/:id', getTransactionById);
 router.post('/transactions', validate(transactionSchema), createTransaction);
 
 // Payout Management Routes
+router.get('/payouts', getPayouts);
+router.put('/payouts/:id', updatePayoutStatus);
 router.get('/test-ping', (req, res) => res.json({ success: true, message: 'Admin layer active' }));
 
 // Dashboard Stats Route
 const { getStats } = require('../controllers/adminStatsController');
-router.get('/stats', getStats);
+router.get('/stats', cacheMiddleware(60), getStats);
 
 // System Settings Routes
 const { getSettings, updateSettings, getSettingByKey } = require('../controllers/adminSettingsController');

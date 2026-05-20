@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { MoreVertical, Plus, X, Search, Check, AlertCircle, Trash2, Edit2, Layers, Calendar, Clock, Activity, ShieldPlus, Sparkles, RefreshCcw } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useConfirm } from '../context/ConfirmContext';
 import { toast } from 'react-hot-toast';
 
 const LeadsCategory = () => {
-    const navigate = useNavigate();
     const { confirm } = useConfirm();
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);

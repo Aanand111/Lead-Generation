@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
     UserPlus, ShieldCheck, Mail, Phone, Lock, ChevronRight, 
     Activity, Zap, Sparkles, Clock, Briefcase, Layers, Bell, TrendingUp, Users
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { getApiBaseUrl } from '../utils/urls';
 
@@ -13,16 +12,9 @@ const VendorReferMember = ({ mode = 'user' }) => {
     const [referrals, setReferrals] = useState([]);
     const [tableLoading, setTableLoading] = useState(true);
     const [stats, setStats] = useState({ referral_code: '' });
-    const navigate = useNavigate();
-
     const isVendorMode = mode === 'vendor';
 
-    useEffect(() => {
-        fetchStats();
-        fetchReferrals();
-    }, [mode]);
-
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${getApiBaseUrl()}/vendor/stats`, {
@@ -31,9 +23,9 @@ const VendorReferMember = ({ mode = 'user' }) => {
             const data = await res.json();
             if (data.success) setStats(data.data);
         } catch (err) { console.error(err); }
-    };
+    }, []);
 
-    const fetchReferrals = async () => {
+    const fetchReferrals = useCallback(async () => {
         setTableLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -46,7 +38,12 @@ const VendorReferMember = ({ mode = 'user' }) => {
             }
         } catch (err) { console.error(err); }
         finally { setTableLoading(false); }
-    };
+    }, [mode]);
+
+    useEffect(() => {
+        fetchStats();
+        fetchReferrals();
+    }, [fetchReferrals, fetchStats]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

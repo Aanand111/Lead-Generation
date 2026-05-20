@@ -45,42 +45,11 @@ const addVendor = async (req, res, next) => {
             vendorData.password = await bcrypt.hash(vendorData.password, salt);
         }
 
-        // 1. Create entry in vendors table for Admin Panel specific data
-        const newVendor = await vendorDb.createVendor(vendorData);
-
-        // 2. Synchronize with users table for Authentication and Dashboard access
-        const { createUser, findUserByEmail, findUserByPhone } = require('../models/userModel');
-        const existingByEmail = await findUserByEmail(vendorData.email);
-        const existingByPhone = await findUserByPhone(vendorData.phone);
-        const existingUser = existingByEmail || existingByPhone;
-
-        if (!existingUser) {
-            await createUser({
-                phone: vendorData.phone,
-                email: vendorData.email,
-                password_hash: vendorData.password,
-                role: 'vendor',
-                referral_code: vendorData.referral_code,
-                status: 'ACTIVE',
-                full_name: vendorData.name,
-                referred_by: vendorData.referred_by_vendor_id || null
-            });
-        } else {
-            // Update existing user to have vendor role and new credentials
-            const { pool } = require('../config/db');
-            await pool.query(
-                `UPDATE users SET 
-                    role = 'vendor', 
-                    full_name = $1, 
-                    password_hash = $2, 
-                    referral_code = $3,
-                    status = 'ACTIVE',
-                    email = $5,
-                    phone = $6
-                WHERE id = $4`,
-                [vendorData.name, vendorData.password, vendorData.referral_code, existingUser.id, vendorData.email, vendorData.phone]
-            );
-        }
+        // 1. Create entry in the users table via the vendor model
+        const newVendor = await vendorDb.createVendor({
+            ...vendorData,
+            role: 'vendor'
+        });
 
         res.status(201).json({
             success: true,
@@ -138,45 +107,16 @@ const updateVendor = async (req, res, next) => {
         const { id } = req.params;
         const vendorData = { ...req.body };
 
-        const { pool } = require('../config/db');
-        
-        // 1. Get old vendor details for synchronization (especially phone)
-        const oldVendorRes = await pool.query('SELECT phone FROM vendors WHERE id = $1', [id]);
-        const oldPhone = oldVendorRes.rows[0]?.phone;
-
         if (vendorData.password) {
             const salt = await bcrypt.genSalt(10);
             vendorData.password = await bcrypt.hash(vendorData.password, salt);
         }
 
-        // 2. Update vendor table
+        // 2. Update vendor table (which now correctly points to users)
         const vendor = await vendorDb.updateVendor(id, vendorData);
 
         if (!vendor) {
             return res.status(404).json({ success: false, message: 'Vendor not found' });
-        }
-
-        // 3. Synchronize with users table using the old phone number if found
-        if (oldPhone) {
-            await pool.query(
-                `UPDATE users SET 
-                    full_name = COALESCE(NULLIF($1, ''), full_name), 
-                    referral_code = COALESCE(NULLIF($2, ''), referral_code),
-                    status = COALESCE(NULLIF($3, ''), status),
-                    phone = COALESCE(NULLIF($4, ''), phone),
-                    password_hash = COALESCE(NULLIF($5, ''), password_hash),
-                    email = COALESCE(NULLIF($6, ''), email)
-                WHERE phone = $7`,
-                [
-                    vendor.name, 
-                    vendor.referral_code, 
-                    vendor.status === 'Active' ? 'ACTIVE' : 'BLOCKED', 
-                    vendor.phone, 
-                    vendor.password,
-                    vendor.email,
-                    oldPhone
-                ]
-            );
         }
 
         res.status(200).json({

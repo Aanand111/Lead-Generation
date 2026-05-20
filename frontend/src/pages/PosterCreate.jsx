@@ -160,7 +160,7 @@ const PosterCreate = () => {
                                                 <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                                                 
                                                 {/* Field Overlays for Mapping */}
-                                                {formData.layout_config.fields.map((field, idx) => (
+                                                {formData.layout_config.fields.map((field) => (
                                                     <div 
                                                         key={field.id}
                                                         className="absolute border-2 border-indigo-500 bg-indigo-500/20 rounded flex items-center justify-center text-[8px] font-black text-white shadow-lg cursor-move"

@@ -14,7 +14,7 @@ const SubVendorDashboard = () => {
         walletBalance: 0,
         totalLeadsInjected: 0
     });
-    const [loading, setLoading] = useState(true);
+    const [, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchStats = async () => {

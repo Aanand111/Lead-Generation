@@ -48,6 +48,7 @@ const Subscriptions = lazy(() => import('./pages/Subscriptions'));
 const SubscriptionCreate = lazy(() => import('./pages/SubscriptionCreate'));
 const SubscriptionEdit = lazy(() => import('./pages/SubscriptionEdit'));
 const Transactions = lazy(() => import('./pages/Transactions'));
+const AdminPayoutRequests = lazy(() => import('./pages/AdminPayoutRequests'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const AdminNotifications = lazy(() => import('./pages/AdminNotifications'));
 const CommissionApproval = lazy(() => import('./pages/CommissionApproval'));
@@ -74,6 +75,8 @@ const UserPosters = lazy(() => import('./pages/customer/Posters'));
 const UserSubscriptions = lazy(() => import('./pages/customer/Subscriptions'));
 const UserNews = lazy(() => import('./pages/customer/News'));
 const UserProfile = lazy(() => import('./pages/customer/Profile'));
+const ChangePassword = lazy(() => import('./pages/ChangePassword'));
+const ResetPasswordEmail = lazy(() => import('./pages/ResetPasswordEmail'));
 
 const RouteLoader = () => (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg-color)] text-[var(--text-muted)]">
@@ -115,13 +118,14 @@ const App = () => {
         <ThemeProvider>
             <ConfirmProvider>
                 <Toaster position="top-right" reverseOrder={false} />
-                <NotificationHandler />
                 <BrowserRouter>
+                    <NotificationHandler />
                     <Suspense fallback={<RouteLoader />}>
                         <Routes>
                             <Route path="/" element={<Login />} />
                             <Route path="/register" element={<Register />} />
                             <Route path="/forgot-password" element={<ForgotPassword />} />
+                            <Route path="/reset-password" element={<ResetPasswordEmail />} />
 
                             <Route element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
                                 <Route path="/dashboard" element={<Dashboard />} />
@@ -155,6 +159,7 @@ const App = () => {
                                 <Route path="/posters/edit/:id" element={<PosterEdit />} />
                                 <Route path="/contact" element={<ContactUs />} />
                                 <Route path="/subscriptions/transaction" element={<Transactions />} />
+                                <Route path="/payouts" element={<AdminPayoutRequests />} />
                                 <Route path="/contact-messages" element={<ContactMessages />} />
                                 <Route path="/subscriptions/plan" element={<SubscriptionPlans />} />
                                 <Route path="/subscriptions/plan/create" element={<SubscriptionPlanCreate />} />
@@ -167,6 +172,7 @@ const App = () => {
                                 <Route path="/commissions/approval" element={<CommissionApproval />} />
                                 <Route path="/analytics" element={<Analytics />} />
                                 <Route path="/notifications/send" element={<AdminNotifications />} />
+                                <Route path="/change-password" element={<ChangePassword />} />
                             </Route>
 
                             <Route element={<ProtectedRoute allowedRoles={['vendor']}><VendorLayout /></ProtectedRoute>}>
@@ -177,6 +183,7 @@ const App = () => {
                                 <Route path="/vendor/earnings" element={<VendorEarnings />} />
                                 <Route path="/vendor/leads/upload" element={<VendorLeadUpload mode="vendor" />} />
                                 <Route path="/vendor/settings" element={<VendorSettings />} />
+                                <Route path="/vendor/change-password" element={<ChangePassword />} />
                             </Route>
 
                             <Route element={<ProtectedRoute allowedRoles={['sub-vendor']}><SubVendorLayout /></ProtectedRoute>}>
@@ -187,6 +194,7 @@ const App = () => {
                                 <Route path="/sub-vendor/leads/upload" element={<VendorLeadUpload mode="vendor" />} />
                                 <Route path="/sub-vendor/earnings" element={<SubVendorEarnings />} />
                                 <Route path="/sub-vendor/settings" element={<SubVendorSettings />} />
+                                <Route path="/sub-vendor/change-password" element={<ChangePassword />} />
                             </Route>
 
                             <Route element={<ProtectedRoute allowedRoles={['user', 'customer']}><CustomerLayout /></ProtectedRoute>}>
@@ -198,6 +206,7 @@ const App = () => {
                                 <Route path="/user/subscriptions" element={<UserSubscriptions />} />
                                 <Route path="/user/news" element={<UserNews />} />
                                 <Route path="/user/profile" element={<UserProfile />} />
+                                <Route path="/user/change-password" element={<ChangePassword />} />
                             </Route>
 
                             <Route path="*" element={<div style={{ padding: '20px' }}>Page coming soon...</div>} />
