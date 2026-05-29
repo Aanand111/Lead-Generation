@@ -196,6 +196,15 @@ const updateCustomerStatus = async (id, status) => {
 };
 
 const deleteCustomer = async (id) => {
+    // Delete dependent records first to avoid foreign key constraint violations
+    await pool.query(`DELETE FROM notifications WHERE user_id = $1`, [id]);
+    await pool.query(`DELETE FROM lead_history WHERE user_id = $1 OR lead_purchase_id IN (SELECT id FROM lead_purchases WHERE user_id = $1)`, [id]);
+    await pool.query(`DELETE FROM lead_purchases WHERE user_id = $1`, [id]);
+    await pool.query(`DELETE FROM user_packages WHERE user_id = $1`, [id]);
+    await pool.query(`DELETE FROM transactions WHERE user_id = $1`, [id]);
+    await pool.query(`DELETE FROM posters WHERE user_id = $1`, [id]);
+    await pool.query(`DELETE FROM referrals WHERE referrer_id = $1 OR referred_user_id = $1`, [id]);
+
     // Remove customer from the system
     // First try deleting from users
     const userResult = await pool.query(`DELETE FROM users WHERE id = $1 AND role = 'user' RETURNING id`, [id]);

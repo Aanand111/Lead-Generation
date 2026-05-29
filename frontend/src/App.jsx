@@ -71,6 +71,7 @@ const UserDashboard = lazy(() => import('./pages/customer/Dashboard'));
 const UserAvailableLeads = lazy(() => import('./pages/customer/AvailableLeads'));
 const UserMyLeads = lazy(() => import('./pages/customer/MyLeads'));
 const UserReferrals = lazy(() => import('./pages/customer/Referrals'));
+const UserRewardHistory = lazy(() => import('./pages/customer/RewardHistory'));
 const UserPosters = lazy(() => import('./pages/customer/Posters'));
 const UserSubscriptions = lazy(() => import('./pages/customer/Subscriptions'));
 const UserNews = lazy(() => import('./pages/customer/News'));
@@ -202,6 +203,7 @@ const App = () => {
                                 <Route path="/user/leads/available" element={<UserAvailableLeads />} />
                                 <Route path="/user/leads/my" element={<UserMyLeads />} />
                                 <Route path="/user/referrals" element={<UserReferrals />} />
+                                <Route path="/user/referrals/history" element={<UserRewardHistory />} />
                                 <Route path="/user/posters" element={<UserPosters />} />
                                 <Route path="/user/subscriptions" element={<UserSubscriptions />} />
                                 <Route path="/user/news" element={<UserNews />} />

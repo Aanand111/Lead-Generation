@@ -40,6 +40,7 @@ router.post('/subscription/verify-payment', verifySubscriptionPayment);
 router.get('/my-leads', (req, res, next) => userController.getMyLeads(req, res, next));
 router.get('/my-uploaded-leads', (req, res, next) => userController.getMyUploadedLeads(req, res, next));
 router.get('/referral-stats', (req, res, next) => userController.getReferralStats(req, res, next));
+router.get('/reward-history', (req, res, next) => userController.getRewardHistory(req, res, next));
 router.get('/posters', (req, res, next) => userController.getPosters(req, res, next));
 router.get('/poster-templates', (req, res, next) => userController.getPosterTemplates(req, res, next));
 

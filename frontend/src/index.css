@@ -55,6 +55,118 @@
   --border-color: #1b254b;
 }
 
+/* ==========================================
+   ELITE PREMIUM THEMES (Black/Gold & Stone/Taupe)
+   ========================================== */
+
+/* Premium Light Theme (Elite User in Light Mode) - Elegant Warm Taupe/Stone & Ivory Gold */
+[data-premium="true"] {
+  --primary: #D4AF37; /* Pure Metallic Gold Accent */
+  --primary-glow: rgba(212, 175, 55, 0.4);
+  --primary-hover: #C59B27;
+  --primary-weak: rgba(212, 175, 55, 0.12);
+
+  /* Warm Stone palette — sidebar/header blend with the page background */
+  --bg-color: #BCAEA3;           /* Main page background — stone taupe */
+  --surface-color: #CEC2B7;      /* Sidebar & Header — slightly lighter stone (blends naturally) */
+  --surface-elevated: #FDFBF7;   /* Cards & Modals — luxurious ivory silk-cream (gold pops!) */
+
+  /* Deep Espresso/Charcoal Text for superb legibility */
+  --text-dark: #1F1916;
+  --text-muted: #6E645E;
+
+  /* Luxurious gold-dusted borders */
+  --border-color: rgba(212, 175, 55, 0.25);
+  
+  --shadow-sm: 0px 5px 20px rgba(212, 175, 55, 0.05);
+  --shadow-md: 0px 10px 30px rgba(212, 175, 55, 0.08);
+  --shadow-lg: 0px 15px 40px rgba(212, 175, 55, 0.12);
+  
+  --active-menu-bg: rgba(212, 175, 55, 0.15);
+}
+
+/* Premium Dark Theme (Elite User in Dark Mode) - Deep Black & Luxurious Gold */
+[data-theme="dark"][data-premium="true"] {
+  --primary: #D4AF37; /* Metallic Gold Accent */
+  --primary-glow: rgba(212, 175, 55, 0.4);
+  --primary-hover: #F3E5AB; /* Bright Warm Gold */
+  --primary-weak: rgba(212, 175, 55, 0.15);
+
+  /* Deep Obsidian Luxury Blacks */
+  --bg-color: #080808; /* Pure black backdrop */
+  --surface-color: #121212; /* Dark slate-black panels */
+  --surface-elevated: #1C1C1C; /* Lighter charcoal elevations */
+
+  /* Gold & Ivory text contrasts */
+  --text-dark: #F5F5F0;
+  --text-muted: #A6A69E;
+  
+  /* Rich gold-dusted dark borders */
+  --border-color: rgba(212, 175, 55, 0.15);
+
+  --shadow-sm: 0px 5px 20px rgba(212, 175, 55, 0.06);
+  --shadow-md: 0px 10px 30px rgba(212, 175, 55, 0.10);
+  --shadow-lg: 0px 15px 40px rgba(212, 175, 55, 0.16);
+
+  --active-menu-bg: rgba(212, 175, 55, 0.18);
+}
+
+/* Custom helper class for the sidebar premium user footer to avoid Tailwind opacity bugs */
+.premium-user-card {
+  background: linear-gradient(to right, rgba(212, 175, 55, 0.12), rgba(212, 175, 55, 0.03)) !important;
+  border-color: rgba(212, 175, 55, 0.22) !important;
+}
+.premium-user-card:hover {
+  background: linear-gradient(to right, rgba(212, 175, 55, 0.22), rgba(212, 175, 55, 0.06)) !important;
+  border-color: rgba(212, 175, 55, 0.45) !important;
+}
+
+/* Premium custom scrollbars */
+[data-premium="true"] ::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.25);
+}
+[data-theme="dark"][data-premium="true"] ::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.25);
+}
+
+/* Premium radial gradient backgrounds */
+[data-premium="true"] .adminShell {
+  background-image:
+    radial-gradient(at 0% 0%, rgba(212, 175, 55, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(212, 175, 55, 0.08) 0px, transparent 50%);
+}
+[data-theme="dark"][data-premium="true"] .adminShell {
+  background-image:
+    radial-gradient(at 0% 0%, rgba(212, 175, 55, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(212, 175, 55, 0.08) 0px, transparent 50%);
+}
+
+/* Premium dashboard hero banners */
+[data-premium="true"] .dash-hero {
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  background:
+    radial-gradient(900px 500px at 10% 10%, rgba(212, 175, 55, 0.22), transparent 60%),
+    radial-gradient(700px 500px at 85% 30%, rgba(212, 175, 55, 0.15), transparent 55%),
+    color-mix(in srgb, var(--surface-elevated) 85%, var(--bg-color));
+  box-shadow: 0 10px 40px rgba(212, 175, 55, 0.18);
+}
+[data-theme="dark"][data-premium="true"] .dash-hero {
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  background:
+    radial-gradient(900px 500px at 10% 10%, rgba(212, 175, 55, 0.18), transparent 60%),
+    radial-gradient(700px 500px at 85% 30%, rgba(212, 175, 55, 0.12), transparent 55%),
+    color-mix(in srgb, var(--surface-elevated) 85%, var(--bg-color));
+  box-shadow: 0 10px 40px rgba(212, 175, 55, 0.22);
+}
+
+/* Premium accessible focus visible rings */
+[data-premium="true"] :where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid rgba(212, 175, 55, 0.6);
+}
+[data-theme="dark"][data-premium="true"] :where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid rgba(212, 175, 55, 0.6);
+}
+
 * {
   margin: 0;
   padding: 0;

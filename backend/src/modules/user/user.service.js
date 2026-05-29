@@ -138,6 +138,20 @@ class UserService {
         };
     }
 
+    async getRewardHistory(userId) {
+        const [referralHistory, transactionHistory, totalRewards] = await Promise.all([
+            userRepository.getReferralHistory(userId),
+            userRepository.getRewardHistory(userId),
+            userRepository.getReferralRewardsTotal(userId)
+        ]);
+
+        return {
+            totalRewards,
+            referralHistory,
+            transactionHistory
+        };
+    }
+
     async getNews() {
         return userRepository.getPublishedNews();
     }

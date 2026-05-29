@@ -298,47 +298,79 @@ const importLeads = async (req, res, next) => {
         const leadsToInsert = [];
         const errors = [];
 
+        console.log("Excel parsing triggered. Raw Row Keys inside uploaded file: ", rawRows.length > 0 ? Object.keys(rawRows[0]) : []);
+
         rawRows.forEach((row, idx) => {
-            const normalizedRow = {};
+            let customer_name = '';
+            let customer_phone = '';
+            let customer_email = null;
+            let category = 'General';
+            let city = '';
+            let state = null;
+            let pincode = null;
+            let lead_value = null;
+            let expiry_date = null;
+            let lead_id = null;
+
             Object.keys(row).forEach(key => {
-                const normKey = key.toLowerCase().trim().replace(/[\s_]+/g, '_');
-                normalizedRow[normKey] = row[key];
+                const cleanKey = key.toLowerCase().trim().replace(/[\s_]+/g, '');
+                const value = row[key];
+                if (value === undefined || value === null) return;
+
+                const valStr = String(value).trim();
+
+                if (cleanKey.includes('phone') || cleanKey.includes('mobile') || cleanKey.includes('contact') || cleanKey.includes('number')) {
+                    if (!cleanKey.includes('name') && !cleanKey.includes('email')) {
+                        customer_phone = valStr;
+                    }
+                }
+                else if (cleanKey.includes('name') || cleanKey === 'customer' || cleanKey === 'client') {
+                    if (!cleanKey.includes('phone') && !cleanKey.includes('contact')) {
+                        customer_name = valStr;
+                    }
+                }
+                else if (cleanKey.includes('email') || cleanKey.includes('mail')) {
+                    customer_email = valStr.toLowerCase();
+                }
+                else if (cleanKey.includes('category') || cleanKey === 'type' || cleanKey.includes('genre')) {
+                    category = valStr;
+                }
+                else if (cleanKey === 'city' || cleanKey.includes('location') || cleanKey.includes('town')) {
+                    city = valStr;
+                }
+                else if (cleanKey === 'state' || cleanKey === 'region' || cleanKey.includes('province')) {
+                    state = valStr;
+                }
+                else if (cleanKey.includes('pincode') || cleanKey === 'pin' || cleanKey === 'zip' || cleanKey.includes('zipcode') || cleanKey.includes('postal')) {
+                    pincode = valStr;
+                }
+                else if (cleanKey.includes('value') || cleanKey.includes('price') || cleanKey.includes('cost') || cleanKey === 'worth' || cleanKey === 'amount') {
+                    const parsedVal = parseFloat(valStr.replace(/[^0-9.]/g, ''));
+                    if (!isNaN(parsedVal)) {
+                        lead_value = parsedVal;
+                    }
+                }
+                else if (cleanKey.includes('expiry') || cleanKey.includes('expire') || cleanKey.includes('valid')) {
+                    const parsedDate = new Date(valStr);
+                    if (!isNaN(parsedDate.getTime())) {
+                        expiry_date = parsedDate;
+                    }
+                }
+                else if (cleanKey === 'leadid' || cleanKey === 'id' || cleanKey === 'uid') {
+                    lead_id = valStr;
+                }
             });
 
-            const customer_name = normalizedRow.customer_name || normalizedRow.name || normalizedRow.client_name || '';
-            const customer_phone = String(normalizedRow.customer_phone || normalizedRow.phone || normalizedRow.mobile || '').trim();
-            const customer_email = normalizedRow.customer_email || normalizedRow.email ? String(normalizedRow.customer_email || normalizedRow.email).trim().toLowerCase() : null;
-            const category = normalizedRow.category || normalizedRow.lead_category || normalizedRow.type || 'General';
-            const city = String(normalizedRow.city || '').trim();
-            const state = normalizedRow.state ? String(normalizedRow.state).trim() : null;
-            const pincode = normalizedRow.pincode || normalizedRow.pin || normalizedRow.zip ? String(normalizedRow.pincode || normalizedRow.pin || normalizedRow.zip).trim() : null;
-            
-            let lead_value = normalizedRow.lead_value || normalizedRow.value || normalizedRow.price || null;
-            if (lead_value !== null) {
-                lead_value = parseFloat(lead_value);
-                if (isNaN(lead_value)) lead_value = null;
-            }
-
-            let expiry_date = normalizedRow.expiry_date || normalizedRow.expiry || null;
-            if (expiry_date) {
-                const parsedDate = new Date(expiry_date);
-                if (!isNaN(parsedDate.getTime())) {
-                    expiry_date = parsedDate;
-                } else {
-                    expiry_date = new Date(new Date().setDate(new Date().getDate() + 30));
-                }
-            } else {
+            if (!expiry_date) {
                 expiry_date = new Date(new Date().setDate(new Date().getDate() + 30));
             }
 
-            const lead_id = normalizedRow.lead_id || normalizedRow.id ? String(normalizedRow.lead_id || normalizedRow.id).trim() : null;
-
             if (!customer_phone) {
-                errors.push(`Row ${idx + 2}: Missing phone number.`);
+                errors.push(`Row ${idx + 2}: Phone number column was not detected or is empty.`);
                 return;
             }
             if (!city) {
-                errors.push(`Row ${idx + 2}: Missing city.`);
+                errors.push(`Row ${idx + 2}: City column was not detected or is empty.`);
                 return;
             }
 
@@ -359,48 +391,59 @@ const importLeads = async (req, res, next) => {
         });
 
         if (leadsToInsert.length === 0) {
+            console.warn("Bulk import failed. Detected errors: ", errors);
             return res.status(400).json({
                 success: false,
-                message: 'No valid leads found in the Excel sheet.',
+                message: 'No valid leads could be parsed. Please check if headers match Phone and City.',
                 errors
             });
         }
 
+        let importedCount = 0;
         const client = await pool.connect();
         try {
-            await client.query('BEGIN');
             for (const lead of leadsToInsert) {
-                await client.query(
-                    `INSERT INTO leads (lead_id, customer_name, customer_phone, customer_email, category, city, state, pincode, lead_value, expiry_date, created_by, status)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-                    [
-                        lead.lead_id,
-                        lead.customer_name,
-                        lead.customer_phone,
-                        lead.customer_email,
-                        lead.category,
-                        lead.city,
-                        lead.state,
-                        lead.pincode,
-                        lead.lead_value,
-                        lead.expiry_date,
-                        lead.created_by,
-                        lead.status
-                    ]
-                );
+                try {
+                    // Clean and truncate strings to match schema limits to prevent 500 errors
+                    const cleanPhone = lead.customer_phone ? String(lead.customer_phone).replace(/[^\d+]/g, '').substring(0, 15) : null;
+                    const cleanCity = lead.city ? String(lead.city).substring(0, 100) : null;
+                    
+                    if (!cleanPhone || !cleanCity) {
+                        errors.push(`Lead skipped: Missing valid phone or city.`);
+                        continue;
+                    }
+
+                    await client.query(
+                        `INSERT INTO leads (lead_id, customer_name, customer_phone, customer_email, category, city, state, pincode, lead_value, expiry_date, created_by, status)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+                        [
+                            lead.lead_id ? String(lead.lead_id) : null,
+                            lead.customer_name ? String(lead.customer_name).substring(0, 100) : null,
+                            cleanPhone,
+                            lead.customer_email ? String(lead.customer_email).substring(0, 100) : null,
+                            lead.category ? String(lead.category).substring(0, 100) : 'General',
+                            cleanCity,
+                            lead.state ? String(lead.state).substring(0, 100) : null,
+                            lead.pincode ? String(lead.pincode).substring(0, 10) : null,
+                            lead.lead_value,
+                            lead.expiry_date,
+                            lead.created_by,
+                            lead.status
+                        ]
+                    );
+                    importedCount++;
+                } catch (rowErr) {
+                    errors.push(`Failed to import lead (${lead.customer_phone || 'Unknown'}): ${rowErr.message}`);
+                }
             }
-            await client.query('COMMIT');
-        } catch (dbErr) {
-            await client.query('ROLLBACK');
-            throw dbErr;
         } finally {
             client.release();
         }
 
         res.status(200).json({
             success: true,
-            message: `Successfully integrated ${leadsToInsert.length} leads into the system!`,
-            importedCount: leadsToInsert.length,
+            message: `Successfully integrated ${importedCount} leads into the system!`,
+            importedCount: importedCount,
             ignoredCount: errors.length,
             errors: errors.length > 0 ? errors : null
         });

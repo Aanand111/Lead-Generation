@@ -156,11 +156,12 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
     };
 
     return (
-        <header className={`h-[70px] flex items-center justify-between px-6 fixed top-0 right-0 z-[999] transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] border-b backdrop-blur-md ${isSidebarOpen ? 'left-[var(--sidebar-width)]' : 'left-[var(--sidebar-collapsed-width)]'} ${user.isPremium ? 'bg-[var(--surface-color)] border-amber-500/40 shadow-[0_2px_20px_rgba(245,158,11,0.15)]' : `bg-[var(--surface-color)] border-[var(--border-color)]`}`}>
+        <header style={user.isPremium ? { borderColor: 'var(--border-color)', boxShadow: '0 2px 20px rgba(212,175,55,0.12)' } : {}} className={`h-[70px] flex items-center justify-between px-6 fixed top-0 right-0 z-[999] transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] border-b backdrop-blur-md bg-[var(--surface-color)] border-[var(--border-color)] ${isSidebarOpen ? 'left-[var(--sidebar-width)]' : 'left-[var(--sidebar-collapsed-width)]'}`}>
             <div className="flex items-center gap-4">
                 <button
                     onClick={toggleSidebar}
-                    className={`border-none cursor-pointer p-2 rounded-xl flex items-center justify-center transition-all duration-200 ${user.isPremium ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20' : 'bg-indigo-500/5 text-[var(--primary)] hover:bg-indigo-500/10'}`}
+                    style={user.isPremium ? { background: 'var(--primary-weak)', color: 'var(--primary)' } : {}}
+                    className={`border-none cursor-pointer p-2 rounded-xl flex items-center justify-center transition-all duration-200 ${user.isPremium ? '' : 'bg-indigo-500/5 text-[var(--primary)] hover:bg-indigo-500/10'}`}
                 >
                     <Menu size={20} />
                 </button>
@@ -175,16 +176,57 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
             </div>
 
             <div className="flex items-center gap-5">
-                {theme === 'light' ? (
-                    <Moon size={20} className="text-[var(--text-muted)] cursor-pointer" onClick={toggleTheme} />
-                ) : (
-                    <Sun size={20} className="text-[var(--text-muted)] cursor-pointer" onClick={toggleTheme} />
-                )}
+                <style>{`
+                    @keyframes theme-spin {
+                        0% { transform: rotate(0deg) scale(1); }
+                        50% { transform: rotate(180deg) scale(1.2); }
+                        100% { transform: rotate(360deg) scale(1); }
+                    }
+                    @keyframes theme-swing {
+                        0% { transform: rotate(0deg) scale(1); }
+                        20% { transform: rotate(15deg) scale(1.15); }
+                        40% { transform: rotate(-12deg) scale(1.15); }
+                        60% { transform: rotate(8deg); }
+                        80% { transform: rotate(-4deg); }
+                        100% { transform: rotate(0deg) scale(1); }
+                    }
+                    .theme-container:hover .theme-icon-sun {
+                        animation: theme-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+                    }
+                    .theme-container:hover .theme-icon-moon {
+                        animation: theme-swing 0.8s ease-in-out both;
+                        transform-origin: center center;
+                    }
+                `}</style>
+                
+                <div className="relative cursor-pointer p-1.5 rounded-lg hover:bg-slate-500/5 theme-container flex items-center justify-center" onClick={toggleTheme}>
+                    {theme === 'light' ? (
+                        <Moon size={20} className="text-[var(--text-muted)] theme-icon-moon" />
+                    ) : (
+                        <Sun size={20} className="text-[var(--text-muted)] theme-icon-sun" />
+                    )}
+                </div>
 
                 {/* Notification Bell Dropdown */}
                 <div className="relative">
-                    <div className="relative cursor-pointer p-1.5 rounded-lg hover:bg-slate-500/5" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
-                        <Bell size={20} className="text-[var(--text-muted)]" />
+                    <style>{`
+                        @keyframes bell-swing {
+                            0% { transform: rotate(0deg); }
+                            15% { transform: rotate(18deg); }
+                            30% { transform: rotate(-14deg); }
+                            45% { transform: rotate(10deg); }
+                            60% { transform: rotate(-7deg); }
+                            75% { transform: rotate(4deg); }
+                            90% { transform: rotate(-2deg); }
+                            100% { transform: rotate(0deg); }
+                        }
+                        .bell-container:hover .bell-icon {
+                            animation: bell-swing 0.85s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+                            transform-origin: top center;
+                        }
+                    `}</style>
+                    <div className="relative cursor-pointer p-1.5 rounded-lg hover:bg-slate-500/5 bell-container" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
+                        <Bell size={20} className="text-[var(--text-muted)] bell-icon" />
                         {unreadCount > 0 && (
                             <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full border-2 border-[var(--surface-color)]">
                                 {unreadCount}
@@ -246,10 +288,10 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                         className="flex items-center gap-3 cursor-pointer group px-2 py-1.5 rounded-2xl hover:bg-indigo-500/5 transition-all"
                     >
                         <div className="flex flex-col text-right leading-none gap-0.5">
-                            <span className={`text-[13px] font-black uppercase tracking-tight ${user.isPremium ? 'text-white' : 'text-[var(--text-dark)]'}`}>
+                            <span className={`text-[13px] font-black uppercase tracking-tight transition-transform duration-300 origin-right group-hover:scale-105 text-[var(--text-dark)]`}>
                                 {user.name}
                             </span>
-                            <div className={`inline-flex items-center justify-end gap-1 text-[9px] font-black uppercase tracking-widest ${user.isPremium ? 'text-amber-400' : isSubVendor ? 'text-amber-500' : 'text-indigo-500'}`}>
+                            <div className={`inline-flex items-center justify-end gap-1 text-[9px] font-black uppercase tracking-widest transition-transform duration-300 origin-right group-hover:scale-105 ${user.isPremium ? 'text-amber-400' : isSubVendor ? 'text-amber-500' : 'text-indigo-500'}`}>
                                 {user.isPremium ? <Crown size={10} fill="currentColor" /> : <Shield size={10} />}
                                 {user.isPremium ? 'Elite User' : user.designation}
                             </div>

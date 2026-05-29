@@ -69,6 +69,19 @@ class UserController {
         }
     }
 
+    async getRewardHistory(req, res, next) {
+        try {
+            const data = await userService.getRewardHistory(req.user.id);
+            res.status(200).json({ success: true, data });
+        } catch (error) {
+            logger.error('[USER] Reward history failed', {
+                message: error.message,
+                stack: error.stack
+            });
+            next(error);
+        }
+    }
+
     async getNews(req, res, next) {
         try {
             const data = await userService.getNews();

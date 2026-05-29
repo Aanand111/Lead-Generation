@@ -89,7 +89,7 @@ const CustomerDashboard = () => {
                         </div>
                         <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase mb-4 leading-tight">
                             {stats.isPremium ? 'ELITE ' : 'Master Your '} 
-                            <span className={`text-transparent bg-clip-text ${stats.isPremium ? 'bg-gradient-to-r from-amber-200 via-amber-500 to-amber-200 animate-shine' : 'bg-gradient-to-r from-indigo-400 to-emerald-400'}`}>
+                            <span className={`text-transparent bg-clip-text ${stats.isPremium ? 'bg-gradient-to-r from-[#F5E5AB] via-[var(--primary)] to-[#F5E5AB] animate-shine' : 'bg-gradient-to-r from-indigo-400 to-emerald-400'}`}>
                                 {stats.isPremium ? 'COMMAND CENTER' : 'Lead Pipeline'}
                             </span>
                         </h1>
@@ -107,7 +107,7 @@ const CustomerDashboard = () => {
                                 onClick={() => navigate('/user/subscriptions')}
                                 className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-2xl font-black uppercase tracking-widest text-[11px] backdrop-blur-md transition-all flex items-center gap-2"
                             >
-                                <Zap size={14} fill="currentColor" className="text-amber-400" /> Upgrade Plan
+                                <Zap size={14} fill="currentColor" className="text-[var(--primary)]" /> Upgrade Plan
                             </button>
                         </div>
                     </div>
@@ -130,24 +130,24 @@ const CustomerDashboard = () => {
             {/* --- Core Statistics Engine --- */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {[
-                    { label: 'Asset Credits', value: `₹${stats.creditBalance}`, icon: <Wallet size={24} />, color: stats.isPremium ? 'text-amber-500' : 'text-emerald-500', bg: stats.isPremium ? 'bg-amber-500/10' : 'bg-emerald-500/10' },
-                    { label: 'Leads Secured', value: stats.totalPurchasedLeads, icon: <Package size={24} />, color: stats.isPremium ? 'text-amber-400' : 'text-indigo-500', bg: stats.isPremium ? 'bg-amber-400/10' : 'bg-indigo-500/10' },
-                    { label: 'Available Inventory', value: stats.availableLeads, icon: <Activity size={24} />, color: stats.isPremium ? 'text-amber-500' : 'text-amber-500', bg: stats.isPremium ? 'bg-amber-500/10' : 'bg-amber-500/10' },
-                    { label: 'Referral Force', value: stats.totalReferrals, icon: <TrendingUp size={24} />, color: stats.isPremium ? 'text-amber-400' : 'text-royal-blue', bg: stats.isPremium ? 'bg-amber-400/10' : 'bg-royal-blue/10' }
+                    { label: 'Asset Credits', value: `₹${stats.creditBalance}`, icon: <Wallet size={24} />, color: stats.isPremium ? 'text-[var(--primary)]' : 'text-emerald-500', bg: stats.isPremium ? 'bg-[var(--primary-weak)]' : 'bg-emerald-500/10' },
+                    { label: 'Leads Secured', value: stats.totalPurchasedLeads, icon: <Package size={24} />, color: stats.isPremium ? 'text-[var(--primary)]' : 'text-indigo-500', bg: stats.isPremium ? 'bg-[var(--primary-weak)]' : 'bg-indigo-500/10' },
+                    { label: 'Available Inventory', value: stats.availableLeads, icon: <Activity size={24} />, color: stats.isPremium ? 'text-[var(--primary)]' : 'text-amber-500', bg: stats.isPremium ? 'bg-[var(--primary-weak)]' : 'bg-amber-500/10' },
+                    { label: 'Referral Force', value: stats.totalReferrals, icon: <TrendingUp size={24} />, color: stats.isPremium ? 'text-[var(--primary)]' : 'text-royal-blue', bg: stats.isPremium ? 'bg-[var(--primary-weak)]' : 'bg-royal-blue/10' }
                 ].map((stat, i) => (
                     <div key={i} className={`card p-8 rounded-[2rem] border transition-all duration-500 hover:scale-[1.02] ${
                         stats.isPremium 
-                        ? 'bg-[var(--surface-color)] border-amber-500/20 shadow-xl' 
+                        ? 'bg-[var(--surface-elevated)] border-[var(--border-color)] shadow-xl' 
                         : 'bg-[var(--surface-color)] border-[var(--border-color)] shadow-lg'
                     }`}>
                         <div className="flex justify-between items-start mb-6">
                             <div className={`p-4 rounded-2xl ${stat.bg} ${stat.color} shadow-sm`}>
                                 {stat.icon}
                             </div>
-                            {stats.isPremium && <Gem size={16} className="text-amber-500/30 animate-pulse" />}
+                            {stats.isPremium && <Gem size={16} className="text-[var(--primary)] opacity-30 animate-pulse" />}
                         </div>
                         <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 italic opacity-70">{stat.label}</div>
-                        <div className={`text-3xl font-black italic tracking-tighter uppercase leading-none ${stats.isPremium ? 'text-amber-500' : 'text-[var(--text-dark)]'}`}>
+                        <div className={`text-3xl font-black italic tracking-tighter uppercase leading-none ${stats.isPremium ? 'text-[var(--primary)]' : 'text-[var(--text-dark)]'}`}>
                             {stat.value}
                         </div>
                     </div>
@@ -181,7 +181,7 @@ const CustomerDashboard = () => {
                 </div>
 
                 <div className="card p-6 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[2rem] flex items-center gap-4 hover:shadow-md transition-shadow">
-                    <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stats.isPremium ? 'bg-[var(--primary)]/10 text-[var(--primary)]' : 'bg-amber-500/10 text-amber-500'}`}>
                         <ShieldCheck size={22} />
                     </div>
                     <div>
@@ -190,9 +190,9 @@ const CustomerDashboard = () => {
                         </div>
                         <div className="text-lg font-black text-[var(--text-dark)] uppercase tracking-tight flex items-center gap-2">
                             {stats.parentName || 'ORGANIC NODE'}
-                            <ChevronRight size={14} className="text-amber-500" />
+                            <ChevronRight size={14} className={stats.isPremium ? 'text-[var(--primary)]' : 'text-amber-500'} />
                         </div>
-                        <div className="text-[10px] font-bold text-amber-500/80 italic uppercase flex items-center gap-2">
+                        <div className={`text-[10px] font-bold italic uppercase flex items-center gap-2 ${stats.isPremium ? 'text-[var(--primary)]/80' : 'text-amber-500/80'}`}>
                             <Star size={10} fill="currentColor" /> {stats.parentRole || (stats.parentId ? 'AUTHORIZED AGENT' : 'Direct System Entry')}
                         </div>
                     </div>
@@ -275,7 +275,7 @@ const CustomerDashboard = () => {
                         <div className="relative bg-[#0f172a] rounded-[2.9rem] p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-10">
                             <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-indigo-500/20 rounded-full blur-[60px] opacity-30"></div>
                             <div className="relative z-10 flex-1 text-center md:text-left">
-                                <div className="text-amber-400 text-[10px] font-black uppercase tracking-[0.3em] mb-4 italic flex items-center justify-center md:justify-start gap-2">
+                                <div className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 italic flex items-center justify-center md:justify-start gap-2 ${stats.isPremium ? 'text-[var(--primary)]' : 'text-amber-400'}`}>
                                     <Gem size={14} fill="currentColor" /> Exclusive Program
                                 </div>
                                 <h3 className="text-3xl font-black italic tracking-tighter uppercase text-white mb-4">

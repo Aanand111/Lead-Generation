@@ -6,9 +6,11 @@ import {
     ChevronRight, Info, TrendingUp, Sparkles,
     MousePointer2, Network, Trophy
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 
 const UserReferrals = () => {
+    const navigate = useNavigate();
     const [referralData, setReferralData] = useState({
         referralCode: 'USER-7281',
         totalReferrals: 0,
@@ -191,7 +193,10 @@ const UserReferrals = () => {
                                     <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Real-Time Connection Feed</p>
                                 </div>
                             </div>
-                            <button className="px-8 py-4 bg-white border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest italic text-indigo-600 hover:bg-slate-50 transition-all flex items-center gap-3">
+                            <button 
+                                onClick={() => navigate('/user/referrals/history')}
+                                className="px-8 py-4 bg-white border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest italic text-indigo-600 hover:bg-slate-50 transition-all flex items-center gap-3"
+                            >
                                 Full Registry <ArrowUpRight size={18} />
                             </button>
                         </div>

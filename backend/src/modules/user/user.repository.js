@@ -368,6 +368,16 @@ class UserRepository {
     async updatePassword(userId, passwordHash, client = pool) {
         await client.query('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, userId]);
     }
+
+    async getRewardHistory(userId, client = pool) {
+        const result = await client.query(`
+            SELECT id, type, amount, credits, status, remarks, created_at
+            FROM transactions
+            WHERE user_id = $1 AND (type = 'REFERRAL_REWARD' OR type = 'REFERRAL_CREDIT')
+            ORDER BY created_at DESC
+        `, [userId]);
+        return result.rows;
+    }
 }
 
 module.exports = new UserRepository();

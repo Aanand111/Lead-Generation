@@ -11,5 +11,6 @@ module.exports = {
     getPosters: userController.getPosters.bind(userController),
     getPosterTemplates: userController.getPosterTemplates.bind(userController),
     generatePoster: userController.generatePoster.bind(userController),
-    submitLeadFeedback: userController.submitLeadFeedback.bind(userController)
+    submitLeadFeedback: userController.submitLeadFeedback.bind(userController),
+    getRewardHistory: userController.getRewardHistory.bind(userController)
 };

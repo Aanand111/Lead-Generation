@@ -81,47 +81,45 @@ const CustomerSidebar = ({ isOpen }) => {
         setOpenDropdowns(prev => ({ ...prev, [label]: !prev[label] }));
     };
 
-    const activeColor = user.isPremium ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-[var(--primary)]';
-    const activeText = user.isPremium ? 'text-black' : 'text-white';
-    const hoverColor = user.isPremium ? 'hover:text-amber-500 hover:bg-amber-500/10' : 'hover:text-[var(--primary)] hover:bg-[var(--active-menu-bg)]';
-    const activeFg = user.isPremium ? 'text-amber-500' : 'text-[var(--primary)]';
-    const sidebarBg = user.isPremium
-        ? 'bg-[var(--surface-color)] border-amber-500/30'
-        : 'bg-[var(--surface-color)] border-[var(--border-color)]';
+    const activeColor = 'bg-[var(--primary)]';
+    const activeText = user.isPremium ? 'text-black font-black' : 'text-white font-black';
+    const hoverColor = 'hover:text-[var(--text-dark)] hover:bg-[var(--active-menu-bg)]';
+    const activeFg = 'text-[var(--primary)]';
+    const sidebarBg = 'bg-[var(--surface-color)] border-[var(--border-color)]';
 
     return (
-        <aside className={`custom-sidebar fixed left-0 top-0 h-screen z-[1000] overflow-y-auto overflow-x-hidden flex flex-col transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] border-r ${sidebarBg} text-[var(--text-dark)] ${user.isPremium ? 'shadow-[2px_0_20px_rgba(245,158,11,0.08)]' : ''} ${isOpen ? 'w-[var(--sidebar-width)]' : 'w-[var(--sidebar-collapsed-width)]'}`}>
+        <aside className={`custom-sidebar fixed left-0 top-0 h-screen z-[1000] overflow-y-auto overflow-x-hidden flex flex-col transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] border-r ${sidebarBg} text-[var(--text-dark)] ${user.isPremium ? 'shadow-[2px_0_20px_rgba(212,175,55,0.08)]' : ''} ${isOpen ? 'w-[var(--sidebar-width)]' : 'w-[var(--sidebar-collapsed-width)]'}`}>
 
             {/* Logo Header */}
-            <div className={`px-6 h-[70px] min-h-[70px] shrink-0 flex items-center justify-center border-b ${user.isPremium ? 'border-amber-500/20 bg-gradient-to-r from-amber-500/10 to-transparent' : 'border-[var(--border-color)] bg-gradient-to-b from-indigo-500/5 to-transparent'}`}>
+            <div style={user.isPremium ? { borderColor: 'var(--border-color)', background: 'linear-gradient(to right, var(--primary-weak), transparent)' } : {}} className={`px-6 h-[70px] min-h-[70px] shrink-0 flex items-center justify-center border-b ${user.isPremium ? '' : 'border-[var(--border-color)] bg-gradient-to-b from-indigo-500/5 to-transparent'}`}>
                 <div className={`flex items-center justify-center w-full overflow-hidden ${isOpen ? 'px-0' : 'px-2.5'}`}>
                     {isOpen && (
                         <div className="flex items-center gap-3 w-full">
                             <img src={InsureeLogo} alt="Logo" className={`h-[36px] w-auto transition-all duration-300 ease-in-out object-contain ${theme === 'dark' ? 'brightness-0 invert' : ''}`} />
                             {user.isPremium && (
-                                <div className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/20 border border-amber-500/30">
-                                    <Crown size={10} className="text-amber-400" fill="currentColor" />
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-amber-400">Elite</span>
+                                <div style={{ background: 'var(--primary-weak)', borderColor: 'var(--border-color)' }} className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded-lg border">
+                                    <Crown size={10} className="text-[var(--primary)]" fill="currentColor" />
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-[var(--primary)]">Elite</span>
                                 </div>
                             )}
                         </div>
                     )}
-                    {!isOpen && user.isPremium && <Crown size={20} className="text-amber-400" fill="currentColor" />}
+                    {!isOpen && user.isPremium && <Crown size={20} className="text-[var(--primary)]" fill="currentColor" />}
                     {!isOpen && !user.isPremium && <img src={InsureeLogo} alt="Logo" className={`h-[28px] w-auto object-contain ${theme === 'dark' ? 'brightness-0 invert' : ''}`} />}
                 </div>
             </div>
 
             {/* Premium Banner (only when sidebar open + premium) */}
             {isOpen && user.isPremium && (
-                <div className="mx-3 mt-3 p-3 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent border border-amber-500/20 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
+                <div style={{ background: 'linear-gradient(to right, var(--primary-weak), rgba(212,175,55,0.06), transparent)', borderColor: 'var(--border-color)' }} className="mx-3 mt-3 p-3 rounded-2xl border flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-[var(--primary)] flex items-center justify-center shrink-0 shadow-lg shadow-[var(--primary)]/20">
                         <Crown size={16} className="text-black" fill="currentColor" />
                     </div>
                     <div>
-                        <div className="text-[10px] font-black text-amber-400 uppercase tracking-widest leading-none">Elite User</div>
-                        <div className="text-[9px] text-amber-500/70 font-bold italic mt-0.5">VIP Access Active</div>
+                        <div className="text-[10px] font-black text-[var(--primary)] uppercase tracking-widest leading-none">Elite User</div>
+                        <div className="text-[9px] text-[var(--primary)]/70 font-bold italic mt-0.5">VIP Access Active</div>
                     </div>
-                    <Gem size={14} className="ml-auto text-amber-500/40 animate-pulse" fill="currentColor" />
+                    <Gem size={14} className="ml-auto text-[var(--primary)]/40 animate-pulse" fill="currentColor" />
                 </div>
             )}
 
@@ -167,7 +165,7 @@ const CustomerSidebar = ({ isOpen }) => {
                                                         ? `${activeFg} font-black`
                                                         : `text-[var(--text-muted)] font-medium ${hoverColor}`}`}
                                                 >
-                                                    <span className={`rounded-full mr-3 transition-all ${isActive(subItem.path) ? `${user.isPremium ? 'bg-amber-500' : 'bg-[var(--primary)]'} w-1.5 h-1.5` : 'bg-current opacity-30 w-1 h-1'}`}></span>
+                                                    <span className={`rounded-full mr-3 transition-all ${isActive(subItem.path) ? 'bg-[var(--primary)] w-1.5 h-1.5' : 'bg-current opacity-30 w-1 h-1'}`}></span>
                                                     {subItem.label}
                                                 </Link>
                                             </li>
@@ -181,20 +179,20 @@ const CustomerSidebar = ({ isOpen }) => {
             </div>
 
             {/* User Footer */}
-            <div className={`p-4 border-t ${user.isPremium ? 'border-amber-500/20' : 'border-[var(--border-color)]'}`}>               
+            <div className="p-4 border-t border-[var(--border-color)]">               
                 <div
                     className={`flex items-center gap-3 p-3 rounded-2xl border overflow-hidden cursor-pointer transition-all duration-300 ${user.isPremium
-                        ? 'bg-gradient-to-r from-amber-500/15 to-amber-500/5 border-amber-500/30 hover:border-amber-500/50 hover:from-amber-500/25'
+                        ? 'premium-user-card'
                         : 'bg-indigo-500/5 border-indigo-500/10 hover:bg-indigo-500/10'}`}
                     onClick={() => navigate('/user/profile')}
                 >
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs overflow-hidden shrink-0 ${user.isPremium
-                        ? 'ring-2 ring-amber-500 ring-offset-1 ring-offset-transparent'
+                        ? 'ring-2 ring-[var(--primary)] ring-offset-1 ring-offset-transparent'
                         : 'border-2 border-white shadow-sm bg-indigo-500 text-white'}`}>
                         {user.profilePic ? (
                             <img src={user.profilePic} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
-                            <div className={`w-full h-full flex items-center justify-center font-black text-sm ${user.isPremium ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-black' : 'bg-indigo-500 text-white'}`}>
+                            <div className={`w-full h-full flex items-center justify-center font-black text-sm ${user.isPremium ? 'bg-[var(--primary)] text-black' : 'bg-indigo-500 text-white'}`}>
                                 {user.name?.[0]?.toUpperCase() || 'U'}
                             </div>
                         )}
@@ -202,7 +200,7 @@ const CustomerSidebar = ({ isOpen }) => {
                     {isOpen && (
                         <div className="min-w-0 flex-1">
                             <div className="text-[11px] font-black uppercase leading-none truncate text-[var(--text-dark)]">{user.name}</div>
-                            <div className={`text-[9px] font-black italic leading-none mt-1.5 uppercase tracking-widest flex items-center gap-1.5 ${user.isPremium ? 'text-amber-400' : 'text-[var(--text-muted)] opacity-70'}`}>
+                            <div className={`text-[9px] font-black italic leading-none mt-1.5 uppercase tracking-widest flex items-center gap-1.5 ${user.isPremium ? 'text-[var(--primary)]' : 'text-[var(--text-muted)] opacity-70'}`}>
                                 {user.isPremium ? (
                                     <>
                                         <Gem size={9} fill="currentColor" className="animate-pulse" />
@@ -215,7 +213,7 @@ const CustomerSidebar = ({ isOpen }) => {
                         </div>
                     )}
                     {isOpen && user.isPremium && (
-                        <Crown size={14} className="text-amber-500/50 shrink-0" fill="currentColor" />
+                        <Crown size={14} className="text-[var(--primary)]/50 shrink-0" fill="currentColor" />
                     )}
                 </div>
             </div>
