@@ -26,8 +26,8 @@ const buildBasePoolConfig = () => {
     return {
         user: process.env.DB_USER || 'postgres',
         host: process.env.DB_HOST || 'localhost',
-        database: process.env.DB_NAME || 'leadgen',
-        password: process.env.DB_PASSWORD || 'postgres',
+        database: process.env.DB_NAME || 'LeadDb',
+        password: process.env.DB_PASSWORD || 'root',
         port: parseNumber(process.env.DB_PORT, 5432),
         ...(ssl ? { ssl } : {})
     };

@@ -10,10 +10,38 @@ ADD CONSTRAINT unique_user_lead_purchase UNIQUE (user_id, lead_id);
 CREATE INDEX IF NOT EXISTS idx_lead_purchases_user_lead ON lead_purchases (user_id, lead_id);
 
 -- 3. Add index on leads status for available leads query performance
-CREATE INDEX IF NOT EXISTS idx_leads_status ON leads (status);
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'leads'
+          AND column_name = 'status'
+    ) THEN
+        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_leads_status ON leads (status)';
+    END IF;
+END $$;
 
 -- 4. Add index on users role for efficient role-based queries
-CREATE INDEX IF NOT EXISTS idx_users_role_status ON users (role, status);
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'users'
+          AND column_name = 'role'
+    ) AND EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'users'
+          AND column_name = 'status'
+    ) THEN
+        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_users_role_status ON users (role, status)';
+    END IF;
+END $$;
 
 -- 5. Add index on referrals for referrer lookups
 CREATE INDEX IF NOT EXISTS idx_referrals_referrer_id ON referrals (referrer_id);
@@ -23,4 +51,21 @@ CREATE INDEX IF NOT EXISTS idx_referrals_referred_user_id ON referrals (referred
 CREATE INDEX IF NOT EXISTS idx_transactions_user_created ON transactions (user_id, created_at DESC);
 
 -- 7. Composite index for lead + status queries
-CREATE INDEX IF NOT EXISTS idx_leads_status_created ON leads (status, created_at DESC);
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'leads'
+          AND column_name = 'status'
+    ) AND EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'leads'
+          AND column_name = 'created_at'
+    ) THEN
+        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_leads_status_created ON leads (status, created_at DESC)';
+    END IF;
+END $$;
