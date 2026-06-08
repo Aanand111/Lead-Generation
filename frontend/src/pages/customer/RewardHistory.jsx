@@ -6,8 +6,10 @@ import {
 } from 'lucide-react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
+import { useTheme } from '../../utils/ThemeContext';
 
 const RewardHistory = () => {
+    const { isPremium: isUserPremium } = useTheme();
     const [rewardData, setRewardData] = useState({
         totalRewards: 0,
         referralHistory: [],
@@ -143,13 +145,13 @@ const RewardHistory = () => {
                         <span className="px-3 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-black text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-amber-500/20">
                             Ledger Console
                         </span>
-                        <div className="flex items-center gap-1.5 text-[9px] font-black text-indigo-500 uppercase tracking-widest italic">
-                            <Sparkles size={12} className="animate-pulse text-indigo-500" /> Decentralized Earnings
+                        <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
+                            <Sparkles size={12} className={`animate-pulse ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`} /> Decentralized Earnings
                         </div>
                     </div>
                     <h1 className="text-5xl md:text-6xl font-black text-[var(--text-dark)] tracking-tighter uppercase leading-[0.9]">
                         Reward <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-royal-blue">Ledger History</span>
+                        <span className={`text-transparent bg-clip-text bg-gradient-to-r ${isUserPremium ? 'from-[#F5E5AB] via-[#D4AF37] to-[#F5E5AB] animate-shine' : 'from-indigo-600 to-royal-blue'}`}>Ledger History</span>
                     </h1>
                     <p className="mt-4 text-xs md:text-sm text-[var(--text-muted)] font-semibold max-w-lg leading-relaxed italic opacity-80">
                         Audit, analyze and verify all incentives generated from expanding the nodes in the system.
@@ -167,7 +169,7 @@ const RewardHistory = () => {
                     </button>
                     <button 
                         onClick={handleExport}
-                        className="px-6 py-3.5 bg-black text-white hover:bg-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-widest italic transition-all flex items-center gap-2 shadow-xl shadow-black/10"
+                        className={`px-6 py-3.5 bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest italic transition-all flex items-center gap-2 shadow-xl shadow-black/10 ${isUserPremium ? 'hover:bg-[#D4AF37] hover:text-black' : 'hover:bg-indigo-600'}`}
                     >
                         <Download size={14} /> Export Console
                     </button>
@@ -178,10 +180,10 @@ const RewardHistory = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Panel 1: Accumulated Yield */}
                 <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[2.5rem] shadow-xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-6 opacity-[0.03] text-indigo-600 group-hover:scale-110 transition-transform duration-500">
+                    <div className={`absolute top-0 right-0 p-6 opacity-[0.03] group-hover:scale-110 transition-transform duration-500 ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-600'}`}>
                         <Wallet size={100} strokeWidth={1} />
                     </div>
-                    <div className="text-[9px] font-black text-indigo-600 uppercase tracking-widest mb-1 italic">Accumulated Yield</div>
+                    <div className={`text-[9px] font-black uppercase tracking-widest mb-1 italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-600'}`}>Accumulated Yield</div>
                     <div className="text-3xl font-black text-[var(--text-dark)] tracking-tighter uppercase italic flex items-baseline gap-2">
                         {rewardData.totalRewards} 
                         <span className="text-xs font-black text-[var(--text-muted)] not-italic uppercase opacity-60">Credits</span>
@@ -216,7 +218,7 @@ const RewardHistory = () => {
                         {avgRewardPerReferral}
                         <span className="text-xs font-black text-[var(--text-muted)] not-italic uppercase opacity-60">Credits/Node</span>
                     </div>
-                    <div className="mt-4 flex items-center gap-1.5 text-[9px] font-bold text-indigo-500 uppercase tracking-wider">
+                    <div className={`mt-4 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
                         <Sparkles size={10} /> Yield per referral node
                     </div>
                 </div>
@@ -255,7 +257,7 @@ const RewardHistory = () => {
                                 placeholder={activeTab === 'transactions' ? "Search ledger remarks..." : "Search referred name..."}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-100 rounded-xl text-xs font-medium focus:outline-none focus:border-indigo-500 focus:bg-white transition-all placeholder:text-slate-400"
+                                className={`w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-100 rounded-xl text-xs font-medium focus:outline-none focus:bg-white transition-all placeholder:text-slate-400 ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`}
                             />
                         </div>
 
@@ -265,7 +267,7 @@ const RewardHistory = () => {
                             <select
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full pl-10 pr-8 py-3 bg-slate-50/50 border border-slate-100 rounded-xl text-xs font-black uppercase tracking-widest italic focus:outline-none focus:border-indigo-500 focus:bg-white transition-all appearance-none cursor-pointer text-[var(--text-dark)]"
+                                className={`w-full pl-10 pr-8 py-3 bg-slate-50/50 border border-slate-100 rounded-xl text-xs font-black uppercase tracking-widest italic focus:outline-none focus:bg-white transition-all appearance-none cursor-pointer text-[var(--text-dark)] ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`}
                             >
                                 <option value="ALL">All Status</option>
                                 {activeTab === 'transactions' ? (
@@ -289,7 +291,7 @@ const RewardHistory = () => {
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
-                                className="w-full pl-10 pr-8 py-3 bg-slate-50/50 border border-slate-100 rounded-xl text-xs font-black uppercase tracking-widest italic focus:outline-none focus:border-indigo-500 focus:bg-white transition-all appearance-none cursor-pointer text-[var(--text-dark)]"
+                                className={`w-full pl-10 pr-8 py-3 bg-slate-50/50 border border-slate-100 rounded-xl text-xs font-black uppercase tracking-widest italic focus:outline-none focus:bg-white transition-all appearance-none cursor-pointer text-[var(--text-dark)] ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`}
                             >
                                 <option value="newest">Newest First</option>
                                 <option value="oldest">Oldest First</option>
@@ -319,16 +321,16 @@ const RewardHistory = () => {
                                 {loading ? (
                                     <tr>
                                         <td colSpan="5" className="text-center py-24 opacity-30">
-                                            <RefreshCw size={48} className="animate-spin mx-auto mb-4 text-indigo-500" />
+                                            <RefreshCw size={48} className={`animate-spin mx-auto mb-4 ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`} />
                                             <span className="text-[10px] font-black uppercase tracking-widest italic">Syncing Ledger...</span>
                                         </td>
                                     </tr>
                                 ) : getFilteredTransactions().length > 0 ? (
                                     getFilteredTransactions().map((tx) => (
-                                        <tr key={tx.id} className="group border-b border-slate-50 last:border-0 hover:bg-indigo-50/20 transition-all">
+                                        <tr key={tx.id} className={`group border-b border-slate-50 last:border-0 transition-all ${isUserPremium ? 'hover:bg-[#D4AF37]/5' : 'hover:bg-indigo-50/20'}`}>
                                             <td className="px-10 py-7">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-indigo-500 group-hover:text-white flex items-center justify-center text-slate-400 transition-all shadow-sm">
+                                                    <div className={`w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 transition-all shadow-sm ${isUserPremium ? 'group-hover:bg-[#D4AF37] group-hover:text-black' : 'group-hover:bg-indigo-500 group-hover:text-white'}`}>
                                                         <Wallet size={16} />
                                                     </div>
                                                     <div>
@@ -338,7 +340,7 @@ const RewardHistory = () => {
                                                 </div>
                                             </td>
                                             <td className="px-10 py-7 text-center">
-                                                <span className="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 text-[9px] font-black uppercase tracking-wider">
+                                                <span className={`px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-wider ${isUserPremium ? 'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/20' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
                                                     {tx.type}
                                                 </span>
                                             </td>
@@ -353,7 +355,7 @@ const RewardHistory = () => {
                                                 </span>
                                             </td>
                                             <td className="px-10 py-7 text-center">
-                                                <div className="text-lg font-black text-indigo-600 tabular-nums italic">+{tx.credits || 0}</div>
+                                                <div className={`text-lg font-black tabular-nums italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-600'}`}>+{tx.credits || 0}</div>
                                                 <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-0.5">Credits Injected</div>
                                             </td>
                                             <td className="px-10 py-7 text-right">
@@ -391,16 +393,16 @@ const RewardHistory = () => {
                                 {loading ? (
                                     <tr>
                                         <td colSpan="4" className="text-center py-24 opacity-30">
-                                            <RefreshCw size={48} className="animate-spin mx-auto mb-4 text-indigo-500" />
+                                            <RefreshCw size={48} className={`animate-spin mx-auto mb-4 ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`} />
                                             <span className="text-[10px] font-black uppercase tracking-widest italic">Syncing Ledger...</span>
                                         </td>
                                     </tr>
                                 ) : getFilteredReferrals().length > 0 ? (
                                     getFilteredReferrals().map((ref, idx) => (
-                                        <tr key={idx} className="group border-b border-slate-50 last:border-0 hover:bg-indigo-50/20 transition-all">
+                                        <tr key={idx} className={`group border-b border-slate-50 last:border-0 transition-all ${isUserPremium ? 'hover:bg-[#D4AF37]/5' : 'hover:bg-indigo-50/20'}`}>
                                             <td className="px-10 py-7">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-indigo-500 group-hover:text-white flex items-center justify-center text-slate-400 transition-all shadow-sm">
+                                                    <div className={`w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 transition-all shadow-sm ${isUserPremium ? 'group-hover:bg-[#D4AF37] group-hover:text-black' : 'group-hover:bg-indigo-500 group-hover:text-white'}`}>
                                                         <Users size={16} />
                                                     </div>
                                                     <div>
@@ -418,7 +420,7 @@ const RewardHistory = () => {
                                                 </span>
                                             </td>
                                             <td className="px-10 py-7 text-center">
-                                                <div className="text-lg font-black text-indigo-600 tabular-nums italic">+{ref.reward || '25'}</div>
+                                                <div className={`text-lg font-black tabular-nums italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-600'}`}>+{ref.reward || '25'}</div>
                                                 <div className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mt-0.5 italic opacity-60">Credits Injected</div>
                                             </td>
                                             <td className="px-10 py-7 text-right">

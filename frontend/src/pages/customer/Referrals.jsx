@@ -8,8 +8,10 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import { useTheme } from '../../utils/ThemeContext';
 
 const UserReferrals = () => {
+    const { isPremium: isUserPremium } = useTheme();
     const navigate = useNavigate();
     const [referralData, setReferralData] = useState({
         referralCode: 'USER-7281',
@@ -50,7 +52,7 @@ const UserReferrals = () => {
             <div className="flex flex-col md:flex-row justify-between items-end gap-8 relative z-10">
                 <div className="max-w-2xl">
                     <div className="flex items-center gap-3 mb-4">
-                        <span className="px-3 py-1 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-indigo-600/20">
+                        <span className={`px-3 py-1 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg ${isUserPremium ? 'bg-[#D4AF37] shadow-[#D4AF37]/20' : 'bg-indigo-600 shadow-indigo-600/20'}`}>
                             Affiliate Program
                         </span>
                         <div className="flex items-center gap-1.5 text-[9px] font-black text-emerald-500 uppercase tracking-widest italic">
@@ -59,7 +61,7 @@ const UserReferrals = () => {
                     </div>
                     <h1 className="text-5xl md:text-6xl font-black text-[var(--text-dark)] tracking-tighter uppercase leading-[0.9]">
                         Network <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-royal-blue">Expander</span>
+                        <span className={`text-transparent bg-clip-text bg-gradient-to-r ${isUserPremium ? 'from-[#F5E5AB] via-[#D4AF37] to-[#F5E5AB] animate-shine' : 'from-indigo-600 to-royal-blue'}`}>Expander</span>
                     </h1>
                     <p className="mt-6 text-sm md:text-base text-[var(--text-muted)] font-medium max-w-lg leading-relaxed italic">
                         Accelerate your earnings by scaling the LeadGen ecosystem. Invite partners and earn perpetual rewards.
@@ -86,12 +88,12 @@ const UserReferrals = () => {
                 <div className="lg:col-span-8">
                     <div className="card p-12 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[4rem] shadow-2xl relative overflow-hidden group min-h-[450px] flex flex-col justify-center">
                         {/* Decorative Background */}
-                        <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-indigo-500 group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-1000">
+                        <div className={`absolute top-0 right-0 p-12 opacity-[0.03] group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-1000 ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
                             <Network size={320} strokeWidth={1} />
                         </div>
                         
                         <div className="relative z-10 max-w-xl">
-                            <div className="w-20 h-20 rounded-[2rem] bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-8 shadow-inner shadow-indigo-500/20">
+                            <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center mb-8 shadow-inner ${isUserPremium ? 'bg-[#D4AF37]/10 text-[#D4AF37] shadow-[#D4AF37]/20' : 'bg-indigo-500/10 text-indigo-500 shadow-indigo-500/20'}`}>
                                 <UserPlus size={40} strokeWidth={1.5} />
                             </div>
                             
@@ -101,14 +103,14 @@ const UserReferrals = () => {
                             </p>
 
                             <div className="flex flex-col md:flex-row items-stretch gap-4 relative">
-                                <div className="flex-1 bg-slate-50 border border-slate-100 px-8 py-5 rounded-[2rem] flex items-center justify-between group/code hover:border-indigo-500/30 transition-all shadow-inner">
+                                <div className={`flex-1 bg-slate-50 border border-slate-100 px-8 py-5 rounded-[2rem] flex items-center justify-between group/code transition-all shadow-inner ${isUserPremium ? 'hover:border-[#D4AF37]/30' : 'hover:border-indigo-500/30'}`}>
                                     <div>
-                                        <div className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1 italic">Personal Referral Code</div>
+                                        <div className={`text-[9px] font-black uppercase tracking-widest mb-1 italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>Personal Referral Code</div>
                                         <div className="text-2xl font-black text-black tracking-[0.3em] uppercase">{referralData.referralCode}</div>
                                     </div>
                                     <button 
                                         onClick={copyCode}
-                                        className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-xl ${copied ? 'bg-emerald-500 text-white' : 'bg-white text-indigo-600 hover:bg-black hover:text-white'}`}
+                                        className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-xl ${copied ? 'bg-emerald-500 text-white' : `bg-white hover:bg-black hover:text-white ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-600'}`}`}
                                     >
                                         {copied ? <CheckCircle size={20} /> : <Copy size={20} />}
                                     </button>
@@ -120,13 +122,13 @@ const UserReferrals = () => {
 
                 <div className="lg:col-span-4 space-y-8">
                     <div className="card p-10 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-6 opacity-[0.03] text-indigo-500 group-hover:scale-110 transition-transform">
+                        <div className={`absolute top-0 right-0 p-6 opacity-[0.03] group-hover:scale-110 transition-transform ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
                             <Users size={120} strokeWidth={1} />
                         </div>
-                        <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-2 italic">Active Connections</div>
+                        <div className={`text-[10px] font-black uppercase tracking-widest mb-2 italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>Active Connections</div>
                         <div className="text-4xl font-black text-[var(--text-dark)] tracking-tighter uppercase italic">{referralData.totalReferrals} <span className="text-sm opacity-30 not-italic">Nodes</span></div>
                         <div className="mt-8 w-full h-1.5 bg-slate-50 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-indigo-500 to-royal-blue w-[40%] animate-pulse"></div>
+                            <div className={`h-full w-[40%] animate-pulse bg-gradient-to-r ${isUserPremium ? 'from-[#D4AF37] to-[#F5E5AB]' : 'from-indigo-500 to-royal-blue'}`}></div>
                         </div>
                     </div>
 
@@ -147,7 +149,7 @@ const UserReferrals = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 {/* Network Goals Widget */}
                 <div className="lg:col-span-4">
-                    <div className="card p-12 bg-gradient-to-br from-indigo-900 to-royal-blue text-white rounded-[4rem] shadow-2xl relative overflow-hidden group h-full">
+                    <div className={`card p-12 text-white rounded-[4rem] shadow-2xl relative overflow-hidden group h-full ${isUserPremium ? 'bg-gradient-to-br from-[#1a1a1a] via-[#2c2c2c] to-black border border-[#D4AF37]/20 shadow-[#D4AF37]/5' : 'bg-gradient-to-br from-indigo-900 to-royal-blue'}`}>
                         <div className="absolute top-0 right-0 p-12 opacity-[0.05] text-white -rotate-12 group-hover:rotate-0 group-hover:scale-125 transition-transform duration-1000">
                             <Trophy size={220} strokeWidth={1} />
                         </div>
@@ -173,7 +175,7 @@ const UserReferrals = () => {
                                     ></div>
                                 </div>
                             </div>
-                            <button className="w-full py-6 bg-white text-indigo-900 rounded-[2rem] font-black uppercase tracking-[0.3em] text-[11px] shadow-2xl hover:bg-amber-400 hover:text-black transition-all active:scale-95">
+                            <button className={`w-full py-6 bg-white rounded-[2rem] font-black uppercase tracking-[0.3em] text-[11px] shadow-2xl hover:bg-amber-400 hover:text-black transition-all active:scale-95 ${isUserPremium ? 'text-black' : 'text-indigo-900'}`}>
                                 Launch Growth Plan
                             </button>
                         </div>
@@ -195,7 +197,7 @@ const UserReferrals = () => {
                             </div>
                             <button 
                                 onClick={() => navigate('/user/referrals/history')}
-                                className="px-8 py-4 bg-white border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest italic text-indigo-600 hover:bg-slate-50 transition-all flex items-center gap-3"
+                                className={`px-8 py-4 bg-white border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest italic hover:bg-slate-50 transition-all flex items-center gap-3 ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-600'}`}
                             >
                                 Full Registry <ArrowUpRight size={18} />
                             </button>
@@ -221,10 +223,10 @@ const UserReferrals = () => {
                                         </tr>
                                     ) : referralData.referralHistory.length > 0 ? (
                                         referralData.referralHistory.map((ref, idx) => (
-                                            <tr key={idx} className="group border-b border-slate-50 last:border-0 hover:bg-indigo-50/30 transition-all">
+                                            <tr key={idx} className={`group border-b border-slate-50 last:border-0 transition-all ${isUserPremium ? 'hover:bg-[#D4AF37]/5' : 'hover:bg-indigo-50/30'}`}>
                                                 <td className="px-12 py-8">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                                                        <div className={`w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 transition-all shadow-sm ${isUserPremium ? 'group-hover:bg-[#D4AF37] group-hover:text-black' : 'group-hover:bg-indigo-600 group-hover:text-white'}`}>
                                                             <Users size={20} />
                                                         </div>
                                                         <div>
@@ -242,7 +244,7 @@ const UserReferrals = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-12 py-8 text-center">
-                                                    <div className="text-lg font-black text-indigo-600 tabular-nums italic leading-none">+{ref.reward || '25'}</div>
+                                                    <div className={`text-lg font-black tabular-nums italic leading-none ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-600'}`}>+{ref.reward || '25'}</div>
                                                     <div className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mt-1 italic opacity-60">Credits Injected</div>
                                                 </td>
                                                 <td className="px-12 py-8 text-right">

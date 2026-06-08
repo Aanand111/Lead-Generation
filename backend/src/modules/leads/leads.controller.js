@@ -7,8 +7,6 @@ class LeadsController {
             res.status(200).json({
                 success: true,
                 data: data.leads,
-                leads: data.leads,
-                userCredits: data.walletBalance,
                 walletBalance: data.walletBalance,
                 pagination: data.pagination
             });

@@ -66,23 +66,23 @@
   --primary-hover: #C59B27;
   --primary-weak: rgba(212, 175, 55, 0.12);
 
-  /* Warm Stone palette — sidebar/header blend with the page background */
-  --bg-color: #BCAEA3;           /* Main page background — stone taupe */
-  --surface-color: #CEC2B7;      /* Sidebar & Header — slightly lighter stone (blends naturally) */
-  --surface-elevated: #FDFBF7;   /* Cards & Modals — luxurious ivory silk-cream (gold pops!) */
+  /* Clean, Sparkling Warm-Stone & Ivory palette */
+  --bg-color: #F5F2EB;           /* Ultra-clean champagne-stone backdrop */
+  --surface-color: #FCFBF7;      /* Glistening pure warm ivory silk (Sidebar & Header) */
+  --surface-elevated: #FFFFFF;   /* Crisp white cards for elite high-contrast pop */
 
-  /* Deep Espresso/Charcoal Text for superb legibility */
+  /* Deep espresso-charcoal text for magnificent readability */
   --text-dark: #1F1916;
-  --text-muted: #6E645E;
+  --text-muted: #7E736C;
 
   /* Luxurious gold-dusted borders */
-  --border-color: rgba(212, 175, 55, 0.25);
+  --border-color: rgba(212, 175, 55, 0.22);
   
   --shadow-sm: 0px 5px 20px rgba(212, 175, 55, 0.05);
   --shadow-md: 0px 10px 30px rgba(212, 175, 55, 0.08);
   --shadow-lg: 0px 15px 40px rgba(212, 175, 55, 0.12);
   
-  --active-menu-bg: rgba(212, 175, 55, 0.15);
+  --active-menu-bg: rgba(212, 175, 55, 0.12);
 }
 
 /* Premium Dark Theme (Elite User in Dark Mode) - Deep Black & Luxurious Gold */

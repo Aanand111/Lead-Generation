@@ -3,6 +3,7 @@ const walletService = require('../wallet/wallet.service');
 const subscriptionsRepository = require('../subscriptions/subscriptions.repository');
 const AppError = require('../../utils/AppError');
 const { withTransaction } = require('../../utils/transaction');
+const cache = require('../../middlewares/cacheMiddleware');
 
 class LeadsService {
     async getAvailableLeads(userId, query) {
@@ -16,8 +17,12 @@ class LeadsService {
         const limit = Math.min(50, parseInt(query.limit) || 20);
         const offset = (page - 1) * limit;
 
-        const { leads, total } = await leadsRepository.getAvailableLeads(userId, filters, { limit, offset });
-        const walletBalance = await walletService.getBalance(userId);
+        const { leads, total, walletBalance: hydratedWalletBalance } = await leadsRepository.getAvailableLeads(
+            userId,
+            filters,
+            { limit, offset }
+        );
+        const walletBalance = hydratedWalletBalance ?? await walletService.getBalance(userId);
 
         return {
             leads: this._maskLeads(leads),
@@ -70,6 +75,13 @@ class LeadsService {
 
             return purchase;
         });
+
+        await cache.invalidateUserCachePaths(userId, [
+            '/api/user/dashboard-stats',
+            '/api/user/available-leads',
+            '/api/user/leads/available',
+            '/api/user/my-leads'
+        ]).catch(() => {});
 
         walletService.emitBalanceUpdate(userId);
         return purchase;

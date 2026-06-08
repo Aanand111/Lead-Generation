@@ -28,6 +28,18 @@ const UserPosters = () => {
     const [logoFile, setLogoFile] = useState(null);
     const [visualFile, setVisualFile] = useState(null);
 
+    const [isUserPremium] = useState(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            try {
+                return Boolean(JSON.parse(storedUser).isPremium);
+            } catch {
+                return false;
+            }
+        }
+        return false;
+    });
+
     const fetchPostersData = async () => {
         setLoading(true);
         try {
@@ -64,7 +76,7 @@ const UserPosters = () => {
             <div className="flex flex-col md:flex-row justify-between items-end gap-8 relative z-10">
                 <div className="max-w-2xl">
                     <div className="flex items-center gap-3 mb-4">
-                        <span className="px-3 py-1 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-indigo-600/20">
+                        <span className={`px-3 py-1 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg ${isUserPremium ? 'bg-[#D4AF37] text-black shadow-[#D4AF37]/20' : 'bg-indigo-600 shadow-indigo-600/20'}`}>
                             Marketing Engine
                         </span>
                         <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-500 uppercase tracking-widest italic">
@@ -73,7 +85,7 @@ const UserPosters = () => {
                     </div>
                     <h1 className="text-5xl md:text-6xl font-black text-[var(--text-dark)] tracking-tighter uppercase leading-[0.9]">
                         Poster <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-royal-blue to-emerald-500">Laboratory</span>
+                        <span className={`text-transparent bg-clip-text bg-gradient-to-r ${isUserPremium ? 'from-[#F5E5AB] via-[#D4AF37] to-[#F5E5AB]' : 'from-indigo-600 via-royal-blue to-emerald-500'}`}>Laboratory</span>
                     </h1>
                     <p className="mt-6 text-sm md:text-base text-[var(--text-muted)] font-medium max-w-lg leading-relaxed">
                         Design high-conversion marketing materials instantly. Custom-brand templates with your business details in one click.
@@ -82,7 +94,7 @@ const UserPosters = () => {
 
                 <div className="flex items-center gap-4">
                     <div className="bg-[var(--surface-color)] p-1.5 rounded-[2.5rem] border border-[var(--border-color)] shadow-xl flex items-center gap-4 pr-8">
-                         <div className={`w-14 h-14 rounded-[2rem] flex items-center justify-center shadow-lg ${hasPosterPlan ? 'bg-indigo-600 text-white' : 'bg-amber-100 text-amber-600'}`}>
+                         <div className={`w-14 h-14 rounded-[2rem] flex items-center justify-center shadow-lg ${hasPosterPlan ? (isUserPremium ? 'bg-[#D4AF37] text-black' : 'bg-indigo-600 text-white') : 'bg-amber-100 text-amber-600'}`}>
                             {hasPosterPlan ? <Gem size={24} /> : <Zap size={24} />}
                          </div>
                          <div>
@@ -94,7 +106,7 @@ const UserPosters = () => {
                     </div>
                     <button 
                         onClick={() => setIsCreatorOpen(true)}
-                        className="px-10 py-6 bg-black text-white hover:bg-indigo-600 rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-[11px] shadow-2xl transition-all active:scale-95 flex items-center gap-3"
+                        className={`px-10 py-6 bg-black text-white rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-[11px] shadow-2xl transition-all active:scale-95 flex items-center gap-3 ${isUserPremium ? 'hover:bg-[#D4AF37] hover:text-black' : 'hover:bg-indigo-600'}`}
                     >
                         <Plus size={20} strokeWidth={3} /> Launch Maker
                     </button>
@@ -116,8 +128,8 @@ const UserPosters = () => {
                 ) : posters.length > 0 ? (
                     posters.map((poster) => (
                         <div key={poster.id} className="group relative">
-                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-[3.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 -z-10"></div>
-                            <div className="bg-[var(--surface-color)] border border-[var(--border-color)] p-2 rounded-[3.5rem] shadow-sm group-hover:shadow-2xl group-hover:border-indigo-500/20 transition-all duration-500 flex flex-col h-full relative overflow-hidden">
+                            <div className={`absolute inset-0 rounded-[3.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 -z-10 bg-gradient-to-br ${isUserPremium ? 'from-[#D4AF37]/15' : 'from-indigo-500/10'} to-transparent`}></div>
+                            <div className={`bg-[var(--surface-color)] border border-[var(--border-color)] p-2 rounded-[3.5rem] shadow-sm group-hover:shadow-2xl transition-all duration-500 flex flex-col h-full relative overflow-hidden ${isUserPremium ? 'group-hover:border-[#D4AF37]/35' : 'group-hover:border-indigo-500/20'}`}>
                                 
                                 <div className="relative aspect-[4/5] rounded-[3rem] overflow-hidden bg-slate-100">
                                     <img 
@@ -127,7 +139,7 @@ const UserPosters = () => {
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-10 backdrop-blur-[2px]">
                                         <div className="flex items-center gap-4 scale-90 group-hover:scale-100 transition-transform">
-                                            <button className="w-14 h-14 rounded-2xl bg-white text-black flex items-center justify-center hover:bg-indigo-500 hover:text-white transition-all shadow-2xl">
+                                            <button className={`w-14 h-14 rounded-2xl bg-white text-black flex items-center justify-center transition-all shadow-2xl ${isUserPremium ? 'hover:bg-[#D4AF37] hover:text-black' : 'hover:bg-indigo-500 hover:text-white'}`}>
                                                 <Download size={22} />
                                             </button>
                                             <button className="w-14 h-14 rounded-2xl bg-white text-black flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-2xl">
@@ -138,13 +150,13 @@ const UserPosters = () => {
                                             </button>
                                         </div>
                                     </div>
-                                    <div className="absolute top-6 left-6 px-4 py-1.5 bg-white/90 backdrop-blur-md rounded-xl text-[9px] font-black uppercase tracking-widest text-indigo-600 shadow-xl">
+                                    <div className={`absolute top-6 left-6 px-4 py-1.5 bg-white/90 backdrop-blur-md rounded-xl text-[9px] font-black uppercase tracking-widest shadow-xl ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-600'}`}>
                                         {poster.category_name || 'BRANDING'}
                                     </div>
                                 </div>
 
                                 <div className="p-8 pb-10 flex flex-col items-center text-center">
-                                    <h3 className="text-2xl font-black text-[var(--text-dark)] uppercase tracking-tighter italic group-hover:text-indigo-600 transition-colors mb-2">{poster.title || 'Untitled Design'}</h3>
+                                    <h3 className={`text-2xl font-black text-[var(--text-dark)] uppercase tracking-tighter italic transition-colors mb-2 ${isUserPremium ? 'group-hover:text-[#D4AF37]' : 'group-hover:text-indigo-600'}`}>{poster.title || 'Untitled Design'}</h3>
                                     <div className="flex items-center gap-3 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic opacity-60">
                                         <Clock size={12} /> {new Date(poster.created_at).toLocaleDateString()}
                                     </div>
@@ -154,7 +166,7 @@ const UserPosters = () => {
                     ))
                 ) : (
                     <div className="col-span-full py-40 text-center rounded-[4rem] bg-[var(--surface-color)] border border-[var(--border-color)] flex flex-col items-center gap-10 grayscale opacity-40">
-                        <div className="w-24 h-24 rounded-full bg-indigo-500/5 flex items-center justify-center">
+                        <div className={`w-24 h-24 rounded-full flex items-center justify-center ${isUserPremium ? 'bg-[#D4AF37]/10' : 'bg-indigo-500/5'}`}>
                             <ImageIcon size={48} strokeWidth={1} />
                         </div>
                         <div className="space-y-4">
@@ -173,7 +185,7 @@ const UserPosters = () => {
                         {/* Modal Header */}
                         <div className="px-12 py-8 border-b border-[var(--border-color)] flex justify-between items-center bg-slate-50/50">
                             <div className="flex items-center gap-5">
-                                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-xl shadow-indigo-600/20">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl ${isUserPremium ? 'bg-[#D4AF37] text-black shadow-[#D4AF37]/15' : 'bg-indigo-600 text-white shadow-indigo-600/20'}`}>
                                     <Palette size={24} />
                                 </div>
                                 <div>
@@ -194,7 +206,7 @@ const UserPosters = () => {
                             <div className="flex-1 p-12 overflow-y-auto custom-scrollbar space-y-12 bg-white">
                                 <div>
                                     <div className="flex items-center gap-3 mb-6">
-                                        <div className="w-2 h-6 bg-indigo-600 rounded-full"></div>
+                                        <div className={`w-2 h-6 rounded-full ${isUserPremium ? 'bg-[#D4AF37]' : 'bg-indigo-600'}`}></div>
                                         <h3 className="text-xl font-black uppercase tracking-tight italic">Blueprint Parameters</h3>
                                     </div>
 
@@ -207,7 +219,7 @@ const UserPosters = () => {
                                                     <button 
                                                         key={tmp.id} 
                                                         onClick={() => setSelectedTemplate(tmp)}
-                                                        className={`flex-shrink-0 w-32 aspect-[4/5] rounded-[1.5rem] overflow-hidden border-4 transition-all ${selectedTemplate?.id === tmp.id ? 'border-indigo-600 scale-105 shadow-2xl' : 'border-transparent opacity-40 hover:opacity-100'}`}
+                                                        className={`flex-shrink-0 w-32 aspect-[4/5] rounded-[1.5rem] overflow-hidden border-4 transition-all ${selectedTemplate?.id === tmp.id ? (isUserPremium ? 'border-[#D4AF37] scale-105 shadow-2xl' : 'border-indigo-600 scale-105 shadow-2xl') : 'border-transparent opacity-40 hover:opacity-100'}`}
                                                     >
                                                         <img src={tmp.thumbnail} alt="Template" className="w-full h-full object-cover" />
                                                     </button>
@@ -221,7 +233,7 @@ const UserPosters = () => {
                                             <textarea 
                                                 value={userInputs.content}
                                                 onChange={(e) => setUserInputs({...userInputs, content: e.target.value})}
-                                                className="w-full h-32 bg-slate-50 border border-slate-100 rounded-[2rem] p-8 text-sm font-black text-[var(--text-dark)] italic focus:border-indigo-500 focus:bg-white transition-all outline-none resize-none shadow-inner"
+                                                className={`w-full h-32 bg-slate-50 border border-slate-100 rounded-[2rem] p-8 text-sm font-black text-[var(--text-dark)] italic focus:bg-white transition-all outline-none resize-none shadow-inner ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`}
                                                 placeholder="Craft your compelling message here..."
                                             ></textarea>
                                         </div>
@@ -233,7 +245,7 @@ const UserPosters = () => {
                                                 <input 
                                                     value={userInputs.business_name}
                                                     onChange={(e) => setUserInputs({...userInputs, business_name: e.target.value})}
-                                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 text-sm font-black text-[var(--text-dark)] uppercase tracking-widest focus:border-indigo-500 focus:bg-white transition-all outline-none shadow-sm" 
+                                                    className={`w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 text-sm font-black text-[var(--text-dark)] uppercase tracking-widest focus:bg-white transition-all outline-none shadow-sm ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`} 
                                                     placeholder="Acme Industries" 
                                                 />
                                             </div>
@@ -242,7 +254,7 @@ const UserPosters = () => {
                                                 <input 
                                                     value={userInputs.phone}
                                                     onChange={(e) => setUserInputs({...userInputs, phone: e.target.value})}
-                                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 text-sm font-black text-[var(--text-dark)] tabular-nums focus:border-indigo-500 focus:bg-white transition-all outline-none shadow-sm" 
+                                                    className={`w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 text-sm font-black text-[var(--text-dark)] tabular-nums focus:bg-white transition-all outline-none shadow-sm ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`} 
                                                     placeholder="+91 0000 0000" 
                                                 />
                                             </div>
@@ -263,8 +275,8 @@ const UserPosters = () => {
                                                             }
                                                         }}
                                                     />
-                                                    <div className="w-full h-20 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center gap-3 group-hover/upload:border-indigo-500 group-hover/upload:bg-indigo-50/30 transition-all">
-                                                        <Plus size={18} className="text-indigo-600" />
+                                                    <div className={`w-full h-20 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center gap-3 transition-all ${isUserPremium ? 'group-hover/upload:border-[#D4AF37] group-hover/upload:bg-[#D4AF37]/5' : 'group-hover/upload:border-indigo-500 group-hover/upload:bg-indigo-50/30'}`}>
+                                                        <Plus size={18} className={isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-600'} />
                                                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Attach PNG</span>
                                                     </div>
                                                 </div>
@@ -282,8 +294,8 @@ const UserPosters = () => {
                                                             }
                                                         }}
                                                     />
-                                                    <div className="w-full h-20 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center gap-3 group-hover/upload:border-indigo-500 group-hover/upload:bg-indigo-50/30 transition-all">
-                                                        <Upload size={18} className="text-indigo-600" />
+                                                    <div className={`w-full h-20 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center gap-3 transition-all ${isUserPremium ? 'group-hover/upload:border-[#D4AF37] group-hover/upload:bg-[#D4AF37]/5' : 'group-hover/upload:border-indigo-500 group-hover/upload:bg-indigo-50/30'}`}>
+                                                        <Upload size={18} className={isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-600'} />
                                                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Custom Visual</span>
                                                     </div>
                                                 </div>
@@ -295,7 +307,7 @@ const UserPosters = () => {
 
                             {/* Live Rendering Preview */}
                             <div className="flex-1 p-12 flex flex-col items-center justify-center bg-slate-50/80 relative">
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.08)_0%,transparent_70%)]"></div>
+                                <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: `radial-gradient(circle at center, ${isUserPremium ? 'rgba(212,175,55,0.1)' : 'rgba(99,102,241,0.08)'} 0%, transparent 70%)` }}></div>
                                 <div className="flex items-center gap-3 mb-10 relative z-10">
                                     <div className="px-5 py-2 rounded-full bg-black text-white text-[10px] font-black uppercase tracking-[0.4em] animate-pulse italic">Real-Time Sync</div>
                                 </div>
@@ -340,7 +352,7 @@ const UserPosters = () => {
                                 </div>
 
                                 <div className="mt-12 flex gap-8 relative z-10">
-                                    <div className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors cursor-default">
+                                    <div className={`flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest transition-colors cursor-default ${isUserPremium ? 'hover:text-[#D4AF37]' : 'hover:text-indigo-600'}`}>
                                         <MonitorSmartphone size={16} /> Multi-Channel Adaptive
                                     </div>
                                     <div className="w-px h-4 bg-slate-200"></div>
@@ -353,12 +365,12 @@ const UserPosters = () => {
 
                         {/* Modal Footer / Action Bar */}
                         <div className="px-12 py-10 border-t border-[var(--border-color)] bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-8">
-                             <div className={`flex items-center gap-3 px-6 py-3 rounded-full border-2 ${hasPosterPlan ? 'bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/20' : 'bg-white text-indigo-600 border-indigo-100'}`}>
-                                {hasPosterPlan ? <Gem size={18} fill="currentColor" className="animate-pulse" /> : <Zap size={18} fill="currentColor" className="text-amber-500" />}
+                             <div className={`flex items-center gap-3 px-6 py-3 rounded-full border-2 ${hasPosterPlan ? 'bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/20' : (isUserPremium ? 'bg-white text-[#D4AF37] border-[#D4AF37]/35 shadow-sm' : 'bg-white text-indigo-600 border-indigo-100')}`}>
+                                {hasPosterPlan ? <Gem size={18} fill="currentColor" className="animate-pulse" /> : <Zap size={18} fill="currentColor" className="text-[#D4AF37]" />}
                                 <span className="text-[11px] font-black uppercase tracking-widest italic">{hasPosterPlan ? 'Unlimited Lab Access' : 'Single Session Pass'}</span>
-                            </div>
+                             </div>
 
-                            <button 
+                             <button 
                                 onClick={async () => {
                                     if (!selectedTemplate) return;
                                     setSubmitting(true);
@@ -390,7 +402,7 @@ const UserPosters = () => {
                                     }
                                 }}
                                 disabled={submitting || !selectedTemplate}
-                                className="w-full md:w-auto px-16 py-6 bg-black text-white hover:bg-indigo-600 rounded-[2rem] font-black uppercase tracking-[0.4em] text-[12px] shadow-2xl transition-all active:scale-95 disabled:opacity-30 flex items-center justify-center gap-4"
+                                className={`w-full md:w-auto px-16 py-6 bg-black text-white rounded-[2rem] font-black uppercase tracking-[0.4em] text-[12px] shadow-2xl transition-all active:scale-95 disabled:opacity-30 flex items-center justify-center gap-4 ${isUserPremium ? 'hover:bg-[#D4AF37] hover:text-black hover:shadow-[#D4AF37]/25' : 'hover:bg-indigo-600'}`}
                             >
                                 {submitting ? <Activity size={24} className="animate-spin" /> : <MousePointer2 size={24} fill="currentColor" />}
                                 {submitting ? 'GENERATING...' : (hasPosterPlan ? 'PROCESS DESIGN (FREE)' : (freePosterAvailable ? 'PROCESS FREE' : 'PROCESS (5 CR)'))}

@@ -15,7 +15,7 @@ const router = express.Router();
 router.use(authenticateToken);
 router.use(authorizeRole(['user', 'vendor', 'customer', 'admin']));
 
-router.get('/dashboard-stats', cache(30), (req, res, next) => userController.getDashboardStats(req, res, next));
+router.get('/dashboard-stats', cache(60), (req, res, next) => userController.getDashboardStats(req, res, next));
 router.post('/profile-picture', fileUpload.single('image'), (req, res, next) => {
     logger.info(`[USER ROUTE] Profile picture upload attempt for user ${req.user.id}`);
     userController.updateProfilePicture(req, res, next);
@@ -28,7 +28,7 @@ router.use('/subscriptions', require('../modules/subscriptions/subscriptions.rou
 
 // Maintain backward compatibility for old paths if needed, 
 // or redirect them to the new service logic:
-router.get('/available-leads', (req, res, next) => leadsController.getAvailableLeads(req, res, next));
+router.get('/available-leads', cache(15), (req, res, next) => leadsController.getAvailableLeads(req, res, next));
 router.post('/purchase-lead/:id', (req, res, next) => leadsController.purchaseLead(req, res, next));
 router.get('/subscription-plans', (req, res, next) => subscriptionsController.getPlans(req, res, next));
 router.post('/purchase-subscription/:id', (req, res, next) => subscriptionsController.purchasePlan(req, res, next));

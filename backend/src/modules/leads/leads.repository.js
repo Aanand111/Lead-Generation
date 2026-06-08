@@ -1,3 +1,4 @@
+// Triggered nodemon restart to run corrected migrations.
 const { pool } = require('../../config/db');
 const { buildLeadPurchaseInsert, loadLeadPurchaseColumns } = require('../../utils/leadPurchaseSchema');
 
@@ -17,8 +18,14 @@ class LeadsRepository {
         const { limit, offset } = pagination;
 
         let query = `
-            SELECT l.*, l.category as category_name, 10 as credit_cost 
+            SELECT
+                l.*,
+                l.category as category_name,
+                COALESCE(l.credit_cost, 10) as credit_cost,
+                u.wallet_balance,
+                COUNT(*) OVER() as total_count
             FROM leads l
+            JOIN users u ON u.id = $1
             LEFT JOIN lead_purchases lp ON lp.lead_id = l.id AND lp.user_id = $1
             WHERE lp.id IS NULL
             AND l.status = 'ACTIVE'
@@ -42,16 +49,15 @@ class LeadsRepository {
             query += ` AND l.category ILIKE $${values.length}`;
         }
 
-        // Count for pagination
-        const countQuery = query.replace('SELECT l.*, l.category as category_name, 10 as credit_cost', 'SELECT COUNT(*)');
-        const countResult = await pool.query(countQuery, values);
-        const total = parseInt(countResult.rows[0].count);
-
         query += ` ORDER BY l.created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
         values.push(limit, offset);
 
         const result = await pool.query(query, values);
-        return { leads: result.rows, total };
+        const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+        const walletBalance = result.rows[0]?.wallet_balance ?? null;
+        const leads = result.rows.map(({ total_count, wallet_balance, ...lead }) => lead);
+
+        return { leads, total, walletBalance };
     }
 
     async checkPurchaseExists(userId, leadId, client = pool) {

@@ -9,8 +9,10 @@ import {
     Shield, Map
 } from 'lucide-react';
 import api from '../../utils/api';
+import { useTheme } from '../../utils/ThemeContext';
 
 const UserProfile = () => {
+    const { isPremium: isUserPremium } = useTheme();
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
 
@@ -171,7 +173,7 @@ const UserProfile = () => {
                         </div>
                     </div>
                     <h1 className="text-5xl font-black text-[var(--text-dark)] tracking-tighter uppercase leading-none italic">
-                        Account <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-indigo-400">Identity</span>
+                        Account <span className={`text-transparent bg-clip-text bg-gradient-to-r ${isUserPremium ? 'from-[#F5E5AB] via-[#D4AF37] to-[#F5E5AB] animate-shine' : 'from-indigo-600 to-indigo-400'}`}>Identity</span>
                     </h1>
                 </div>
                 <button className="px-8 py-4 bg-rose-500/5 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/10 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-3 shadow-xl shadow-rose-500/5">
@@ -194,7 +196,7 @@ const UserProfile = () => {
                 {/* --- Left Column: Summary & Quick Links --- */}
                 <div className="lg:col-span-4 space-y-8">
                     <div className="card p-10 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3.5rem] shadow-xl relative overflow-hidden group text-center">
-                        <div className="absolute top-0 right-0 p-10 opacity-[0.03] text-indigo-500 group-hover:scale-110 transition-transform">
+                        <div className={`absolute top-0 right-0 p-10 opacity-[0.03] group-hover:scale-110 transition-transform ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
                             <User size={200} strokeWidth={1} />
                         </div>
 
@@ -206,7 +208,7 @@ const UserProfile = () => {
                                 accept=".jpg,.jpeg,.png,.webp" 
                                 onChange={handlePhotoChange} 
                             />
-                            <div className="w-40 h-40 rounded-[3rem] bg-gradient-to-br from-indigo-500/10 to-transparent border-4 border-white shadow-2xl flex items-center justify-center text-indigo-500 overflow-hidden transform group-hover/avatar:rotate-3 transition-transform duration-500">
+                            <div className={`w-40 h-40 rounded-[3rem] border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden transform group-hover/avatar:rotate-3 transition-transform duration-500 ${isUserPremium ? 'from-[#D4AF37]/10 to-transparent text-[#D4AF37] bg-gradient-to-br' : 'from-indigo-500/10 to-transparent text-indigo-500 bg-gradient-to-br'}`}>
                                 {profile.profile_pic ? (
                                     <img src={profile.profile_pic} alt="Profile" className="w-full h-full object-cover" />
                                 ) : <User size={72} strokeWidth={1.5} />}
@@ -220,31 +222,31 @@ const UserProfile = () => {
                         </div>
 
                         <h3 className="text-3xl font-black text-[var(--text-dark)] uppercase tracking-tighter italic mb-1">{profile.name}</h3>
-                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-8 italic">Authorized Partner</p>
+                        <p className={`text-[10px] font-black uppercase tracking-[0.3em] mb-8 italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>Authorized Partner</p>
 
                         <div className="space-y-3 pt-8 border-t border-[var(--border-color)]">
-                            <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--bg-color)]/50 border border-transparent hover:border-indigo-500/10 transition-all">
+                            <div className={`flex items-center justify-between p-4 rounded-2xl bg-[var(--bg-color)]/50 border border-transparent transition-all ${isUserPremium ? 'hover:border-[#D4AF37]/20' : 'hover:border-indigo-500/10'}`}>
                                 <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Network Status</span>
                                 <span className="flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest">
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> Active
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--bg-color)]/50 border border-transparent hover:border-indigo-500/10 transition-all">
+                            <div className={`flex items-center justify-between p-4 rounded-2xl bg-[var(--bg-color)]/50 border border-transparent transition-all ${isUserPremium ? 'hover:border-[#D4AF37]/20' : 'hover:border-indigo-500/10'}`}>
                                 <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Account Tier</span>
-                                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Premium</span>
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>Premium</span>
                             </div>
                         </div>
                     </div>
 
                     <div 
                         onClick={handleRequestPasswordReset}
-                        className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[2.5rem] shadow-sm hover:shadow-xl hover:border-indigo-500/20 transition-all group cursor-pointer flex items-center justify-between overflow-hidden"
+                        className={`card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all group cursor-pointer flex items-center justify-between overflow-hidden ${isUserPremium ? 'hover:border-[#D4AF37]/30 shadow-[#D4AF37]/5' : 'hover:border-indigo-500/20'}`}
                     >
-                        <div className="absolute top-0 right-0 p-6 opacity-[0.02] text-indigo-500 group-hover:scale-110 transition-transform">
+                        <div className={`absolute top-0 right-0 p-6 opacity-[0.02] group-hover:scale-110 transition-transform ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
                             <Lock size={120} strokeWidth={1} />
                         </div>
                         <div className="flex items-center gap-5">
-                            <div className="w-14 h-14 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform ${isUserPremium ? 'bg-[#D4AF37] text-black shadow-[#D4AF37]/20' : 'bg-indigo-500 text-white shadow-indigo-500/20'}`}>
                                 <Key size={24} strokeWidth={1.5} />
                             </div>
                             <div>
@@ -252,7 +254,7 @@ const UserProfile = () => {
                                 <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest italic opacity-60">Update Password</p>
                             </div>
                         </div>
-                        <ChevronRight size={24} className="text-[var(--text-muted)] group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                        <ChevronRight size={24} className={`text-[var(--text-muted)] group-hover:translate-x-1 transition-all ${isUserPremium ? 'group-hover:text-[#D4AF37]' : 'group-hover:text-indigo-500'}`} />
                     </div>
                 </div>
 
@@ -265,9 +267,9 @@ const UserProfile = () => {
                         </div>
                     )}
                     <div className="card bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3.5rem] shadow-2xl overflow-hidden">
-                        <div className="p-10 md:p-12 border-b border-[var(--border-color)] flex  flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[var(--border-color)]/10">
+                        <div className="p-10 md:p-12 border-b border-[var(--border-color)] flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[var(--border-color)]/10">
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${isUserPremium ? 'bg-[#D4AF37] text-black' : 'bg-indigo-600'}`}>
                                     <Settings size={20} />
                                 </div>
                                 <div>
@@ -283,58 +285,58 @@ const UserProfile = () => {
                         <form onSubmit={handleSubmit} className="p-10 md:p-14 space-y-12">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                 <div className="space-y-4">
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest ml-1 italic">
+                                    <label className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ml-1 italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
                                         <User size={14} /> Name
                                     </label>
                                     <input
                                         type="text" value={profile.name || ''}
                                         onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                                        className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.5rem] px-8 py-5 text-sm font-black text-[var(--text-dark)] uppercase tracking-widest italic focus:border-indigo-500 transition-all outline-none shadow-sm"
+                                        className={`w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.5rem] px-8 py-5 text-sm font-black text-[var(--text-dark)] uppercase tracking-widest italic transition-all outline-none shadow-sm ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`}
                                         placeholder="Name"
                                     />
                                 </div>
 
                                 <div className="space-y-4">
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest ml-1 italic">
+                                    <label className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ml-1 italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
                                         <Smartphone size={14} /> Registered Mobile
                                     </label>
                                     <div className="relative">
                                         <input
                                             type="text" value={profile.phone || ''}
                                             onChange={(e) => setProfile({ ...profile, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                                            className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.5rem] px-8 py-5 text-sm font-black text-[var(--text-dark)] uppercase tracking-widest italic focus:border-indigo-500 transition-all outline-none tabular-nums shadow-sm"
+                                            className={`w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.5rem] px-8 py-5 text-sm font-black text-[var(--text-dark)] uppercase tracking-widest italic transition-all outline-none tabular-nums shadow-sm ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`}
                                             placeholder="Mobile Number"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-4">
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest ml-1 italic">
+                                    <label className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ml-1 italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
                                         <Mail size={14} /> Email Environment
                                     </label>
                                     <input
                                         type="email" value={profile.email || ''}
                                         onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                                        className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.5rem] px-8 py-5 text-sm font-black text-[var(--text-dark)] lowercase tracking-wide focus:border-indigo-500 transition-all outline-none shadow-sm"
+                                        className={`w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.5rem] px-8 py-5 text-sm font-black text-[var(--text-dark)] lowercase tracking-wide transition-all outline-none shadow-sm ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`}
                                         placeholder="Email Address"
                                     />
                                 </div>
 
                                 <div className="space-y-4">
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest ml-1 italic">
+                                    <label className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ml-1 italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
                                         <Globe size={14} /> Geographic Location
                                     </label>
                                     <div className="grid grid-cols-2 gap-4">
                                         <input
                                             type="text" value={profile.city || ''}
                                             onChange={(e) => setProfile({ ...profile, city: e.target.value })}
-                                            className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.2rem] px-6 py-5 text-[11px] font-black text-[var(--text-dark)] uppercase tracking-widest italic focus:border-indigo-500 transition-all outline-none shadow-sm"
+                                            className={`w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.2rem] px-6 py-5 text-[11px] font-black text-[var(--text-dark)] uppercase tracking-widest italic transition-all outline-none shadow-sm ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`}
                                             placeholder="City"
                                         />
                                         <input
                                             type="text" value={profile.state || ''}
                                             onChange={(e) => setProfile({ ...profile, state: e.target.value })}
-                                            className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.2rem] px-6 py-5 text-[11px] font-black text-[var(--text-dark)] uppercase tracking-widest italic focus:border-indigo-500 transition-all outline-none shadow-sm"
+                                            className={`w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.2rem] px-6 py-5 text-[11px] font-black text-[var(--text-dark)] uppercase tracking-widest italic transition-all outline-none shadow-sm ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`}
                                             placeholder="State"
                                         />
                                     </div>
@@ -342,25 +344,25 @@ const UserProfile = () => {
                             </div>
 
                             <div className="space-y-4">
-                                <label className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest ml-1 italic">
+                                <label className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ml-1 italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
                                     <Map size={14} /> Postal Index Number (PIN)
                                 </label>
                                 <input
                                     type="text" value={profile.pincode || ''}
                                     onChange={(e) => setProfile({ ...profile, pincode: e.target.value })}
-                                    className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.5rem] px-8 py-5 text-sm font-black text-[var(--text-dark)] tabular-nums tracking-[0.5em] focus:border-indigo-500 transition-all outline-none shadow-sm"
+                                    className={`w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.5rem] px-8 py-5 text-sm font-black text-[var(--text-dark)] tabular-nums tracking-[0.5em] transition-all outline-none shadow-sm ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`}
                                     placeholder="Enter 6-digit Pincode"
                                 />
                             </div>
 
                             <div className="space-y-4">
-                                <label className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest ml-1 italic">
+                                <label className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ml-1 italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
                                     <CreditCard size={14} /> PAN Card Number (Identity)
                                 </label>
                                 <input
                                     type="text" value={profile.pan_number || ''}
                                     onChange={(e) => setProfile({ ...profile, pan_number: e.target.value.toUpperCase() })}
-                                    className="w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.5rem] px-8 py-5 text-sm font-black text-[var(--text-dark)] uppercase tracking-widest focus:border-indigo-500 transition-all outline-none shadow-sm"
+                                    className={`w-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[1.5rem] px-8 py-5 text-sm font-black text-[var(--text-dark)] uppercase tracking-widest transition-all outline-none shadow-sm ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`}
                                     placeholder="Enter PAN Number"
                                 />
                             </div>
@@ -385,7 +387,7 @@ const UserProfile = () => {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="flex-1 md:flex-none px-14 py-5 bg-black text-white hover:bg-indigo-600 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3"
+                                        className={`flex-1 md:flex-none px-14 py-5 bg-black text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3 ${isUserPremium ? 'hover:bg-[#D4AF37] hover:text-black shadow-[#D4AF37]/5' : 'hover:bg-indigo-600'}`}
                                     >
                                         {loading ? <Activity size={18} className="animate-spin" /> : <Save size={18} />} Update Profile
                                     </button>

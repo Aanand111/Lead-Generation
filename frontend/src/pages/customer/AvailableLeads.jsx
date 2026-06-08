@@ -130,11 +130,11 @@ const UserAvailableLeads = () => {
         <div className="page-content animate-fade-in space-y-12 pb-20">
             {/* --- Hero / Header Section --- */}
             <div className="relative">
-                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[100px] -translate-y-1/2"></div>
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px] -translate-y-1/2"></div>
                 <div className="flex flex-col md:flex-row justify-between items-end gap-8 relative z-10">
                     <div className="max-w-2xl">
                         <div className="flex items-center gap-3 mb-4">
-                            <span className="px-3 py-1 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-indigo-600/20">
+                            <span className="px-3 py-1 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-emerald-600/20">
                                 Global Repository
                             </span>
                             <div className="flex items-center gap-1.5 text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest italic">
@@ -143,7 +143,7 @@ const UserAvailableLeads = () => {
                         </div>
                         <h1 className="text-5xl md:text-6xl font-black text-[var(--text-dark)] tracking-tighter uppercase leading-[0.9]">
                             Acquisition <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-[#4f46e5]">Center</span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-amber-500">Center</span>
                         </h1>
                         <p className="mt-6 text-sm md:text-base text-[var(--text-muted)] font-medium max-w-lg leading-relaxed">
                             Access real-time verified business prospects. Filter by region and industry to find your perfect match.
@@ -153,7 +153,7 @@ const UserAvailableLeads = () => {
                     <div className="flex items-center gap-4">
                          {/* Wallet Card */}
                          <div className="bg-[var(--surface-color)] p-1 rounded-[2.5rem] border border-[var(--border-color)] shadow-xl group cursor-default">
-                             <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 p-6 rounded-[2.2rem] text-white flex items-center gap-6 shadow-inner">
+                             <div className="bg-gradient-to-br from-emerald-500 to-emerald-800 p-6 rounded-[2.2rem] text-white flex items-center gap-6 shadow-inner">
                                  <div>
                                      <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-1">My Capital</div>
                                      <div className="text-3xl font-black tabular-nums tracking-tighter">{userCredits} <span className="text-xs uppercase opacity-60">CR</span></div>
@@ -169,40 +169,40 @@ const UserAvailableLeads = () => {
 
             {/* --- Advanced Filter Console --- */}
             <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/10 via-transparent to-emerald-500/10 rounded-[3rem] blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/10 via-transparent to-amber-500/10 rounded-[3rem] blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 <div className="relative p-2 rounded-[3rem] bg-[var(--surface-color)] border border-[var(--border-color)] shadow-2xl flex flex-col md:flex-row items-center gap-3 backdrop-blur-xl">
                     <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-3 p-2">
                         <div className="relative group/input">
-                            <div className="absolute inset-y-0 left-6 flex items-center text-[var(--text-muted)] group-focus-within/input:text-indigo-500 transition-colors">
+                            <div className="absolute inset-y-0 left-6 flex items-center text-[var(--text-muted)] group-focus-within/input:text-emerald-500 transition-colors">
                                 <MapPin size={18} />
                             </div>
                             <input 
                                 type="text" placeholder="Filter by City" 
                                 value={filters.city}
                                 onChange={(e) => updateFilter('city', e.target.value)}
-                                className="w-full pl-16 pr-6 py-5 bg-[var(--bg-color)]/30 border border-transparent focus:border-indigo-500/20 rounded-3xl text-xs font-black uppercase tracking-widest focus:ring-0 transition-all placeholder:text-[var(--text-muted)]/50"
+                                className="w-full pl-16 pr-6 py-5 bg-[var(--bg-color)]/30 border border-transparent focus:border-emerald-500/20 rounded-3xl text-xs font-black uppercase tracking-widest focus:ring-0 transition-all placeholder:text-[var(--text-muted)]/50"
                             />
                         </div>
                         <div className="relative group/input">
-                            <div className="absolute inset-y-0 left-6 flex items-center text-[var(--text-muted)] group-focus-within/input:text-indigo-500 transition-colors">
+                            <div className="absolute inset-y-0 left-6 flex items-center text-[var(--text-muted)] group-focus-within/input:text-emerald-500 transition-colors">
                                 <Hash size={18} />
                             </div>
                             <input 
                                 type="text" placeholder="Postal Code" 
                                 value={filters.pincode}
                                 onChange={(e) => updateFilter('pincode', e.target.value)}
-                                className="w-full pl-16 pr-6 py-5 bg-[var(--bg-color)]/30 border border-transparent focus:border-indigo-500/20 rounded-3xl text-xs font-black uppercase tracking-widest focus:ring-0 transition-all placeholder:text-[var(--text-muted)]/50"
+                                className="w-full pl-16 pr-6 py-5 bg-[var(--bg-color)]/30 border border-transparent focus:border-emerald-500/20 rounded-3xl text-xs font-black uppercase tracking-widest focus:ring-0 transition-all placeholder:text-[var(--text-muted)]/50"
                             />
                         </div>
                         <div className="relative group/input">
-                            <div className="absolute inset-y-0 left-6 flex items-center text-[var(--text-muted)] group-focus-within/input:text-indigo-500 transition-colors">
+                            <div className="absolute inset-y-0 left-6 flex items-center text-[var(--text-muted)] group-focus-within/input:text-emerald-500 transition-colors">
                                 <SlidersHorizontal size={18} />
                             </div>
                             <input 
                                 type="text" placeholder="Industry Type" 
                                 value={filters.category}
                                 onChange={(e) => updateFilter('category', e.target.value)}
-                                className="w-full pl-16 pr-6 py-5 bg-[var(--bg-color)]/30 border border-transparent focus:border-indigo-500/20 rounded-3xl text-xs font-black uppercase tracking-widest focus:ring-0 transition-all placeholder:text-[var(--text-muted)]/50"
+                                className="w-full pl-16 pr-6 py-5 bg-[var(--bg-color)]/30 border border-transparent focus:border-emerald-500/20 rounded-3xl text-xs font-black uppercase tracking-widest focus:ring-0 transition-all placeholder:text-[var(--text-muted)]/50"
                             />
                         </div>
                     </div>
@@ -216,7 +216,7 @@ const UserAvailableLeads = () => {
                                 <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${autoRefresh ? 'left-4.5' : 'left-0.5'}`}></div>
                             </div>
                         </div>
-                        <button onClick={() => fetchLeads()} className="flex-1 md:flex-none px-12 py-5 bg-black text-white hover:bg-indigo-600 rounded-3xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3">
+                        <button onClick={() => fetchLeads()} className="flex-1 md:flex-none px-12 py-5 bg-black text-white hover:bg-emerald-600 rounded-3xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3">
                             <Search size={18} /> Find
                         </button>
                     </div>
@@ -257,13 +257,13 @@ const UserAvailableLeads = () => {
                 ) : leads.length > 0 ? (
                     leads.map((lead) => (
                         <div key={lead.id} className="group relative">
-                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-[3.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 -z-10"></div>
-                            <div className="bg-[var(--surface-color)] border border-[var(--border-color)] p-10 rounded-[3.5rem] shadow-sm group-hover:shadow-2xl group-hover:border-indigo-500/20 transition-all duration-500 flex flex-col h-full relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-amber-500/5 rounded-[3.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 -z-10"></div>
+                            <div className="bg-[var(--surface-color)] border border-[var(--border-color)] p-10 rounded-[3.5rem] shadow-sm group-hover:shadow-2xl group-hover:border-emerald-500/20 transition-all duration-500 flex flex-col h-full relative overflow-hidden">
                                 
                                 <div className="flex items-center justify-between mb-8">
                                     <div className="px-4 py-1.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-2">
-                                        <Hash size={12} className="text-indigo-400" />
-                                        <span className="text-[10px] font-black font-mono text-indigo-500 uppercase tracking-tighter">ID: {lead.lead_uid?.split('-')[0] || 'N/A'}***</span>
+                                        <Hash size={12} className="text-amber-500" />
+                                        <span className="text-[10px] font-black font-mono text-amber-600 uppercase tracking-tighter">ID: {lead.lead_uid?.split('-')[0] || 'N/A'}***</span>
                                     </div>
                                     <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest italic flex items-center gap-1.5 opacity-60">
                                         <Clock size={12} /> {getTimeAgo(lead.created_at)}
@@ -271,18 +271,18 @@ const UserAvailableLeads = () => {
                                 </div>
 
                                 <div className="flex items-start gap-6 mb-8">
-                                    <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-500 text-white flex items-center justify-center shadow-2xl shadow-indigo-500/20 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500">
+                                    <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-emerald-500 to-emerald-700 text-white flex items-center justify-center shadow-2xl shadow-emerald-500/20 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500">
                                         <Target size={28} strokeWidth={1.5} />
                                     </div>
                                     <div className="pt-2">
-                                        <div className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-1 italic">Vetted Lead</div>
+                                        <div className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1 italic">Vetted Lead</div>
                                         <h4 className="text-2xl font-black text-[var(--text-dark)] uppercase tracking-tighter leading-tight">{lead.category_name || 'Market Prospect'}</h4>
                                     </div>
                                 </div>
 
                                 <div className="space-y-6 flex-1">
                                     <div className="space-y-2">
-                                        <h3 className="text-2xl font-black text-[var(--text-dark)] tracking-tighter leading-none group-hover:text-indigo-600 transition-colors uppercase italic">{lead.name}</h3>
+                                        <h3 className="text-2xl font-black text-[var(--text-dark)] tracking-tighter leading-none group-hover:text-emerald-600 transition-colors uppercase italic">{lead.name}</h3>
                                         <div className="flex items-center gap-2 text-[var(--text-muted)]">
                                             <MapPin size={14} className="text-emerald-500" />
                                             <span className="text-[11px] font-bold uppercase tracking-widest">{lead.city}, {lead.state}</span>
@@ -304,11 +304,11 @@ const UserAvailableLeads = () => {
                                 <div className="mt-10 pt-8 border-t border-[var(--border-color)] flex items-center justify-between gap-6">
                                     <div className="space-y-0.5">
                                         <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Acquisition Price</div>
-                                        <div className="text-2xl font-black text-[var(--text-dark)] tracking-tighter tabular-nums">{lead.credit_cost || 10} <span className="text-[11px] uppercase text-indigo-500">CR</span></div>
+                                        <div className="text-2xl font-black text-[var(--text-dark)] tracking-tighter tabular-nums">{lead.credit_cost || 10} <span className="text-[11px] uppercase text-amber-600 font-black">CR</span></div>
                                     </div>
                                     <button 
                                         onClick={() => handlePurchase(lead.id, lead.credit_cost)}
-                                        className="flex-1 py-4 bg-black text-white hover:bg-indigo-600 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl transition-all duration-500 flex items-center justify-center gap-2 group-hover:translate-x-1 active:scale-95"
+                                        className="flex-1 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-500 hover:to-amber-500 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-emerald-600/20 transition-all duration-500 flex items-center justify-center gap-2 group-hover:translate-x-1 active:scale-95"
                                     >
                                         Unlock <ArrowUpRight size={16} />
                                     </button>
@@ -318,7 +318,7 @@ const UserAvailableLeads = () => {
                     ))
                 ) : (
                     <div className="col-span-full py-40 text-center rounded-[4rem] bg-[var(--surface-color)] border border-[var(--border-color)] flex flex-col items-center gap-10 grayscale opacity-40">
-                        <div className="w-24 h-24 rounded-full bg-indigo-500/5 flex items-center justify-center">
+                        <div className="w-24 h-24 rounded-full bg-emerald-500/5 flex items-center justify-center">
                             <Target size={48} strokeWidth={1} />
                         </div>
                         <div className="space-y-4">
@@ -346,7 +346,7 @@ const UserAvailableLeads = () => {
                                 onClick={() => setPage(i + 1)}
                                 className={`w-12 h-12 rounded-2xl font-black text-[11px] transition-all ${
                                     page === i + 1 
-                                    ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/30 scale-110' 
+                                    ? 'bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-2xl shadow-emerald-600/30 scale-110' 
                                     : 'bg-[var(--surface-color)] text-[var(--text-muted)] hover:bg-slate-50 border border-[var(--border-color)]'
                                 }`}
                             >
@@ -366,7 +366,7 @@ const UserAvailableLeads = () => {
 
             {/* --- Urgent Action Banner --- */}
             {userCredits < 20 && (
-                <div className="relative group overflow-hidden rounded-[4rem] bg-gradient-to-br from-indigo-600 to-indigo-900 p-12 text-white shadow-2xl shadow-indigo-600/20 animate-slide-up">
+                <div className="relative group overflow-hidden rounded-[4rem] bg-gradient-to-br from-emerald-700 via-emerald-800 to-[#064e3b] p-12 text-white shadow-2xl shadow-emerald-800/30 animate-slide-up">
                     <div className="absolute top-0 right-0 p-12 text-white/5 -rotate-12 transition-transform duration-1000 group-hover:rotate-0 group-hover:scale-125">
                         <Zap size={240} />
                     </div>
@@ -380,7 +380,7 @@ const UserAvailableLeads = () => {
                                 Your capital is depleted ({userCredits} CR). Secure more credits to maintain your acquisition momentum.
                             </p>
                         </div>
-                        <button className="bg-white text-indigo-900 px-12 py-6 rounded-[2rem] font-black uppercase tracking-[0.3em] text-[11px] shadow-2xl hover:bg-emerald-400 hover:text-black hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-3">
+                        <button className="bg-amber-400 text-emerald-900 px-12 py-6 rounded-[2rem] font-black uppercase tracking-[0.3em] text-[11px] shadow-2xl hover:bg-amber-300 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-3">
                             Buy Credits <MousePointer2 size={18} />
                         </button>
                     </div>

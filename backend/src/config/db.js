@@ -45,11 +45,6 @@ const derivedPoolMax = Math.max(
     1,
     Math.floor(usableConnections / totalRuntimeProcesses)
 );
-const rolePoolCaps = {
-    api: 20,
-    worker: 10,
-    scheduler: 4
-};
 const rolePoolMins = {
     api: 2,
     worker: 1,
@@ -57,7 +52,7 @@ const rolePoolMins = {
 };
 const configuredPoolMax = parseNumber(
     process.env[`DB_POOL_MAX_${runtimeRole.toUpperCase()}`],
-    parseNumber(process.env.DB_POOL_MAX, Math.min(derivedPoolMax, rolePoolCaps[runtimeRole] || 10))
+    parseNumber(process.env.DB_POOL_MAX, derivedPoolMax)
 );
 const configuredPoolMin = parseNumber(
     process.env[`DB_POOL_MIN_${runtimeRole.toUpperCase()}`],

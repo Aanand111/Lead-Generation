@@ -122,20 +122,32 @@ const VendorSidebar = ({ isOpen }) => {
                     })}
                 </ul>
             </div>
-            <div className="sidebar-footer p-4 border-t border-[var(--border-color)]">
-               <div className="flex items-center gap-3 bg-indigo-500/5 p-3 rounded-2xl border border-indigo-500/10 overflow-hidden group cursor-pointer hover:bg-indigo-500/10 transition-all" onClick={() => navigate('/vendor/settings')}>
-                   <div className="w-9 h-9 rounded-full bg-indigo-500 text-white flex items-center justify-center font-black text-[10px] overflow-hidden border border-white shrink-0 shadow-sm">
-                       {user.profilePic ? (
-                           <img src={user.profilePic} alt="P" className="w-full h-full object-cover" />
-                       ) : (
-                           user.name?.[0] || 'V'
-                       )}
+            <div className={`sidebar-footer border-t border-[var(--border-color)] ${isOpen ? 'p-4' : 'py-4 flex justify-center'}`}>
+               {isOpen ? (
+                   <div className="flex items-center gap-3 bg-indigo-500/5 p-3 rounded-2xl border border-indigo-500/10 overflow-hidden group cursor-pointer hover:bg-indigo-500/10 transition-all" onClick={() => navigate('/vendor/settings')}>
+                       <div className="w-9 h-9 rounded-full bg-indigo-500 text-white flex items-center justify-center font-black text-[10px] overflow-hidden border border-white shrink-0 shadow-sm">
+                           {user.profilePic ? (
+                               <img src={user.profilePic} alt="P" className="w-full h-full object-cover" />
+                           ) : (
+                               user.name?.[0] || 'V'
+                           )}
+                       </div>
+                       <div className="min-w-0">
+                           <div className="text-[10px] font-black text-[var(--text-dark)] uppercase leading-none truncate">{user.name}</div>
+                           <div className="text-[9px] font-bold text-[var(--text-muted)] italic leading-none mt-1 uppercase tracking-tighter opacity-70">Production Node</div>
+                       </div>
                    </div>
-                   {isOpen && <div className="min-w-0">
-                       <div className="text-[10px] font-black text-[var(--text-dark)] uppercase leading-none truncate">{user.name}</div>
-                       <div className="text-[9px] font-bold text-[var(--text-muted)] italic leading-none mt-1 uppercase tracking-tighter opacity-70">Production Node</div>
-                   </div>}
-               </div>
+               ) : (
+                   <div className="cursor-pointer flex items-center justify-center transition-all duration-300 hover:scale-105" onClick={() => navigate('/vendor/settings')}>
+                       <div className="w-9 h-9 rounded-full bg-indigo-500 text-white flex items-center justify-center font-black text-[10px] overflow-hidden border border-white shrink-0 shadow-sm">
+                           {user.profilePic ? (
+                               <img src={user.profilePic} alt="P" className="w-full h-full object-cover" />
+                           ) : (
+                               user.name?.[0] || 'V'
+                           )}
+                       </div>
+                   </div>
+               )}
             </div>
         </aside>
     );

@@ -81,7 +81,9 @@ const CustomerSidebar = ({ isOpen }) => {
         setOpenDropdowns(prev => ({ ...prev, [label]: !prev[label] }));
     };
 
-    const activeColor = 'bg-[var(--primary)]';
+    const activeColor = user.isPremium
+        ? 'bg-gradient-to-r from-[#F5E5AB] via-[#D4AF37] to-[#C59B27] border border-[#D4AF37]/35 text-black'
+        : 'bg-[var(--primary)]';
     const activeText = user.isPremium ? 'text-black font-black' : 'text-white font-black';
     const hoverColor = 'hover:text-[var(--text-dark)] hover:bg-[var(--active-menu-bg)]';
     const activeFg = 'text-[var(--primary)]';
@@ -179,25 +181,25 @@ const CustomerSidebar = ({ isOpen }) => {
             </div>
 
             {/* User Footer */}
-            <div className="p-4 border-t border-[var(--border-color)]">               
-                <div
-                    className={`flex items-center gap-3 p-3 rounded-2xl border overflow-hidden cursor-pointer transition-all duration-300 ${user.isPremium
-                        ? 'premium-user-card'
-                        : 'bg-indigo-500/5 border-indigo-500/10 hover:bg-indigo-500/10'}`}
-                    onClick={() => navigate('/user/profile')}
-                >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs overflow-hidden shrink-0 ${user.isPremium
-                        ? 'ring-2 ring-[var(--primary)] ring-offset-1 ring-offset-transparent'
-                        : 'border-2 border-white shadow-sm bg-indigo-500 text-white'}`}>
-                        {user.profilePic ? (
-                            <img src={user.profilePic} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                            <div className={`w-full h-full flex items-center justify-center font-black text-sm ${user.isPremium ? 'bg-[var(--primary)] text-black' : 'bg-indigo-500 text-white'}`}>
-                                {user.name?.[0]?.toUpperCase() || 'U'}
-                            </div>
-                        )}
-                    </div>
-                    {isOpen && (
+            <div className={`border-t border-[var(--border-color)] ${isOpen ? 'p-4' : 'py-4 flex justify-center'}`}>               
+                {isOpen ? (
+                    <div
+                        className={`flex items-center gap-3 p-3 rounded-2xl border overflow-hidden cursor-pointer transition-all duration-300 ${user.isPremium
+                            ? 'premium-user-card'
+                            : 'bg-indigo-500/5 border-indigo-500/10 hover:bg-indigo-500/10'}`}
+                        onClick={() => navigate('/user/profile')}
+                    >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs overflow-hidden shrink-0 ${user.isPremium
+                            ? 'ring-2 ring-[var(--primary)] ring-offset-1 ring-offset-transparent'
+                            : 'border-2 border-white shadow-sm bg-indigo-50 text-white'}`}>
+                            {user.profilePic ? (
+                                <img src={user.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className={`w-full h-full flex items-center justify-center font-black text-sm ${user.isPremium ? 'bg-[var(--primary)] text-black' : 'bg-indigo-500 text-white'}`}>
+                                    {user.name?.[0]?.toUpperCase() || 'U'}
+                                </div>
+                            )}
+                        </div>
                         <div className="min-w-0 flex-1">
                             <div className="text-[11px] font-black uppercase leading-none truncate text-[var(--text-dark)]">{user.name}</div>
                             <div className={`text-[9px] font-black italic leading-none mt-1.5 uppercase tracking-widest flex items-center gap-1.5 ${user.isPremium ? 'text-[var(--primary)]' : 'text-[var(--text-muted)] opacity-70'}`}>
@@ -211,11 +213,28 @@ const CustomerSidebar = ({ isOpen }) => {
                                 )}
                             </div>
                         </div>
-                    )}
-                    {isOpen && user.isPremium && (
-                        <Crown size={14} className="text-[var(--primary)]/50 shrink-0" fill="currentColor" />
-                    )}
-                </div>
+                        {user.isPremium && (
+                            <Crown size={14} className="text-[var(--primary)]/50 shrink-0" fill="currentColor" />
+                        )}
+                    </div>
+                ) : (
+                    <div
+                        className="cursor-pointer flex items-center justify-center transition-all duration-300 hover:scale-105"
+                        onClick={() => navigate('/user/profile')}
+                    >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs overflow-hidden shrink-0 ${user.isPremium
+                            ? 'ring-2 ring-[var(--primary)] ring-offset-1 ring-offset-transparent'
+                            : 'border-2 border-white shadow-sm bg-indigo-50 text-white'}`}>
+                            {user.profilePic ? (
+                                <img src={user.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className={`w-full h-full flex items-center justify-center font-black text-sm ${user.isPremium ? 'bg-[var(--primary)] text-black' : 'bg-indigo-500 text-white'}`}>
+                                    {user.name?.[0]?.toUpperCase() || 'U'}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </aside>
     );

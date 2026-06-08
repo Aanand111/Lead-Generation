@@ -7,8 +7,10 @@ import {
     Sparkles, Lock, MousePointer2, X
 } from 'lucide-react';
 import api from '../../utils/api';
+import { useTheme } from '../../utils/ThemeContext';
 
 const UserSubscriptions = () => {
+    const { isPremium: isUserPremium } = useTheme();
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState(null);
@@ -149,7 +151,7 @@ const UserSubscriptions = () => {
                     </div>
                     <h1 className="text-5xl md:text-6xl font-black text-[var(--text-dark)] tracking-tighter uppercase leading-[0.9]">
                         Service <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-royal-blue to-emerald-500">Acquisition</span>
+                        <span className={`text-transparent bg-clip-text ${isUserPremium ? 'bg-gradient-to-r from-[#F5E5AB] via-[#D4AF37] to-[#F5E5AB] animate-shine' : 'bg-gradient-to-r from-indigo-600 via-royal-blue to-emerald-500'}`}>Acquisition</span>
                     </h1>
                     <p className="mt-6 text-sm md:text-base text-[var(--text-muted)] font-medium max-w-lg leading-relaxed italic">
                         Select an operational blueprint to scale your lead generation activities. Instant activation upon verification.
@@ -190,8 +192,8 @@ const UserSubscriptions = () => {
                         onClick={() => setSelectedCategory(cat)}
                         className={`px-12 py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.3em] transition-all duration-500 shadow-xl border cursor-pointer italic ${
                             selectedCategory === cat 
-                            ? 'bg-black text-white border-black scale-110 shadow-2xl' 
-                            : 'bg-[var(--surface-color)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-indigo-500 hover:text-indigo-500'
+                            ? (isUserPremium ? 'bg-[#D4AF37] text-black border-[#D4AF37] scale-110 shadow-2xl shadow-[#D4AF37]/25' : 'bg-black text-white border-black scale-110 shadow-2xl')
+                            : `bg-[var(--surface-color)] text-[var(--text-muted)] border-[var(--border-color)] ${isUserPremium ? 'hover:border-[#D4AF37] hover:text-[#D4AF37]' : 'hover:border-indigo-500 hover:text-indigo-500'}`
                         }`}
                     >
                         {cat}
@@ -309,12 +311,12 @@ const UserSubscriptions = () => {
             </div>
 
             {/* --- Enterprise Widget --- */}
-            <div className="p-14 bg-indigo-600 rounded-[5rem] text-white flex flex-col md:flex-row items-center justify-between gap-12 relative overflow-hidden group shadow-[0_50px_100px_-20px_rgba(79,70,229,0.3)]">
+            <div className={`p-14 rounded-[5rem] text-white flex flex-col md:flex-row items-center justify-between gap-12 relative overflow-hidden group shadow-2xl transition-all ${isUserPremium ? 'bg-gradient-to-br from-[#1c1c1c] via-[#2a2a2a] to-black border border-[#D4AF37]/20 shadow-[#D4AF37]/5' : 'bg-indigo-600 shadow-[0_50px_100px_-20px_rgba(79,70,229,0.3)]'}`}>
                 <div className="absolute top-0 right-0 p-14 text-white/5 -rotate-12 transition-transform duration-1000 group-hover:rotate-0 group-hover:scale-125">
                     <Target size={280} strokeWidth={1} />
                 </div>
                 <div className="relative z-10 max-w-2xl text-center md:text-left space-y-6">
-                    <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/10 border border-white/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest italic backdrop-blur-md">
+                    <div className={`inline-flex items-center gap-3 px-5 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest italic backdrop-blur-md ${isUserPremium ? 'bg-[#D4AF37]/10 border-[#D4AF37]/20 text-[#F5E5AB]' : 'bg-white/10 border-white/20 text-emerald-400'}`}>
                         <Sparkles size={16} fill="currentColor" /> Enterprise Solutions
                     </div>
                     <h3 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">Custom Volume Strategy</h3>
@@ -322,7 +324,7 @@ const UserSubscriptions = () => {
                         Requiring high-velocity lead flow? Consult with our architects to deploy a customized plan designed for your specific business scale.
                     </p>
                 </div>
-                <button className="bg-white text-indigo-600 px-12 py-7 rounded-[2.5rem] font-black uppercase tracking-[0.4em] text-[12px] shadow-2xl hover:bg-emerald-400 hover:text-black hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-4 relative z-10">
+                <button className={`px-12 py-7 rounded-[2.5rem] font-black uppercase tracking-[0.4em] text-[12px] shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-4 relative z-10 ${isUserPremium ? 'bg-[#D4AF37] text-black hover:bg-[#F5E5AB]' : 'bg-white text-indigo-600 hover:bg-emerald-400 hover:text-black'}`}>
                     Deploy Custom <ExternalLink size={20} />
                 </button>
             </div>
@@ -331,10 +333,10 @@ const UserSubscriptions = () => {
             {showForm && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-[40px] animate-fade-in">
                     <div className="w-full max-w-2xl bg-[var(--surface-color)] rounded-[4rem] shadow-2xl overflow-hidden animate-zoom-in relative">
-                        <div className="p-12 border-b border-slate-50  flex justify-between items-center">
+                        <div className="p-12 border-b border-slate-50 flex justify-between items-center">
                             <div>
-                                <h3 className="text-2xl font-black text-indigo-500 uppercase tracking-tighter italic flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white  flex items-center justify-center"><Lock size={20} /></div>
+                                <h3 className={`text-2xl font-black uppercase tracking-tighter italic flex items-center gap-4 ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${isUserPremium ? 'bg-[#D4AF37] text-black' : 'bg-indigo-600'}`}><Lock size={20} /></div>
                                     Secure Verification
                                 </h3>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2 ml-14">Required for Transaction Authorization</p>
@@ -368,7 +370,7 @@ const UserSubscriptions = () => {
                                             const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
                                             setUserDetails({...userDetails, panNumber: val});
                                         }}
-                                        className="w-full p-5 bg-[var(--surface-color)] border border-slate-200 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-indigo-500 focus:bg-[var(--surface-color)] outline-none transition-all shadow-inner"
+                                        className={`w-full p-5 bg-[var(--surface-color)] border border-slate-200 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none transition-all shadow-inner ${isUserPremium ? 'focus:border-[#D4AF37]' : 'focus:border-indigo-500'}`}
                                     />
                                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-2 italic">Your PAN will be encrypted and stored for compliance.</p>
                                 </div>
@@ -378,7 +380,7 @@ const UserSubscriptions = () => {
                                 <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-6 rounded-[2rem] text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-500 transition-colors">Abort</button>
                                 <button 
                                     type="submit" disabled={purchasing}
-                                    className="flex-[2] py-6 rounded-[2rem] bg-black text-white text-[11px] font-black uppercase tracking-[0.4em] shadow-2xl shadow-black/10 hover:bg-indigo-600 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
+                                    className={`flex-[2] py-6 rounded-[2rem] text-white text-[11px] font-black uppercase tracking-[0.4em] shadow-2xl shadow-black/10 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4 ${isUserPremium ? 'bg-[#D4AF37] text-black hover:bg-[#F5E5AB]' : 'bg-black hover:bg-indigo-600'}`}
                                 >
                                     {purchasing ? <RefreshCcw className="animate-spin" size={20} /> : <>Authorize Payment <MousePointer2 size={18} fill="currentColor" /></>}
                                 </button>
