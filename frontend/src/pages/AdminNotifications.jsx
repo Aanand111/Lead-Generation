@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
     Bell, Send, Users, Shield, Target, 
-    History, CheckCircle, AlertCircle, RefreshCcw,
+    History as HistoryIcon, CheckCircle, AlertCircle, RefreshCcw,
     LayoutGrid, UserCheck, MessageSquare
 } from 'lucide-react';
 import api from '../utils/api';
@@ -146,7 +146,7 @@ const AdminNotifications = () => {
                 {/* Quick Info & Stats */}
                 <div className="space-y-8">
                     <div className="card p-8 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-[3rem] shadow-sm relative overflow-hidden group">
-                        <History size={100} className="absolute -bottom-6 -right-6 opacity-5 group-hover:scale-110 transition-transform" />
+                        <HistoryIcon size={100} className="absolute -bottom-6 -right-6 opacity-5 group-hover:scale-110 transition-transform" />
                         <h4 className="text-sm font-black uppercase tracking-tight text-[var(--text-dark)] mb-6 flex items-center gap-3 italic"><LayoutGrid size={18} className="text-indigo-600" /> Dispatch Presets</h4>
                         <div className="space-y-3">
                             <div className="p-4 bg-[var(--bg-color)] rounded-2xl border border-[var(--border-color)] cursor-pointer hover:border-indigo-500/30 transition-all">

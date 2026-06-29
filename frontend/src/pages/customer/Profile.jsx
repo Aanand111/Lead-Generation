@@ -6,7 +6,7 @@ import {
     Lock, CheckCircle, Activity, Camera, Edit3,
     Save, Trash2, Key, Target, Globe, CreditCard,
     Zap, Gem, LogOut, ChevronRight, Settings, Sparkles,
-    Shield, Map
+    Shield, Map as MapIcon
 } from 'lucide-react';
 import api from '../../utils/api';
 import { useTheme } from '../../utils/ThemeContext';
@@ -345,7 +345,7 @@ const UserProfile = () => {
 
                             <div className="space-y-4">
                                 <label className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ml-1 italic ${isUserPremium ? 'text-[#D4AF37]' : 'text-indigo-500'}`}>
-                                    <Map size={14} /> Postal Index Number (PIN)
+                                    <MapIcon size={14} /> Postal Index Number (PIN)
                                 </label>
                                 <input
                                     type="text" value={profile.pincode || ''}
