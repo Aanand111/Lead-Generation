@@ -143,13 +143,24 @@ const contactLimiter = rateLimit({
     message: { success: false, message: 'Contact limit exceeded. Please try again after an hour.' }
 });
 
+const billingStore = createRateLimitStore('rl:billing:');
+const billingLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: parseNumber(process.env.BILLING_RATE_LIMIT_MAX, 30),
+    standardHeaders: true,
+    legacyHeaders: false,
+    passOnStoreError: true,
+    ...(billingStore ? { store: billingStore } : {}),
+    message: { success: false, message: 'Too many transaction attempts. Please wait 15 minutes.' }
+});
+
 swaggerSetup(app);
 
 app.get('/', (req, res) => {
     res.send('Lead Generation API is running.');
 });
 
-const buildHealthPayload = async () => {
+const buildHealthPayload = async (showDiagnostics = false) => {
     const db = await checkDatabaseHealth();
     const redis = getRedisStatus();
     const socket = socketGateway.getStatus();
@@ -158,32 +169,37 @@ const buildHealthPayload = async () => {
     const socketHealthy = !socket.configured || socket.bridgeStatus === 'ready';
     const healthy = db.status === 'UP' && (!redisRequired || (redisUp && socketHealthy));
 
+    const payload = {
+        success: healthy,
+        status: healthy ? 'healthy' : 'degraded',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    };
+
+    if (showDiagnostics) {
+        payload.services = {
+            server: 'UP',
+            database: db.connectionStatus || db.status,
+            schema: db.schemaStatus || 'UNKNOWN',
+            redis: redisUp ? 'UP' : (redis.configured ? 'DOWN' : 'DISABLED'),
+            realtime: socket.bridgeStatus === 'ready'
+                ? 'UP'
+                : (socket.configured ? socket.bridgeStatus.toUpperCase() : 'DISABLED')
+        };
+        payload.latencyMs = {
+            database: db.latencyMs
+        };
+        payload.schema = db.schema || null;
+        payload.pool = getPoolStatus();
+        payload.runtime = {
+            role: process.env.RUNTIME_ROLE || 'api',
+            pid: process.pid
+        };
+    }
+
     return {
         httpStatus: healthy ? 200 : 503,
-        body: {
-            success: healthy,
-            status: healthy ? 'healthy' : 'degraded',
-            timestamp: new Date().toISOString(),
-            uptime: process.uptime(),
-            services: {
-                server: 'UP',
-                database: db.connectionStatus || db.status,
-                schema: db.schemaStatus || 'UNKNOWN',
-                redis: redisUp ? 'UP' : (redis.configured ? 'DOWN' : 'DISABLED'),
-                realtime: socket.bridgeStatus === 'ready'
-                    ? 'UP'
-                    : (socket.configured ? socket.bridgeStatus.toUpperCase() : 'DISABLED')
-            },
-            latencyMs: {
-                database: db.latencyMs
-            },
-            schema: db.schema || null,
-            pool: getPoolStatus(),
-            runtime: {
-                role: process.env.RUNTIME_ROLE || 'api',
-                pid: process.pid
-            }
-        }
+        body: payload
     };
 };
 
@@ -196,18 +212,27 @@ app.get('/api/health/live', (req, res) => {
 });
 
 app.get('/api/health/ready', async (req, res) => {
-    const payload = await buildHealthPayload();
+    const hasSecret = process.env.HEALTH_CHECK_SECRET && req.query.secret === process.env.HEALTH_CHECK_SECRET;
+    const showDiagnostics = hasSecret || (process.env.NODE_ENV !== 'production');
+    const payload = await buildHealthPayload(showDiagnostics);
     res.status(payload.httpStatus).json(payload.body);
 });
 
 app.get('/api/health', async (req, res) => {
-    const payload = await buildHealthPayload();
+    const hasSecret = process.env.HEALTH_CHECK_SECRET && req.query.secret === process.env.HEALTH_CHECK_SECRET;
+    const showDiagnostics = hasSecret || (process.env.NODE_ENV !== 'production');
+    const payload = await buildHealthPayload(showDiagnostics);
     res.status(payload.httpStatus).json(payload.body);
 });
 
 
 
 app.use('/api/', generalLimiter);
+app.use('/api/user/purchase-lead', billingLimiter);
+app.use('/api/user/purchase-subscription', billingLimiter);
+app.use('/api/user/subscription', billingLimiter);
+app.use('/api/user/leads/purchase', billingLimiter);
+app.use('/api/user/subscriptions/purchase', billingLimiter);
 app.use('/api/auth', authLimiter, require('./modules/auth/auth.routes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/vendor', require('./routes/vendorRoutes'));

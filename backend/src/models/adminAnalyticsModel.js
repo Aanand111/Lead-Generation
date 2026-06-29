@@ -1,4 +1,7 @@
-const { pool } = require('../config/db');
+const db = require('../config/db');
+const pool = {
+    query: db.readQuery
+};
 
 const appendQueryLimitOffset = (query, params, { limit, offset } = {}) => {
     let nextQuery = query;

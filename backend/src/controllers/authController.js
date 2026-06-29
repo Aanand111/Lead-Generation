@@ -216,7 +216,8 @@ const loginUser = async (req, res, next) => {
                     return res.status(403).json({ success: false, message: 'Your account has been blocked. Please contact support.' });
                 }
 
-                const token = generateToken(user.id, user.role);
+                const effectiveRole = (user.role === 'vendor' && user.referred_by !== null) ? 'sub-vendor' : user.role;
+                const token = generateToken(user.id, effectiveRole);
 
                 res.status(200).json({
                     success: true,
@@ -226,7 +227,7 @@ const loginUser = async (req, res, next) => {
                         id: user.id,
                         email: user.email,
                         phone: user.phone,
-                        role: user.role,
+                        role: effectiveRole,
                         name: user.full_name,
                         profile_pic: user.profile_pic,
                         status: user.status,

@@ -122,12 +122,32 @@ const refreshAnalyticsView = async () => {
     }
 };
 
+const cleanupPendingTransactions = async () => {
+    try {
+        logger.info('[JOBS] Starting pending transaction cleanup');
+        const result = await pool.query(
+            `UPDATE transactions
+             SET status = 'FAILED', remarks = 'Transaction timed out / abandoned by user'
+             WHERE status = 'PENDING'
+             AND created_at < (NOW() - INTERVAL '2 hours')
+             RETURNING id`
+        );
+        logger.info('[JOBS] Pending transaction cleanup completed', { cleanedCount: result.rowCount });
+    } catch (error) {
+        logger.error('[JOBS] Pending transaction cleanup failed', {
+            message: error.message,
+            stack: error.stack
+        });
+    }
+};
+
 const runAllMaintenanceTasks = async () => {
     logger.info('[JOBS] Initiating manual maintenance sequence');
     await archiveExpiredPosters();
     await expirePurchasedLeads();
     await checkPackageRenewals();
     await refreshAnalyticsView();
+    await cleanupPendingTransactions();
     logger.info('[JOBS] Manual maintenance sequence completed');
 };
 
@@ -136,5 +156,6 @@ module.exports = {
     expirePurchasedLeads,
     checkPackageRenewals,
     refreshAnalyticsView,
+    cleanupPendingTransactions,
     runAllMaintenanceTasks
 };

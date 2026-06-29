@@ -215,8 +215,8 @@ router.get('/vendors-performance', getVendorPerformance);
 // Analytics & Metrics Routes (Granular Reports)
 const { fetchGranularAnalytics, recordBannerInteraction, getLeadReports, exportDetailedReports } = require('../controllers/adminAnalyticsController');
 const { sendTargetedNotification } = require('../controllers/adminNotificationController');
-router.get('/analytics/granular', fetchGranularAnalytics);
-router.get('/analytics/lead-reports', getLeadReports);
+router.get('/analytics/granular', cacheMiddleware(1800), fetchGranularAnalytics);
+router.get('/analytics/lead-reports', cacheMiddleware(300), getLeadReports);
 router.get('/analytics/export-leads', exportDetailedReports);
 
 router.post('/notifications/send', sendTargetedNotification);

@@ -112,6 +112,9 @@ const resetPassword = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'User not found.' });
         }
 
+        // Revoke active JWTs
+        await redisConnection.setex(`jwt_revoked_at:${updateResult.rows[0].id}`, 7 * 24 * 3600, Math.floor(Date.now() / 1000));
+
         // Clear OTP after successful reset
         await deleteOTP(phone);
 
@@ -158,6 +161,9 @@ const resetPasswordConfirm = async (req, res, next) => {
         if (updateResult.rows.length === 0) {
             return res.status(404).json({ success: false, message: 'User not found.' });
         }
+
+        // Revoke active JWTs
+        await redisConnection.setex(`jwt_revoked_at:${updateResult.rows[0].id}`, 7 * 24 * 3600, Math.floor(Date.now() / 1000));
 
         // Delete the token so it cannot be used again
         await redisConnection.del(`pwd_reset_link:${token}`);

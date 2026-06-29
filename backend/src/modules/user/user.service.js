@@ -354,6 +354,16 @@ class UserService {
 
         const newHash = await bcrypt.hash(newPassword, 10);
         await userRepository.updatePassword(userId, newHash);
+
+        // Revoke active JWTs
+        try {
+            const { redisConnection } = require('../../config/redis');
+            if (redisConnection) {
+                await redisConnection.setex(`jwt_revoked_at:${userId}`, 7 * 24 * 3600, Math.floor(Date.now() / 1000));
+            }
+        } catch (err) {
+            logger.warn(`Failed to set JWT revocation key in Redis for user ${userId}: ${err.message}`);
+        }
     }
 
     async requestPasswordReset(userId) {

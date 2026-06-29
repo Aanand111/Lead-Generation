@@ -42,6 +42,29 @@ const addSubVendor = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Name, phone and email are required' });
         }
 
+        if (!vendorData.referred_by_vendor_id) {
+            return res.status(400).json({ success: false, message: 'Parent vendor is required' });
+        }
+
+        const { pool } = require('../config/db');
+        const parentRes = await pool.query(
+            "SELECT id, role, referred_by FROM users WHERE id = $1",
+            [vendorData.referred_by_vendor_id]
+        );
+
+        if (parentRes.rows.length === 0) {
+            return res.status(400).json({ success: false, message: 'Invalid parent vendor: Record does not exist.' });
+        }
+
+        const parent = parentRes.rows[0];
+        if (parent.role !== 'vendor') {
+            return res.status(400).json({ success: false, message: 'Invalid parent vendor: Selected user is not a vendor.' });
+        }
+
+        if (parent.referred_by !== null) {
+            return res.status(400).json({ success: false, message: 'Invalid parent vendor: Selected user is a sub-vendor and cannot have child nodes.' });
+        }
+
         // Generate unguessable code if not provided
         if (!vendorData.referral_code) {
             vendorData.referral_code = `SVND-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
@@ -75,7 +98,6 @@ const addSubVendor = async (req, res, next) => {
             });
         } else {
             // Update existing user to have vendor role and new credentials
-            const { pool } = require('../config/db');
             await pool.query(
                 `UPDATE users SET 
                     role = 'vendor', 
@@ -101,6 +123,27 @@ const updateSubVendor = async (req, res, next) => {
         const { id } = req.params;
         const data = { ...req.body };
         
+        if (data.referred_by_vendor_id) {
+            const { pool } = require('../config/db');
+            const parentRes = await pool.query(
+                "SELECT id, role, referred_by FROM users WHERE id = $1",
+                [data.referred_by_vendor_id]
+            );
+
+            if (parentRes.rows.length === 0) {
+                return res.status(400).json({ success: false, message: 'Invalid parent vendor: Record does not exist.' });
+            }
+
+            const parent = parentRes.rows[0];
+            if (parent.role !== 'vendor') {
+                return res.status(400).json({ success: false, message: 'Invalid parent vendor: Selected user is not a vendor.' });
+            }
+
+            if (parent.referred_by !== null) {
+                return res.status(400).json({ success: false, message: 'Invalid parent vendor: Selected user is a sub-vendor and cannot have child nodes.' });
+            }
+        }
+
         if (data.password) {
             const salt = await bcrypt.genSalt(10);
             data.password = await bcrypt.hash(data.password, salt);

@@ -22,6 +22,19 @@ const protect = async (req, res, next) => {
             }
             const decoded = jwt.verify(token, secret);
 
+            // Verify if the token has been revoked (Task 6)
+            try {
+                const { redisConnection } = require('../config/redis');
+                if (redisConnection && typeof redisConnection.get === 'function') {
+                    const revokedAt = await redisConnection.get(`jwt_revoked_at:${decoded.id}`);
+                    if (revokedAt && decoded.iat < parseInt(revokedAt, 10)) {
+                        return res.status(401).json({ success: false, message: 'Session expired due to password change. Please log in again.' });
+                    }
+                }
+            } catch (rErr) {
+                console.error('[REDIS REVOCATION CHECK ERROR]', rErr.message);
+            }
+
             req.user = {
                 id: decoded.id,
                 role: decoded.role
@@ -69,11 +82,22 @@ const authorizeRole = (roles) => {
     };
 };
 
+const subVendorOnly = (req, res, next) => {
+    if (req.user && req.user.role === 'sub-vendor') {
+        return next();
+    }
+    return res.status(403).json({ 
+        success: false, 
+        message: 'Access denied. Sub-vendor privileges required.' 
+    });
+};
+
 module.exports = { 
     protect, 
     authenticateToken: protect,
     adminOnly, 
     vendorOnly,
+    subVendorOnly,
     authorizeRole
 };
 

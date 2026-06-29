@@ -65,7 +65,9 @@ class AuthService {
         if (user.status === 'PENDING') throw new AppError('Your account is pending approval by the admin.', 403);
         if (user.status === 'BLOCKED') throw new AppError('Your account has been blocked. Please contact support.', 403);
 
-        const token = this.generateToken(user.id, user.role);
+        const effectiveRole = (user.role === 'vendor' && user.referred_by !== null) ? 'sub-vendor' : user.role;
+        const token = this.generateToken(user.id, effectiveRole);
+        user.role = effectiveRole;
 
         return { token, user };
     }

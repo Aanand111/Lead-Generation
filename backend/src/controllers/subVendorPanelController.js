@@ -246,10 +246,53 @@ const approveReferral = async (req, res, next) => {
     }
 };
 
+/**
+ * Get Sub-Vendor Assigned/Uploaded Leads
+ */
+const getSubVendorLeads = async (req, res, next) => {
+    try {
+        const subVendorId = req.user.id;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        const result = await pool.query(
+            `SELECT l.*, 
+                    (SELECT COUNT(*)::int FROM lead_purchases lp WHERE lp.lead_id = l.id) as purchase_count,
+                    (SELECT COUNT(*)::int FROM lead_feedback lf WHERE lf.lead_id = l.id) as interest_count
+             FROM leads l
+             WHERE l.assigned_to = $1 OR l.created_by = $1
+             ORDER BY l.created_at DESC 
+             LIMIT $2 OFFSET $3`,
+            [subVendorId, limit, offset]
+        );
+
+        const countRes = await pool.query(
+            "SELECT COUNT(*) FROM leads WHERE assigned_to = $1 OR created_by = $1",
+            [subVendorId]
+        );
+        const total = parseInt(countRes.rows[0].count, 10);
+
+        res.status(200).json({ 
+            success: true, 
+            data: result.rows,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getSubVendorStats,
     getSubVendorReferrals,
     getSubVendorEarnings,
     requestSettlement,
-    approveReferral
+    approveReferral,
+    getSubVendorLeads
 };

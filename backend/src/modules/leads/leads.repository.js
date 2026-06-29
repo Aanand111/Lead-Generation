@@ -1,9 +1,9 @@
 // Triggered nodemon restart to run corrected migrations.
-const { pool } = require('../../config/db');
+const { pool, readPool } = require('../../config/db');
 const { buildLeadPurchaseInsert, loadLeadPurchaseColumns } = require('../../utils/leadPurchaseSchema');
 
 class LeadsRepository {
-    async findById(id, client = pool) {
+    async findById(id, client = readPool) {
         const result = await client.query('SELECT * FROM leads WHERE id = $1', [id]);
         return result.rows[0];
     }
@@ -52,7 +52,7 @@ class LeadsRepository {
         query += ` ORDER BY l.created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
         values.push(limit, offset);
 
-        const result = await pool.query(query, values);
+        const result = await readPool.query(query, values);
         const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
         const walletBalance = result.rows[0]?.wallet_balance ?? null;
         const leads = result.rows.map(({ total_count, wallet_balance, ...lead }) => lead);
@@ -60,7 +60,7 @@ class LeadsRepository {
         return { leads, total, walletBalance };
     }
 
-    async checkPurchaseExists(userId, leadId, client = pool) {
+    async checkPurchaseExists(userId, leadId, client = readPool) {
         const result = await client.query(
             'SELECT id FROM lead_purchases WHERE user_id = $1 AND lead_id = $2',
             [userId, leadId]

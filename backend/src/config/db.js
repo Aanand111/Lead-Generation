@@ -13,12 +13,13 @@ const buildSslConfig = () => {
     };
 };
 
-const buildBasePoolConfig = () => {
+const buildBasePoolConfig = (customUrl) => {
     const ssl = buildSslConfig();
+    const dbUrl = customUrl || process.env.DATABASE_URL;
 
-    if (process.env.DATABASE_URL) {
+    if (dbUrl) {
         return {
-            connectionString: process.env.DATABASE_URL,
+            connectionString: dbUrl,
             ...(ssl ? { ssl } : {})
         };
     }
@@ -76,6 +77,23 @@ const poolConfig = {
 
 const pool = new Pool(poolConfig);
 
+const readPool = process.env.DATABASE_READ_URL
+    ? new Pool({
+        ...buildBasePoolConfig(process.env.DATABASE_READ_URL),
+        max: Math.max(1, configuredPoolMax),
+        min: Math.min(configuredPoolMin, configuredPoolMax),
+        idleTimeoutMillis: parseNumber(process.env.DB_POOL_IDLE_TIMEOUT_MS, 30000),
+        connectionTimeoutMillis: parseNumber(process.env.DB_POOL_CONNECTION_TIMEOUT_MS, 5000),
+        statement_timeout: parseNumber(process.env.DB_STATEMENT_TIMEOUT_MS, 15000),
+        query_timeout: parseNumber(process.env.DB_QUERY_TIMEOUT_MS, 15000),
+        idle_in_transaction_session_timeout: parseNumber(process.env.DB_IDLE_TX_TIMEOUT_MS, 10000),
+        keepAlive: true,
+        allowExitOnIdle: false,
+        maxUses: parseNumber(process.env.DB_POOL_MAX_USES, 7500),
+        application_name: process.env.DB_READ_APPLICATION_NAME || `leadgen-read-${runtimeRole}-${process.pid}`
+      })
+    : pool;
+
 pool.on('connect', () => {
     logger.debug('[DB] Client connected', {
         total: pool.totalCount,
@@ -83,6 +101,23 @@ pool.on('connect', () => {
         waiting: pool.waitingCount
     });
 });
+
+if (readPool !== pool) {
+    readPool.on('connect', () => {
+        logger.debug('[DB] Read client connected', {
+            total: readPool.totalCount,
+            idle: readPool.idleCount,
+            waiting: readPool.waitingCount
+        });
+    });
+
+    readPool.on('error', (err) => {
+        logger.error('[DB] Unexpected idle read client error', {
+            message: err.message,
+            stack: err.stack
+        });
+    });
+}
 
 pool.on('error', (err) => {
     logger.error('[DB] Unexpected idle client error', {
@@ -92,6 +127,7 @@ pool.on('error', (err) => {
 });
 
 const query = (text, params) => pool.query(text, params);
+const readQuery = (text, params) => readPool.query(text, params);
 
 const inspectSchemaHealth = async (client) => {
     const expectedMigrations = getMigrationFiles();
@@ -171,12 +207,17 @@ const getPoolStatus = () => ({
 });
 
 const closePool = async () => {
-    await pool.end();
+    await Promise.allSettled([
+        pool.end(),
+        readPool !== pool ? readPool.end() : Promise.resolve()
+    ]);
 };
 
 module.exports = {
     query,
+    readQuery,
     pool,
+    readPool,
     poolConfig,
     getPoolStatus,
     checkDatabaseHealth,

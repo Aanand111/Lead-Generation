@@ -37,6 +37,26 @@ class LeadsService {
     }
 
     async purchaseLead(userId, leadId) {
+        // Concurrency Lock (Task 40): Reject concurrent purchase requests for the same lead by the same user within a 5-second window
+        const { redisConnection, isRedisConfigured, isRedisReady } = require('../../config/redis');
+        const lockKey = `purchase_lock:${userId}:${leadId}`;
+        let locked = true;
+
+        try {
+            if (isRedisConfigured() && isRedisReady()) {
+                const acquired = await redisConnection.set(lockKey, '1', 'EX', 5, 'NX');
+                if (!acquired) {
+                    locked = false;
+                }
+            }
+        } catch (rErr) {
+            console.error('[REDIS CONCURRENCY LOCK ERROR]', rErr.message);
+        }
+
+        if (!locked) {
+            throw new AppError('A purchase request for this lead is already in progress or was made recently. Please wait 5 seconds.', 429);
+        }
+
         const purchase = await withTransaction(async (client) => {
             // 1. Lock and check lead
             const lead = await leadsRepository.findByIdWithLock(leadId, client);

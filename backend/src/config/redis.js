@@ -11,7 +11,9 @@ const buildRedisOptions = (role) => {
         maxRetriesPerRequest: null,
         enableReadyCheck: true,
         lazyConnect: false,
-        retryStrategy: (attempt) => Math.min(attempt * 100, 2000),
+        retryStrategy: (attempt) => Math.min(attempt * 100, 3000),
+        connectTimeout: parseNumber(process.env.REDIS_CONNECT_TIMEOUT_MS, 15000),
+        keepAlive: parseNumber(process.env.REDIS_KEEP_ALIVE_MS, 30000),
         connectionName: `leadgen:${role}:${process.pid}`
     };
 

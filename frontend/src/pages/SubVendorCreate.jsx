@@ -16,25 +16,66 @@ const SubVendorCreate = () => {
         status: 'Active'
     });
     const [vendors, setVendors] = useState([]);
+    const [subvendors, setSubvendors] = useState([]);
     const [loadingVendors, setLoadingVendors] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [validationErrors, setValidationErrors] = useState({});
 
     React.useEffect(() => {
-        const fetchVendors = async () => {
+        const fetchVendorsAndSubvendors = async () => {
             try {
-                const res = await api.get('/admin/vendors?limit=1000');
-                if (res.data.success) {
-                    setVendors(res.data.data);
+                const [vendorsRes, subvendorsRes] = await Promise.all([
+                    api.get('/admin/vendors?limit=1000'),
+                    api.get('/admin/subvendors?limit=1000')
+                ]);
+                if (vendorsRes.data.success) {
+                    setVendors(vendorsRes.data.data);
+                }
+                if (subvendorsRes.data.success) {
+                    setSubvendors(subvendorsRes.data.data);
                 }
             } catch (err) {
-                console.error("Fetch vendors failure");
+                console.error("Fetch failure for vendors/subvendors data", err);
             } finally {
                 setLoadingVendors(false);
             }
         };
-        fetchVendors();
+        fetchVendorsAndSubvendors();
     }, []);
+
+    const validateField = (name, value) => {
+        let errs = { ...validationErrors };
+        if (name === 'phone') {
+            if (!value) {
+                errs.phone = 'Phone number is required';
+            } else if (!/^[6-9]\d{9}$/.test(value)) {
+                errs.phone = 'Phone number must be a valid 10-digit Indian cellular number';
+            } else {
+                const isDuplicate = subvendors.some(sv => sv.phone === value) || vendors.some(v => v.phone === value);
+                if (isDuplicate) {
+                    errs.phone = 'Phone number is already registered';
+                } else {
+                    delete errs.phone;
+                }
+            }
+        }
+        if (name === 'email') {
+            if (!value) {
+                errs.email = 'Email address is required';
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                errs.email = 'Please enter a valid email address';
+            } else {
+                const isDuplicate = subvendors.some(sv => sv.email?.toLowerCase() === value.toLowerCase()) || vendors.some(v => v.email?.toLowerCase() === value.toLowerCase());
+                if (isDuplicate) {
+                    errs.email = 'Email address is already registered';
+                } else {
+                    delete errs.email;
+                }
+            }
+        }
+        setValidationErrors(errs);
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -42,9 +83,11 @@ const SubVendorCreate = () => {
             const val = value.replace(/\D/g, '');
             if (val.length <= 10) {
                 setFormData({ ...formData, [name]: val });
+                validateField(name, val);
             }
         } else {
             setFormData({ ...formData, [name]: value });
+            validateField(name, value);
         }
     };
 
@@ -131,10 +174,13 @@ const SubVendorCreate = () => {
                                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-500 transition-colors" size={18} />
                                         <input
                                             type="text" name="phone" value={formData.phone} onChange={handleChange}
-                                            className="w-full pl-12 pr-4 py-5 rounded-[1.5rem] font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none text-[var(--text-dark)]"
+                                            className={`w-full pl-12 pr-4 py-5 rounded-[1.5rem] font-bold text-sm bg-[var(--bg-color)] border ${validationErrors.phone ? 'border-red-500' : 'border-[var(--border-color)]'} focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none text-[var(--text-dark)]`}
                                             placeholder="10 DIGITS" maxLength={10} required
                                         />
                                     </div>
+                                    {validationErrors.phone && (
+                                        <div className="text-[10px] font-black text-red-500 uppercase tracking-widest mt-1 ml-1">{validationErrors.phone}</div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-2">
@@ -143,10 +189,13 @@ const SubVendorCreate = () => {
                                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-indigo-500 transition-colors" size={18} />
                                         <input
                                             type="email" name="email" value={formData.email} onChange={handleChange}
-                                            className="w-full pl-12 pr-4 py-5 rounded-[1.5rem] font-bold text-sm bg-[var(--bg-color)] border border-[var(--border-color)] focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none text-[var(--text-dark)]"
+                                            className={`w-full pl-12 pr-4 py-5 rounded-[1.5rem] font-bold text-sm bg-[var(--bg-color)] border ${validationErrors.email ? 'border-red-500' : 'border-[var(--border-color)]'} focus:bg-[var(--surface-color)] focus:border-indigo-500 transition-all shadow-inner outline-none text-[var(--text-dark)]`}
                                             placeholder="EX: NODE@ENTITY.COM" required
                                         />
                                     </div>
+                                    {validationErrors.email && (
+                                        <div className="text-[10px] font-black text-red-500 uppercase tracking-widest mt-1 ml-1">{validationErrors.email}</div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-2">
@@ -217,8 +266,8 @@ const SubVendorCreate = () => {
                     <div className="flex flex-col md:flex-row gap-6">
                         <button
                             type="submit"
-                            disabled={submitting}
-                            className="flex-1 py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-xs tracking-[0.2em] rounded-[1.5rem] shadow-2xl shadow-indigo-500/40 flex items-center justify-center gap-4 transition-all active:scale-95 disabled:opacity-50"
+                            disabled={submitting || Object.keys(validationErrors).length > 0}
+                            className="flex-1 py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-xs tracking-[0.2em] rounded-[1.5rem] shadow-2xl shadow-indigo-500/40 flex items-center justify-center gap-4 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {submitting ? (
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
